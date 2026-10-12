@@ -140,7 +140,9 @@ The current list is strong on models, research and tools (layers 2–3). It is w
 | 5 | **Podcasts and YouTube** | — | Channel RSS, titles only at first |
 | 6 | **Paywalled outlets** (The Information, Stratechery) | — | Headlines only |
 
-None of the candidates in 1–2 has been verified yet. Phase 1 checks each feed before it is added.
+**Update 2026-10-12:** gaps 1–2 are now filled with verified feeds, listed in [sources-layers.md](sources-layers.md):
+- **Business, funding and policy:** 15 sources, including policy feeds for the US, CA, UK, CH, UAE and the EU.
+- **Compute and low-level systems:** 15 sources.
 
 **Jobs: not yet.**
 
@@ -156,6 +158,21 @@ Ways to close the gap:
 | (b) Workday career-site JSON endpoints, per company | No auth needed, but undocumented, so moderate ToS risk |
 | (c) **Your own job-alert emails** (LinkedIn, jobs.ch, Indeed, Bayt) | Collected in a dedicated Gmail label and read with the Gmail API. Legal, because the emails are sent to you |
 | (d) Regional open data, e.g. Canada Job Bank | Coverage varies |
+
+**Update 2026-10-12:** the job-source mix for each market is now decided; see [job-sources-markets.md](job-sources-markets.md). Every market uses these:
+- the Greenhouse / Lever / Ashby job-board APIs
+- the career-site endpoints of the enterprise systems: Workday (banks, pharma, NVIDIA), SuccessFactors, Oracle Recruiting and SmartRecruiters
+- SerpApi Google Jobs twice a week, which fits the free tier
+- job-alert emails
+
+Per-market extras:
+
+| Market | Extra sources |
+|---|---|
+| UK | the Reed API, daily |
+| Switzerland | swissdevjobs.ch RSS, daily |
+| US | USAJobs, weekly |
+| UAE | relies mainly on SerpApi and alert emails, because Bayt, GulfTalent and Naukrigulf can't be accessed automatically |
 
 **Measuring coverage:**
 - **News recall:** each week, take every story linked by the aggregator newsletters (AINews, TLDR, etc.) and check whether our primary sources already had it. The target is above 90%. Domains that keep getting missed are proposed as new sources in the private chat, with a ➕ button.

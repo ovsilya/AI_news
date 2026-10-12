@@ -77,7 +77,7 @@
 <body>
 <main>
   <h1>AI_news: architecture</h1>
-  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Markets: USA · Canada · UK · Switzerland · UAE. Draft v0.4 · 2026-10-12. <b>Click any block</b> for what it does and why.</p>
+  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Markets: USA · Canada · UK · Switzerland · UAE. Draft v0.5 · 2026-10-12. <b>Click any block</b> for what it does and why.</p>
 
   <div class="frame">
   <svg viewBox="0 0 1240 870" role="img" aria-label="Architecture diagram: sources feed one Cloud Run job image that runs in three scheduled modes on GCP, calls Vertex AI, stores state in Cloud Storage and Firestore, and posts to a Telegram channel; a Telegram bot webhook collects feedback and profile edits">
@@ -88,23 +88,27 @@
     </defs>
 
     <!-- ===== Sources ===== -->
-    <text class="h" x="20" y="92">Sources</text>
-    <g class="blk" data-id="src-vendor" tabindex="0"><rect class="ext" x="20" y="105" width="230" height="60" rx="8"/>
-      <text class="t" x="34" y="129">Vendors &amp; changelogs</text><text class="s" x="34" y="148">OpenAI · Anthropic · Google · HF</text></g>
-    <g class="blk" data-id="src-news" tabindex="0"><rect class="ext" x="20" y="180" width="230" height="60" rx="8"/>
-      <text class="t" x="34" y="204">Newsletters</text><text class="s" x="34" y="223">AINews · TLDR · Simon W. → votes</text></g>
-    <g class="blk" data-id="src-research" tabindex="0"><rect class="ext" x="20" y="255" width="230" height="60" rx="8"/>
-      <text class="t" x="34" y="279">Research</text><text class="s" x="34" y="298">HF Daily Papers · arXiv</text></g>
-    <g class="blk" data-id="src-code" tabindex="0"><rect class="ext" x="20" y="330" width="230" height="60" rx="8"/>
-      <text class="t" x="34" y="354">Models &amp; code</text><text class="s" x="34" y="373">GitHub releases · HF · OpenRouter</text></g>
-    <g class="blk" data-id="src-community" tabindex="0"><rect class="ext" x="20" y="405" width="230" height="60" rx="8"/>
-      <text class="t" x="34" y="429">Community &amp; big picture</text><text class="s" x="34" y="448">HN · Reddit · business · policy</text></g>
+    <text class="h" x="20" y="90">Sources · ~70 feeds</text>
+    <g class="blk" data-id="src-vendor" tabindex="0"><rect class="ext" x="20" y="98" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="118">Vendors &amp; changelogs</text><text class="s" x="34" y="136">OpenAI · Anthropic · Google · HF</text></g>
+    <g class="blk" data-id="src-news" tabindex="0"><rect class="ext" x="20" y="156" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="176">Newsletters</text><text class="s" x="34" y="194">AINews · TLDR · Simon W. → votes</text></g>
+    <g class="blk" data-id="src-research" tabindex="0"><rect class="ext" x="20" y="214" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="234">Research</text><text class="s" x="34" y="252">HF Daily Papers · arXiv</text></g>
+    <g class="blk" data-id="src-code" tabindex="0"><rect class="ext" x="20" y="272" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="292">Models &amp; code</text><text class="s" x="34" y="310">GitHub releases · HF · OpenRouter</text></g>
+    <g class="blk" data-id="src-community" tabindex="0"><rect class="ext" x="20" y="330" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="350">Community</text><text class="s" x="34" y="368">HN · Reddit · Bluesky · YouTube</text></g>
+    <g class="blk" data-id="src-biz" tabindex="0"><rect class="ext" x="20" y="388" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="408">Business &amp; policy</text><text class="s" x="34" y="426">Bloomberg · Crunchbase · 5-mkt policy</text></g>
+    <g class="blk" data-id="src-systems" tabindex="0"><rect class="ext" x="20" y="446" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="466">Compute &amp; systems</text><text class="s" x="34" y="484">SemiAnalysis · PyTorch · vLLM · NVIDIA</text></g>
 
     <text class="h" x="20" y="525">Job market · US · CA · UK · CH · UAE</text>
     <g class="blk" data-id="src-jobs" tabindex="0"><rect class="ext" x="20" y="535" width="230" height="60" rx="8"/>
-      <text class="t" x="34" y="559">Job boards</text><text class="s" x="34" y="578">ATS APIs · SerpApi · alert emails</text></g>
+      <text class="t" x="34" y="559">Job boards</text><text class="s" x="34" y="578">ATS · Workday · SerpApi · alerts</text></g>
 
-    <path class="a" d="M250 135 H272 M250 210 H272 M250 285 H272 M250 360 H272 M250 435 H272 M272 135 V435"/>
+    <path class="a" d="M250 123 H272 M250 181 H272 M250 239 H272 M250 297 H272 M250 355 H272 M250 413 H272 M250 471 H272 M272 123 V471"/>
     <path class="a" d="M272 202 H336" marker-end="url(#arr)"/>
     <path class="a" d="M250 565 H292 V398 H336" marker-end="url(#arr)"/>
 
@@ -323,8 +327,10 @@ const BLOCKS = [
     ["src-news","Newsletters","Curated digests: AINews, TLDR AI, Simon Willison, Import AI, Interconnects and others.","Their links count as votes for what matters, and AINews recaps chatter on X and Discord that we don't pull directly. Each link is resolved to the original article, so newsletters never create duplicate stories."],
     ["src-research","Research","The HF Daily Papers API (community upvotes) plus arXiv cs.CL/LG/AI feeds.","Upvotes filter the hundreds of daily papers down to the few that matter; arXiv covers the long tail."],
     ["src-code","Models & code","GitHub releases.atom for about 25 key repos, HF trending models and spaces, and changes to OpenRouter's model list.","Usually the first sign of a new model, SDK version or price change, often hours before any blog post."],
-    ["src-community","Community & big picture","HN (Algolia), Reddit RSS, Bluesky lists, plus business and funding outlets, and policy trackers for the US, Canada, UK, Switzerland, UAE and the EU AI Act. (The source list is being verified.)","What practitioners are arguing about, plus the big-picture layer: funding, regulation, chips and energy."],
-    ["src-jobs","Job boards","Covers five markets: USA, Canada, UK, Switzerland and UAE. The public job-board APIs of Greenhouse, Lever and Ashby cover AI-native companies. SerpApi Google Jobs searches each market and indirectly covers LinkedIn, Indeed, jobs.ch and Bayt. Job-alert emails arrive in a Gmail label. Enterprise systems such as Workday are being evaluated.","Data straight from employers: legal, free, with full descriptions and often salary. SerpApi and alert emails fill the big-tech, bank and enterprise gaps without scraping LinkedIn or Indeed. Your alert emails are legal to parse because they are sent to you."]
+    ["src-community","Community","HN (Algolia, filtered by points), r/LocalLLaMA and r/MachineLearning RSS, Bluesky researcher lists, and YouTube channel RSS.","Shows what practitioners are arguing about, and how real adoption compares with the hype."],
+    ["src-biz","Business & policy","15 verified feeds. Business: The Information, Bloomberg Tech, Reuters (via Google News), TechCrunch AI, Crunchbase News, Techmeme. Policy for each market: the Federal Register and US state AI bills, UK AISI and DSIT, Canada ISED, the Swiss federal news service, UAE AI news, and the EU AI Act Newsletter. Safety: Transformer, METR.","The big-picture layer: funding, M&A, regulation in the five markets you track, and AI safety. Paywalled outlets provide headlines only."],
+    ["src-systems","Compute & systems","15 verified feeds. Compute: SemiAnalysis, Chips and Cheese, NVIDIA Technical Blog, AMD ROCm, ServeTheHome, The Next Platform, Latitude Media (energy). Systems: PyTorch blog and dev-discuss, vLLM, LMSYS/SGLang, release feeds for Triton, FlashAttention, CUTLASS and TensorRT-LLM, GPU MODE, Lei Mao, Thinking Machines.","The low-level layer: chips, datacenters and energy, inference and kernels, quantization, and compilers."],
+    ["src-jobs","Job boards","Five markets. In every market: the Greenhouse/Lever/Ashby job-board APIs (AI-native companies); the career-site endpoints of Workday, SuccessFactors, Oracle Recruiting and SmartRecruiters (banks, pharma, NVIDIA and other enterprises); SerpApi Google Jobs twice a week (free tier); and your job-alert emails read through Gmail. Extras: the Reed API (UK, daily), swissdevjobs.ch RSS (CH, daily) and USAJobs (US, weekly). The UAE relies on SerpApi plus alert emails.","Data straight from employers: legal, free, with full descriptions and often salary. SerpApi and alert emails fill the big-tech, bank and enterprise gaps without scraping LinkedIn or Indeed. Your alert emails are legal to parse because they are sent to you."]
   ]],
   ["Orchestration", [
     ["scheduler","Cloud Scheduler","Three cron triggers, which is the free quota: ① the brief at 06:00 and 18:00, ② jobs at 05:00, ③ the weekly reports Mondays at 07:00.","Managed cron with no server to run. Jobs finish before the morning brief, so the brief can include fresh postings."],
