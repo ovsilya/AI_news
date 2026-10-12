@@ -7,3 +7,6 @@ __pycache__/
 .venv/
 node_modules/
 .claude/settings.local.json
+
+# Personal data: profile, skills inventory, gap analyses (never commit)
+private/

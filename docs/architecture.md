@@ -1,6 +1,59 @@
 # Architecture proposal: AI_news daily brief
 
-*Draft v0.1, 2026-10-12. Based on [research.md](research.md).*
+*Draft v0.2, 2026-10-12. Based on [research.md](research.md).*
+
+## 0. v0.2 decisions (these replace earlier sections where they conflict)
+
+| Topic | Decision |
+|---|---|
+| **Delivery** | A **Telegram channel**, with a bot as channel admin. The bot posts with `sendRichMessage` (Bot API 10.1+: up to 32k characters, headings and tables). Each story has inline 👍/👎/🔇 buttons; `callback_query` gives the identity of whoever clicked. Channel reactions only come back as anonymous aggregate counts (`message_reaction_count`). Long-form copies go to Telegraph. Email is dropped. |
+| **Hosting** | **GCP, on a personal project with no organization** (not a work account), in us-central1. This replaces the Hetzner VPS in §5. See the deployment below. |
+| **LLMs** | All models through **Vertex AI**, on the global endpoint where possible (same prices as Anthropic). Claude Haiku 5.5 for triage and job extraction. Claude Opus 5.5 writes the brief; Claude Sonnet 5.5 is a cheaper option. `gemini-embedding-001` at 768 dimensions for embeddings. Vertex has no Anthropic Message Batches API; Vertex batch prediction can be used instead, at +10% because batch doesn't run on the global endpoint. |
+| **Scope** | **From the big picture down to low-level detail**, not only the user's role. The brief has fixed layers, each with its own ranking quota, so stories relevant to one role don't crowd out the rest (see below). |
+| **New module** | **Career fit.** It compares a private skills inventory against the requirements extracted by the jobs pipeline (§3.6) and produces a weekly market-fit report. |
+
+### Deployment on GCP (serverless, ≈ $0–1/month infra)
+
+```
+Cloud Scheduler (3 free jobs: brief 06:00+18:00, jobs poll, weekly trends/fit)
+   └─► Cloud Run Job "pipeline" (1 vCPU / 2 GiB, parallelism 1)
+         1 download SQLite snapshot from GCS ──► ingest ─► embed ─► dedup/cluster
+         2 triage (Haiku 5.5) ─► write (Opus 5.5) ─► verify ─► post to Telegram channel
+         3 merge feedback from Firestore ─► upload SQLite (ifGenerationMatch)
+Cloud Run service "tg-webhook" (scale-to-zero; secret_token header) ─► Firestore (feedback inbox)
+Secret Manager (bot token, keys) · Artifact Registry (image, cleanup policy) · budget alert $5
+Optional: BigQuery as analytics sink · Chirp 3 HD TTS (1M chars/mo free) for an audio brief
+```
+
+How the pieces are wired:
+- **State:** a single SQLite file in GCS. Each job downloads it, works on a local copy, and uploads it back. Writing SQLite directly over a GCS FUSE mount is unsafe because FUSE has no file locking.
+- **Feedback:** written to Firestore's free tier.
+- **Bot:** a webhook, not long polling. On Cloud Run, long polling needs an always-on instance, which costs about $12/month.
+- **Infrastructure:** defined in Terraform. Deployed by GitHub Actions to Cloud Run using Workload Identity Federation, so no service-account keys.
+
+### Brief layers (broad → deep)
+
+1. **Big picture:** industry, funding and M&A, policy and regulation, compute and energy.
+2. **Models and research:** releases, benchmarks, pricing, papers.
+3. **Engineering and tools:** frameworks, SDK changes, agent and RAG practice, evals.
+4. **Low-level systems:** inference, kernels, quantization, serving, hardware.
+5. **Career and market:** notable postings, skill trends. On Mondays, the weekly market-fit report.
+
+The sources for layers 1 and 4 still need to be expanded and verified. This happens in Phase 1, using the vendor and newsletter list in research.md as a base.
+
+### Career-fit module
+
+**Inputs:**
+- A private `skills.yaml` and `profile.md`, generated from the user's local job-search folder by a sync script that runs on the laptop.
+- The private files are stored in a private GCS bucket, never in this repo.
+
+**Weekly output:**
+- **Coverage:** how much of the demand is covered, weighted by how often each skill appears in target-role postings, filtered to the target regions and role families.
+- **Top missing skills,** ranked by demand × trend.
+- **Rising skills the user lacks.**
+- **Skills the user has that are declining.**
+
+**Daily:** stories that touch a known gap are tagged "📈 gap: <skill>".
 
 ## 1. Goals
 
