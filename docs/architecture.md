@@ -1,6 +1,6 @@
 # Architecture proposal: AI_news daily brief
 
-*Draft v0.2, 2026-10-12. Based on [research.md](research.md).*
+*Draft v0.3, 2026-10-12. Based on [research.md](research.md).*
 
 ## 0. v0.2 decisions (these replace earlier sections where they conflict)
 
@@ -44,8 +44,9 @@ The sources for layers 1 and 4 still need to be expanded and verified. This happ
 ### Career-fit module
 
 **Inputs:**
-- A private `skills.yaml` and `profile.md`, generated from the user's local job-search folder by a sync script that runs on the laptop.
-- The private files are stored in a private GCS bucket, never in this repo.
+- The user's private profile: skills, projects, portfolio and targets.
+- It lives in Firestore with version history, and is exported weekly to a private GCS bucket. It is never stored in this repo.
+- It is imported once from the local job-search folder. After that it is edited **through the Telegram bot** (see "Profile management" below).
 
 **Weekly output:**
 - **Coverage:** how much of the demand is covered, weighted by how often each skill appears in target-role postings, filtered to the target regions and role families.
@@ -54,6 +55,97 @@ The sources for layers 1 and 4 still need to be expanded and verified. This happ
 - **Skills the user has that are declining.**
 
 **Daily:** stories that touch a known gap are tagged "📈 gap: <skill>".
+
+### Run lanes (one image, three schedules)
+
+The lanes do **not** call each other. Each is a separate run, and they hand data to each other only through the SQLite snapshot. Inside a lane the steps run in order.
+
+| Lane | Schedule | Steps | Reads | Writes |
+|---|---|---|---|---|
+| ② Jobs | daily 05:00 | J1 poll & diff → J2 extract (Haiku) → J3 aggregate | Job boards, profile filters | Postings, extractions, skill statistics |
+| ① Brief | 06:00 full · 18:00 changes only | Ingest → dedup → cluster → score → write → verify & publish | Sources, profile, feedback, ② output | Items, stories, scores, briefs |
+| ③ Weekly | Mon 07:00 | W1 trends & fit → W2 write reports (Opus) → W3 publish | 7–28 days of ① and ② history, profile | Weekly reports, profile suggestions (sent privately) |
+
+The job runs with parallelism 1 and uploads the snapshot with a GCS generation precondition. Together these guarantee only one writer at a time.
+
+### What is stored
+
+The full table with retention periods is in [architecture-diagram.html](architecture-diagram.html).
+
+| Store | Contents |
+|---|---|
+| **SQLite** (snapshot kept in GCS) | Source health, items (metadata, plus a 30-day text excerpt), 90-day int8 embeddings, stories, scores and prompt versions, briefs with Telegram message IDs, job postings and extractions, weekly skill statistics, run reports. |
+| **Firestore** | Feedback inbox, the versioned profile, bot conversation state. |
+| **Secret Manager** | Keys. |
+
+**Not stored:** full article bodies or raw HTML.
+
+**Expected size:** about 1–1.5 GB after a year.
+
+### Profile management via Telegram
+
+**Options considered:**
+
+| Option | How it works | Effort | Trade-off |
+|---|---|---|---|
+| A. Slash commands | `/skill add MCP level=portfolio evidence="…"`, `/skills`, `/project add` | Low | Precise, but fiddly to type on a phone |
+| **B. Plain-text or voice edits** | You send "Shipped an MCP server with FastMCP on Cloud Run for a client demo". Haiku 5.5 turns it into a structured patch. The bot shows a diff with ✅ Apply / ✏️ Edit / ❌ Cancel, and applying saves a new Firestore version. It also accepts a **GitHub repo URL** (reads README and dependency files, then proposes skills with evidence), a **PDF** resume or JD, and **voice notes** (transcribed first) | Medium | The most natural. Needs the confirm step, and fetched content is treated as data, never as instructions |
+| C. Telegram Mini App | A button opens a small web form to edit skill levels and projects in bulk. Authenticated with Telegram's signed `initData` | Medium-high | Best UI for bulk edits, and written in **TypeScript**, which closes a portfolio gap |
+| D. Private Git repo or Google Sheet as the source of truth | Edit YAML on GitHub mobile, or a Sheet; the job reads it | Low | No bot work, but the edits happen outside Telegram |
+
+**Recommended:** B as the main path, plus A for quick operations: `/skills`, `/gaps`, `/fit`, `/jd <paste>` (match score against a JD), `/undo`, `/export`. C comes later as a TypeScript portfolio piece.
+
+**Security:**
+- Profile commands are accepted only from your Telegram user ID, and only in the private chat, never the channel.
+- Every change is shown as a diff before it is applied, and every change is versioned.
+- Slow work (LLM parsing, reading a repo) goes through Cloud Tasks so the webhook can answer immediately.
+
+**Profile model:**
+
+| Section | Fields |
+|---|---|
+| `skills[]` | name, category, level (`production` / `portfolio` / `studied` / `learning`), evidence, last_used, interest |
+| `projects[]` | role, dates, stack, metrics, links |
+| `targets` | roles, regions, remote policy, salary, seniority |
+| `interests` / `anti_interests` | used for news ranking |
+
+The weekly run can *propose* updates, for example "you 👍'd six MCP stories and mentioned a demo; add MCP = portfolio?". You approve them in the private chat.
+
+### Coverage: are the sources enough?
+
+**News: not yet.**
+
+The current list is strong on models, research and tools (layers 2–3). It is weak or missing in these areas:
+
+| # | Area | Status | Candidates to add |
+|---|---|---|---|
+| 1 | **Big picture** (business, funding, policy) | Missing | TechCrunch AI, The Verge AI, Ars Technica AI, Axios AI+, EU AI Act and policy trackers, plus Canada / Switzerland / UAE AI ecosystem news |
+| 2 | **Low-level systems** | Missing | PyTorch, NVIDIA technical blog, vLLM/SGLang/LMSYS blogs, SemiAnalysis free posts, Chips and Cheese, GPU MODE, and Raschka, Chip Huyen, Lilian Weng, Hamel Husain, Thinking Machines |
+| 3 | **X/Twitter**, where many launches break first | Indirect only, through AINews recaps and HN | Later: the xAI X Search tool over a list of about 50 accounts (about $5–10/mo) |
+| 4 | **Chinese labs** (Qwen, DeepSeek, Moonshot, Zhipu) | Partial, via HF and GitHub releases | Their orgs and blogs |
+| 5 | **Podcasts and YouTube** | — | Channel RSS, titles only at first |
+| 6 | **Paywalled outlets** (The Information, Stratechery) | — | Headlines only |
+
+None of the candidates in 1–2 has been verified yet. Phase 1 checks each feed before it is added.
+
+**Jobs: not yet.**
+
+The Greenhouse/Lever/Ashby APIs cover AI-native companies well. They miss:
+- **Big tech**, which runs its own career sites.
+- **Most enterprises and banks**, especially in Switzerland (UBS, Swiss Re, Roche…), the UAE (G42, ADNOC, banks) and large Canadian employers. These typically use Workday, SuccessFactors or Oracle.
+
+Ways to close the gap:
+
+| Option | Notes |
+|---|---|
+| (a) SerpApi Google Jobs per region | Indirectly covers LinkedIn, Indeed, jobs.ch and Bayt. 250 searches/mo free, $25 for 1k |
+| (b) Workday career-site JSON endpoints, per company | No auth needed, but undocumented, so moderate ToS risk |
+| (c) **Your own job-alert emails** (LinkedIn, jobs.ch, Indeed, Bayt) | Collected in a dedicated Gmail label and read with the Gmail API. Legal, because the emails are sent to you |
+| (d) Regional open data, e.g. Canada Job Bank | Coverage varies |
+
+**Measuring coverage:**
+- **News recall:** each week, take every story linked by the aggregator newsletters (AINews, TLDR, etc.) and check whether our primary sources already had it. The target is above 90%. Domains that keep getting missed are proposed as new sources in the private chat, with a ➕ button.
+- **Jobs recall:** each week, compare SerpApi results against the tracked companies. Companies that are hiring but untracked get their job boards probed and added automatically.
 
 ## 1. Goals
 

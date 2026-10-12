@@ -7,60 +7,80 @@
 <style>
   :root {
     --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1f; --muted: #5f6368; --line: #8a8f98;
-    --border: #d5d7db; --gcp: #eef3fb; --gcp-border: #9db5dc;
+    --border: #d5d7db; --gcp: #eef3fb; --gcp-border: #9db5dc; --sel: #2f6fdb;
     --llm: #f3ecfd; --llm-border: #9a7ad1; --store: #eaf6ef; --store-border: #6fae8a;
     --ext: #fdf3e6; --ext-border: #d39b4a; --job: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #141518; --panel: #1c1e22; --ink: #e8e9eb; --muted: #a0a4ab; --line: #7d838c;
-      --border: #3a3e45; --gcp: #18202c; --gcp-border: #3f5a85;
+      --border: #3a3e45; --gcp: #18202c; --gcp-border: #3f5a85; --sel: #6ea2ff;
       --llm: #261d36; --llm-border: #8c6cc6; --store: #16271e; --store-border: #4f8d69;
       --ext: #2b2216; --ext-border: #b07f38; --job: #1c1e22;
     }
   }
   :root[data-theme="dark"] {
     --bg: #141518; --panel: #1c1e22; --ink: #e8e9eb; --muted: #a0a4ab; --line: #7d838c;
-    --border: #3a3e45; --gcp: #18202c; --gcp-border: #3f5a85;
+    --border: #3a3e45; --gcp: #18202c; --gcp-border: #3f5a85; --sel: #6ea2ff;
     --llm: #261d36; --llm-border: #8c6cc6; --store: #16271e; --store-border: #4f8d69;
     --ext: #2b2216; --ext-border: #b07f38; --job: #1c1e22;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
          font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 40px; }
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
   h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 32px 0 8px; }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 8px; }
   .lede { color: var(--muted); margin: 0 0 16px; }
-  .frame { background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-           padding: 12px; overflow-x: auto; }
+  .frame { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; overflow-x: auto; }
   svg { display: block; width: 100%; min-width: 920px; height: auto; }
   svg text { fill: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   .t { font-size: 13.5px; font-weight: 600; }
   .s { font-size: 11.5px; fill: var(--muted); }
   .h { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; fill: var(--muted); }
+  .lane { font-size: 12px; font-weight: 700; fill: var(--ink); }
   .ext   { fill: var(--ext);   stroke: var(--ext-border); }
   .comp  { fill: var(--job);   stroke: var(--border); }
   .llm   { fill: var(--llm);   stroke: var(--llm-border); }
   .store { fill: var(--store); stroke: var(--store-border); }
   .gcp   { fill: var(--gcp);   stroke: var(--gcp-border); stroke-dasharray: 6 4; }
   .jobbox{ fill: none; stroke: var(--gcp-border); }
+  .sep   { stroke: var(--gcp-border); stroke-dasharray: 4 4; }
   rect { stroke-width: 1.2; }
   .a { fill: none; stroke: var(--line); stroke-width: 1.6; }
   .a.fb { stroke-dasharray: 5 4; }
   .tip { fill: var(--line); }
-  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
-  .note { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
-  .note b { display: block; margin-bottom: 4px; }
-  .note p { margin: 0; color: var(--muted); font-size: 14px; }
+  .blk { cursor: pointer; outline: none; }
+  .blk:hover > rect:first-child, .blk:focus-visible > rect:first-child { stroke: var(--sel); stroke-width: 2; }
+  .blk.sel > rect:first-child { stroke: var(--sel); stroke-width: 2.6; }
+  .detail { margin-top: 12px; background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--sel);
+            border-radius: 10px; padding: 12px 16px; min-height: 64px; }
+  .detail .k { font-weight: 700; }
+  .detail p { margin: 4px 0; }
+  .muted { color: var(--muted); }
+  .callout { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+  .callout ol { margin: 6px 0 0; padding-left: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; scroll-margin-top: 16px; }
+  .card.sel { border-color: var(--sel); box-shadow: 0 0 0 1px var(--sel); }
+  .card b { display: block; margin-bottom: 2px; }
+  .card p { margin: 2px 0; font-size: 14px; }
+  .card .lbl { font-weight: 600; color: var(--muted); }
+  .tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 640px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
 </style>
 </head>
 <body>
 <main>
   <h1>AI_news: architecture</h1>
-  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Draft v0.2 · 2026-10-12.</p>
+  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Draft v0.3 · 2026-10-12. <b>Click any block</b> for what it does and why.</p>
 
   <div class="frame">
-  <svg viewBox="0 0 1240 845" role="img" aria-label="Architecture diagram: sources feed a Cloud Run pipeline on GCP that calls Vertex AI and posts the brief to a Telegram channel; feedback returns through a webhook into Firestore">
+  <svg viewBox="0 0 1240 870" role="img" aria-label="Architecture diagram: sources feed one Cloud Run job image that runs in three scheduled modes on GCP, calls Vertex AI, stores state in Cloud Storage and Firestore, and posts to a Telegram channel; a Telegram bot webhook collects feedback and profile edits">
     <defs>
       <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path class="tip" d="M0,0 L10,5 L0,10 z"/>
@@ -68,197 +88,292 @@
     </defs>
 
     <!-- ===== Sources ===== -->
-    <text class="h" x="20" y="92">Sources (~60)</text>
-    <rect class="ext" x="20" y="105" width="230" height="60" rx="8"/>
-    <text class="t" x="34" y="129">Vendors &amp; changelogs</text>
-    <text class="s" x="34" y="148">OpenAI · Anthropic · Google · HF</text>
-
-    <rect class="ext" x="20" y="180" width="230" height="60" rx="8"/>
-    <text class="t" x="34" y="204">Newsletters</text>
-    <text class="s" x="34" y="223">AINews · TLDR · Simon W. → votes</text>
-
-    <rect class="ext" x="20" y="255" width="230" height="60" rx="8"/>
-    <text class="t" x="34" y="279">Research</text>
-    <text class="s" x="34" y="298">HF Daily Papers · arXiv</text>
-
-    <rect class="ext" x="20" y="330" width="230" height="60" rx="8"/>
-    <text class="t" x="34" y="354">Models &amp; code</text>
-    <text class="s" x="34" y="373">GitHub releases · HF · OpenRouter</text>
-
-    <rect class="ext" x="20" y="405" width="230" height="60" rx="8"/>
-    <text class="t" x="34" y="429">Community &amp; big picture</text>
-    <text class="s" x="34" y="448">HN · Reddit RSS · Bluesky · policy</text>
+    <text class="h" x="20" y="92">Sources</text>
+    <g class="blk" data-id="src-vendor" tabindex="0"><rect class="ext" x="20" y="105" width="230" height="60" rx="8"/>
+      <text class="t" x="34" y="129">Vendors &amp; changelogs</text><text class="s" x="34" y="148">OpenAI · Anthropic · Google · HF</text></g>
+    <g class="blk" data-id="src-news" tabindex="0"><rect class="ext" x="20" y="180" width="230" height="60" rx="8"/>
+      <text class="t" x="34" y="204">Newsletters</text><text class="s" x="34" y="223">AINews · TLDR · Simon W. → votes</text></g>
+    <g class="blk" data-id="src-research" tabindex="0"><rect class="ext" x="20" y="255" width="230" height="60" rx="8"/>
+      <text class="t" x="34" y="279">Research</text><text class="s" x="34" y="298">HF Daily Papers · arXiv</text></g>
+    <g class="blk" data-id="src-code" tabindex="0"><rect class="ext" x="20" y="330" width="230" height="60" rx="8"/>
+      <text class="t" x="34" y="354">Models &amp; code</text><text class="s" x="34" y="373">GitHub releases · HF · OpenRouter</text></g>
+    <g class="blk" data-id="src-community" tabindex="0"><rect class="ext" x="20" y="405" width="230" height="60" rx="8"/>
+      <text class="t" x="34" y="429">Community &amp; big picture</text><text class="s" x="34" y="448">HN · Reddit · business · policy</text></g>
 
     <text class="h" x="20" y="525">Job market</text>
-    <rect class="ext" x="20" y="535" width="230" height="60" rx="8"/>
-    <text class="t" x="34" y="559">Job boards</text>
-    <text class="s" x="34" y="578">Greenhouse · Lever · Ashby · HN</text>
+    <g class="blk" data-id="src-jobs" tabindex="0"><rect class="ext" x="20" y="535" width="230" height="60" rx="8"/>
+      <text class="t" x="34" y="559">Job boards</text><text class="s" x="34" y="578">Greenhouse · Lever · Ashby · SerpApi</text></g>
 
-    <rect class="ext" x="20" y="650" width="230" height="64" rx="8"/>
-    <text class="t" x="34" y="674">Your laptop</text>
-    <text class="s" x="34" y="692">job-search folder → sync script</text>
-    <text class="s" x="34" y="707">(private profile &amp; skills)</text>
-
-    <!-- source bus -->
     <path class="a" d="M250 135 H272 M250 210 H272 M250 285 H272 M250 360 H272 M250 435 H272 M272 135 V435"/>
-    <path class="a" d="M272 197 H336" marker-end="url(#arr)"/>
-    <path class="a" d="M250 565 H292 V437 H336" marker-end="url(#arr)"/>
-    <path class="a" d="M250 682 H306 V590 H316" marker-end="url(#arr)"/>
+    <path class="a" d="M272 202 H336" marker-end="url(#arr)"/>
+    <path class="a" d="M250 565 H292 V398 H336" marker-end="url(#arr)"/>
 
-    <!-- ===== GCP boundary ===== -->
-    <rect class="gcp" x="290" y="15" width="630" height="815" rx="14"/>
+    <!-- ===== GCP ===== -->
+    <rect class="gcp" x="290" y="15" width="630" height="835" rx="14"/>
     <text class="h" x="306" y="38">Google Cloud · personal project · us-central1</text>
 
-    <rect class="comp" x="320" y="50" width="580" height="50" rx="8"/>
-    <text class="t" x="336" y="72">Cloud Scheduler</text>
-    <text class="s" x="336" y="89">brief 06:00 &amp; 18:00 · daily jobs poll · weekly trends &amp; fit (3 free jobs)</text>
+    <g class="blk" data-id="scheduler" tabindex="0"><rect class="comp" x="320" y="50" width="580" height="50" rx="8"/>
+      <text class="t" x="336" y="72">Cloud Scheduler · 3 free jobs</text>
+      <text class="s" x="336" y="89">① brief 06:00 &amp; 18:00 · ② jobs daily 05:00 · ③ weekly Mon 07:00</text></g>
     <path class="a" d="M610 100 V116" marker-end="url(#arr)"/>
 
-    <rect class="jobbox" x="320" y="120" width="580" height="375" rx="10"/>
-    <text class="h" x="336" y="145">Cloud Run Job · pipeline (1 vCPU / 2 GiB)</text>
+    <g class="blk" data-id="job" tabindex="0"><rect class="jobbox" x="320" y="120" width="580" height="428" rx="10"/>
+      <text class="h" x="336" y="142">Cloud Run Job · one image, three modes · single writer</text></g>
 
-    <!-- row 1 -->
-    <rect class="comp" x="340" y="165" width="166" height="64" rx="8"/>
-    <text class="t" x="423" y="187" text-anchor="middle">1 · Ingest</text>
-    <text class="s" x="423" y="205" text-anchor="middle">RSS · APIs · page diffs</text>
-    <text class="s" x="423" y="220" text-anchor="middle">source health checks</text>
+    <!-- lane 1 -->
+    <text class="lane" x="340" y="162">① Daily brief · 06:00 &amp; 18:00</text>
+    <g class="blk" data-id="a1" tabindex="0"><rect class="comp" x="340" y="170" width="166" height="64" rx="8"/>
+      <text class="t" x="423" y="192" text-anchor="middle">1 · Ingest</text>
+      <text class="s" x="423" y="210" text-anchor="middle">RSS · APIs · page diffs</text>
+      <text class="s" x="423" y="225" text-anchor="middle">source health checks</text></g>
+    <g class="blk" data-id="a2" tabindex="0"><rect class="comp" x="527" y="170" width="166" height="64" rx="8"/>
+      <text class="t" x="610" y="192" text-anchor="middle">2 · Dedup</text>
+      <text class="s" x="610" y="210" text-anchor="middle">URL canon → MinHash</text>
+      <text class="s" x="610" y="225" text-anchor="middle">→ embeddings (cos ≥ .88)</text></g>
+    <g class="blk" data-id="a3" tabindex="0"><rect class="comp" x="714" y="170" width="166" height="64" rx="8"/>
+      <text class="t" x="797" y="192" text-anchor="middle">3 · Cluster &amp; heat</text>
+      <text class="s" x="797" y="210" text-anchor="middle">stable story IDs</text>
+      <text class="s" x="797" y="225" text-anchor="middle">distinct sources, 24 h decay</text></g>
+    <path class="a" d="M506 202 H523" marker-end="url(#arr)"/>
+    <path class="a" d="M693 202 H710" marker-end="url(#arr)"/>
+    <path class="a" d="M797 234 V248 H423 V258" marker-end="url(#arr)"/>
 
-    <rect class="comp" x="537" y="165" width="166" height="64" rx="8"/>
-    <text class="t" x="620" y="187" text-anchor="middle">2 · Dedup</text>
-    <text class="s" x="620" y="205" text-anchor="middle">URL canon → MinHash</text>
-    <text class="s" x="620" y="220" text-anchor="middle">→ embeddings (cos ≥ .88)</text>
+    <g class="blk" data-id="a4" tabindex="0"><rect class="llm" x="340" y="262" width="166" height="64" rx="8"/>
+      <text class="t" x="423" y="284" text-anchor="middle">4 · Score</text>
+      <text class="s" x="423" y="302" text-anchor="middle">Haiku 5.5 vs profile</text>
+      <text class="s" x="423" y="317" text-anchor="middle">relevance · novelty · layer</text></g>
+    <g class="blk" data-id="a5" tabindex="0"><rect class="llm" x="527" y="262" width="166" height="64" rx="8"/>
+      <text class="t" x="610" y="284" text-anchor="middle">5 · Write brief</text>
+      <text class="s" x="610" y="302" text-anchor="middle">Opus 5.5 + citations</text>
+      <text class="s" x="610" y="317" text-anchor="middle">5 layers, broad → deep</text></g>
+    <g class="blk" data-id="a6" tabindex="0"><rect class="comp" x="714" y="262" width="166" height="64" rx="8"/>
+      <text class="t" x="797" y="284" text-anchor="middle">6 · Verify &amp; publish</text>
+      <text class="s" x="797" y="302" text-anchor="middle">drop uncited sentences</text>
+      <text class="s" x="797" y="317" text-anchor="middle">check numbers &amp; links</text></g>
+    <path class="a" d="M506 294 H523" marker-end="url(#arr)"/>
+    <path class="a" d="M693 294 H710" marker-end="url(#arr)"/>
 
-    <rect class="comp" x="734" y="165" width="166" height="64" rx="8"/>
-    <text class="t" x="817" y="187" text-anchor="middle">3 · Cluster &amp; heat</text>
-    <text class="s" x="817" y="205" text-anchor="middle">stable story IDs</text>
-    <text class="s" x="817" y="220" text-anchor="middle">distinct sources, 24 h decay</text>
+    <line class="sep" x1="320" y1="340" x2="900" y2="340"/>
 
-    <path class="a" d="M506 197 H533" marker-end="url(#arr)"/>
-    <path class="a" d="M703 197 H730" marker-end="url(#arr)"/>
-    <path class="a" d="M817 229 V257 H423 V281" marker-end="url(#arr)"/>
+    <!-- lane 2 -->
+    <text class="lane" x="340" y="358">② Jobs · daily 05:00</text>
+    <text class="s" x="880" y="358" text-anchor="end">feeds the next brief's career section via the DB</text>
+    <g class="blk" data-id="b1" tabindex="0"><rect class="comp" x="340" y="366" width="166" height="64" rx="8"/>
+      <text class="t" x="423" y="388" text-anchor="middle">J1 · Poll &amp; diff</text>
+      <text class="s" x="423" y="406" text-anchor="middle">all tracked job boards</text>
+      <text class="s" x="423" y="421" text-anchor="middle">new · changed · closed</text></g>
+    <g class="blk" data-id="b2" tabindex="0"><rect class="llm" x="527" y="366" width="166" height="64" rx="8"/>
+      <text class="t" x="610" y="388" text-anchor="middle">J2 · Extract</text>
+      <text class="s" x="610" y="406" text-anchor="middle">Haiku 5.5, strict JSON</text>
+      <text class="s" x="610" y="421" text-anchor="middle">skills · stack · salary</text></g>
+    <g class="blk" data-id="b3" tabindex="0"><rect class="comp" x="714" y="366" width="166" height="64" rx="8"/>
+      <text class="t" x="797" y="388" text-anchor="middle">J3 · Aggregate</text>
+      <text class="s" x="797" y="406" text-anchor="middle">skill taxonomy, counts</text>
+      <text class="s" x="797" y="421" text-anchor="middle">flag matching postings</text></g>
+    <path class="a" d="M506 398 H523" marker-end="url(#arr)"/>
+    <path class="a" d="M693 398 H710" marker-end="url(#arr)"/>
 
-    <!-- row 2 -->
-    <rect class="llm" x="340" y="285" width="166" height="64" rx="8"/>
-    <text class="t" x="423" y="307" text-anchor="middle">4 · Score</text>
-    <text class="s" x="423" y="325" text-anchor="middle">Haiku 5.5 vs profile</text>
-    <text class="s" x="423" y="340" text-anchor="middle">relevance · novelty · layer</text>
+    <line class="sep" x1="320" y1="444" x2="900" y2="444"/>
 
-    <rect class="llm" x="537" y="285" width="166" height="64" rx="8"/>
-    <text class="t" x="620" y="307" text-anchor="middle">5 · Write brief</text>
-    <text class="s" x="620" y="325" text-anchor="middle">Opus 5.5 + citations</text>
-    <text class="s" x="620" y="340" text-anchor="middle">5 layers, broad → deep</text>
+    <!-- lane 3 -->
+    <text class="lane" x="340" y="462">③ Weekly · Mon 07:00</text>
+    <text class="s" x="880" y="462" text-anchor="end">reads a week of ① + ② history via the DB</text>
+    <g class="blk" data-id="c1" tabindex="0"><rect class="comp" x="340" y="470" width="166" height="64" rx="8"/>
+      <text class="t" x="423" y="492" text-anchor="middle">W1 · Trends &amp; fit</text>
+      <text class="s" x="423" y="510" text-anchor="middle">topic bursts, skill shifts</text>
+      <text class="s" x="423" y="525" text-anchor="middle">vs your profile</text></g>
+    <g class="blk" data-id="c2" tabindex="0"><rect class="llm" x="527" y="470" width="166" height="64" rx="8"/>
+      <text class="t" x="610" y="492" text-anchor="middle">W2 · Write reports</text>
+      <text class="s" x="610" y="510" text-anchor="middle">Opus 5.5</text>
+      <text class="s" x="610" y="525" text-anchor="middle">field · market fit</text></g>
+    <g class="blk" data-id="c3" tabindex="0"><rect class="comp" x="714" y="470" width="166" height="64" rx="8"/>
+      <text class="t" x="797" y="492" text-anchor="middle">W3 · Publish</text>
+      <text class="s" x="797" y="510" text-anchor="middle">channel: reports</text>
+      <text class="s" x="797" y="525" text-anchor="middle">private: profile hints</text></g>
+    <path class="a" d="M506 502 H523" marker-end="url(#arr)"/>
+    <path class="a" d="M693 502 H710" marker-end="url(#arr)"/>
 
-    <rect class="comp" x="734" y="285" width="166" height="64" rx="8"/>
-    <text class="t" x="817" y="307" text-anchor="middle">6 · Verify &amp; publish</text>
-    <text class="s" x="817" y="325" text-anchor="middle">drop uncited sentences</text>
-    <text class="s" x="817" y="340" text-anchor="middle">check numbers &amp; links</text>
+    <!-- storage -->
+    <g class="blk" data-id="gcs" tabindex="0"><rect class="store" x="320" y="575" width="175" height="64" rx="8"/>
+      <text class="t" x="336" y="597">Cloud Storage</text>
+      <text class="s" x="336" y="615">SQLite snapshot (locked)</text>
+      <text class="s" x="336" y="630">brief archive · exports</text></g>
+    <g class="blk" data-id="fs" tabindex="0"><rect class="store" x="510" y="575" width="190" height="64" rx="8"/>
+      <text class="t" x="526" y="597">Firestore</text>
+      <text class="s" x="526" y="615">feedback · your profile</text>
+      <text class="s" x="526" y="630">(versioned) · bot state</text></g>
+    <g class="blk" data-id="bot" tabindex="0"><rect class="comp" x="725" y="575" width="175" height="64" rx="8"/>
+      <text class="t" x="741" y="597">tg-bot (Cloud Run)</text>
+      <text class="s" x="741" y="615">webhook → Cloud Tasks</text>
+      <text class="s" x="741" y="630">scale to zero</text></g>
+    <path class="a" d="M407 552 V571" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <path class="a" d="M605 575 V552" marker-end="url(#arr)"/>
+    <path class="a" d="M725 607 H704" marker-start="url(#arr)" marker-end="url(#arr)"/>
 
-    <path class="a" d="M506 317 H533" marker-end="url(#arr)"/>
-    <path class="a" d="M703 317 H730" marker-end="url(#arr)"/>
+    <g class="blk" data-id="platform" tabindex="0"><rect class="comp" x="320" y="660" width="580" height="36" rx="8"/>
+      <text class="s" x="610" y="683" text-anchor="middle">Secret Manager · Artifact Registry · Cloud Tasks · Logging · Budget alert ($5)</text></g>
 
-    <!-- row 3: jobs lane -->
-    <rect class="llm" x="340" y="405" width="166" height="64" rx="8"/>
-    <text class="t" x="423" y="427" text-anchor="middle">J1 · Jobs extract</text>
-    <text class="s" x="423" y="445" text-anchor="middle">Haiku 5.5, strict JSON</text>
-    <text class="s" x="423" y="460" text-anchor="middle">skills · stack · salary</text>
-
-    <rect class="comp" x="537" y="405" width="166" height="64" rx="8"/>
-    <text class="t" x="620" y="427" text-anchor="middle">J2 · Trends &amp; fit</text>
-    <text class="s" x="620" y="445" text-anchor="middle">skill shares, topic bursts</text>
-    <text class="s" x="620" y="460" text-anchor="middle">vs private skills.yaml</text>
-
-    <rect class="llm" x="734" y="405" width="166" height="64" rx="8"/>
-    <text class="t" x="817" y="427" text-anchor="middle">Weekly reports</text>
-    <text class="s" x="817" y="445" text-anchor="middle">state of the field</text>
-    <text class="s" x="817" y="460" text-anchor="middle">market fit (Mondays)</text>
-
-    <path class="a" d="M506 437 H533" marker-end="url(#arr)"/>
-    <path class="a" d="M703 437 H730" marker-end="url(#arr)"/>
-    <path class="a" d="M620 405 V353" marker-end="url(#arr)"/>
-    <path class="a" d="M817 405 V353" marker-end="url(#arr)"/>
-
-    <!-- storage row -->
-    <rect class="store" x="320" y="540" width="200" height="64" rx="8"/>
-    <text class="t" x="336" y="562">Cloud Storage</text>
-    <text class="s" x="336" y="580">SQLite snapshot (gen-locked)</text>
-    <text class="s" x="336" y="595">private profile bucket</text>
-
-    <rect class="store" x="540" y="540" width="160" height="64" rx="8"/>
-    <text class="t" x="556" y="562">Firestore</text>
-    <text class="s" x="556" y="580">feedback inbox</text>
-    <text class="s" x="556" y="595">(free tier)</text>
-
-    <rect class="comp" x="720" y="540" width="180" height="64" rx="8"/>
-    <text class="t" x="736" y="562">Cloud Run service</text>
-    <text class="s" x="736" y="580">tg-webhook, scale to zero</text>
-    <text class="s" x="736" y="595">secret_token check</text>
-
-    <path class="a" d="M420 503 V536" marker-start="url(#arr)" marker-end="url(#arr)"/>
-    <path class="a" d="M620 540 V499" marker-end="url(#arr)"/>
-    <path class="a" d="M720 572 H704" marker-end="url(#arr)"/>
-
-    <rect class="comp" x="320" y="630" width="580" height="36" rx="8"/>
-    <text class="s" x="610" y="653" text-anchor="middle">Secret Manager · Artifact Registry · Cloud Logging · Budget alert ($5)</text>
-
-    <!-- Vertex AI -->
-    <rect class="llm" x="320" y="690" width="580" height="122" rx="10"/>
-    <text class="h" x="336" y="714">Vertex AI · global endpoint · all LLM steps (purple)</text>
-    <rect class="comp" x="336" y="728" width="135" height="68" rx="7"/>
-    <text class="t" x="403" y="752" text-anchor="middle">Haiku 5.5</text>
-    <text class="s" x="403" y="770" text-anchor="middle">triage · scoring</text>
-    <text class="s" x="403" y="785" text-anchor="middle">job extraction</text>
-    <rect class="comp" x="478" y="728" width="135" height="68" rx="7"/>
-    <text class="t" x="545" y="752" text-anchor="middle">Opus 5.5</text>
-    <text class="s" x="545" y="770" text-anchor="middle">writes the brief</text>
-    <text class="s" x="545" y="785" text-anchor="middle">(Sonnet 5.5 option)</text>
-    <rect class="comp" x="620" y="728" width="135" height="68" rx="7"/>
-    <text class="t" x="687" y="752" text-anchor="middle">Embeddings</text>
-    <text class="s" x="687" y="770" text-anchor="middle">gemini-embedding</text>
-    <text class="s" x="687" y="785" text-anchor="middle">001 · 768-d</text>
-    <rect class="comp" x="762" y="728" width="122" height="68" rx="7"/>
-    <text class="t" x="823" y="752" text-anchor="middle">Chirp 3 HD</text>
-    <text class="s" x="823" y="770" text-anchor="middle">optional audio</text>
-    <text class="s" x="823" y="785" text-anchor="middle">brief (TTS)</text>
+    <g class="blk" data-id="vertex" tabindex="0"><rect class="llm" x="320" y="715" width="580" height="120" rx="10"/>
+      <text class="h" x="336" y="735">Vertex AI · global endpoint · all LLM steps (purple)</text>
+      <rect class="comp" x="336" y="747" width="135" height="70" rx="7"/>
+      <text class="t" x="403" y="771" text-anchor="middle">Haiku 5.5</text>
+      <text class="s" x="403" y="789" text-anchor="middle">scoring · extraction</text>
+      <text class="s" x="403" y="804" text-anchor="middle">bot edit parsing</text>
+      <rect class="comp" x="478" y="747" width="135" height="70" rx="7"/>
+      <text class="t" x="545" y="771" text-anchor="middle">Opus 5.5</text>
+      <text class="s" x="545" y="789" text-anchor="middle">brief &amp; reports</text>
+      <text class="s" x="545" y="804" text-anchor="middle">(Sonnet 5.5 option)</text>
+      <rect class="comp" x="620" y="747" width="135" height="70" rx="7"/>
+      <text class="t" x="687" y="771" text-anchor="middle">Embeddings</text>
+      <text class="s" x="687" y="789" text-anchor="middle">gemini-embedding</text>
+      <text class="s" x="687" y="804" text-anchor="middle">001 · 768-d</text>
+      <rect class="comp" x="762" y="747" width="122" height="70" rx="7"/>
+      <text class="t" x="823" y="771" text-anchor="middle">Speech</text>
+      <text class="s" x="823" y="789" text-anchor="middle">voice-note input</text>
+      <text class="s" x="823" y="804" text-anchor="middle">optional TTS brief</text></g>
 
     <!-- ===== Delivery ===== -->
-    <text class="h" x="960" y="270">Delivery</text>
-    <path class="a" d="M900 317 H956" marker-end="url(#arr)"/>
-    <rect class="ext" x="960" y="282" width="260" height="84" rx="8"/>
-    <text class="t" x="976" y="306">Telegram channel</text>
-    <text class="s" x="976" y="324">bot posts via sendRichMessage</text>
-    <text class="s" x="976" y="339">👍 👎 🔇 buttons on each story</text>
-    <text class="s" x="976" y="354">Telegraph page for long-form</text>
+    <text class="h" x="960" y="250">Delivery</text>
+    <path class="a" d="M880 294 H956" marker-end="url(#arr)"/>
+    <path class="a" d="M880 502 H940 V330 H956" marker-end="url(#arr)"/>
+    <g class="blk" data-id="channel" tabindex="0"><rect class="ext" x="960" y="262" width="260" height="84" rx="8"/>
+      <text class="t" x="976" y="286">Telegram channel</text>
+      <text class="s" x="976" y="304">daily brief · weekly reports</text>
+      <text class="s" x="976" y="319">👍 👎 🔇 buttons on each story</text>
+      <text class="s" x="976" y="334">Telegraph page for long-form</text></g>
+    <path class="a" d="M1090 346 V376" marker-end="url(#arr)"/>
+    <g class="blk" data-id="you" tabindex="0"><rect class="ext" x="960" y="380" width="260" height="90" rx="8"/>
+      <text class="t" x="976" y="404">You · private bot chat</text>
+      <text class="s" x="976" y="422">/skill /project /fit /gaps /jd</text>
+      <text class="s" x="976" y="437">plain-text or voice edits</text>
+      <text class="s" x="976" y="452">→ diff preview → ✅ apply</text></g>
+    <path class="a fb" d="M1090 474 V607 H904" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <text class="s" x="1098" y="530">clicks · commands</text>
+    <text class="s" x="1098" y="545">edits · bot replies</text>
 
-    <path class="a" d="M1090 366 V401" marker-end="url(#arr)"/>
-    <rect class="ext" x="960" y="405" width="260" height="60" rx="8"/>
-    <text class="t" x="976" y="429">You &amp; subscribers</text>
-    <text class="s" x="976" y="448">read · react · click feedback</text>
+    <g class="blk" data-id="github" tabindex="0"><rect class="ext" x="960" y="645" width="260" height="66" rx="8"/>
+      <text class="t" x="976" y="669">GitHub · ovsilya/AI_news</text>
+      <text class="s" x="976" y="687">Actions CI · Terraform</text>
+      <text class="s" x="976" y="702">deploy via Workload Identity</text></g>
+    <path class="a" d="M960 678 H904" marker-end="url(#arr)"/>
 
-    <path class="a fb" d="M1090 465 V572 H904" marker-end="url(#arr)"/>
-    <text class="s" x="1098" y="520">callback_query</text>
-    <text class="s" x="1098" y="535">→ webhook</text>
-
-    <rect class="ext" x="960" y="615" width="260" height="68" rx="8"/>
-    <text class="t" x="976" y="639">GitHub · ovsilya/AI_news</text>
-    <text class="s" x="976" y="657">Actions CI · Terraform</text>
-    <text class="s" x="976" y="672">deploy via Workload Identity</text>
-    <path class="a" d="M960 648 H904" marker-end="url(#arr)"/>
-
-    <!-- legend -->
-    <text class="h" x="960" y="730">Legend</text>
-    <rect class="ext" x="960" y="742" width="16" height="12" rx="3"/><text class="s" x="984" y="752">external service / input</text>
-    <rect class="comp" x="960" y="762" width="16" height="12" rx="3"/><text class="s" x="984" y="772">compute step (deterministic)</text>
-    <rect class="llm" x="960" y="782" width="16" height="12" rx="3"/><text class="s" x="984" y="792">LLM step (Vertex AI)</text>
-    <rect class="store" x="960" y="802" width="16" height="12" rx="3"/><text class="s" x="984" y="812">storage</text>
+    <text class="h" x="960" y="752">Legend</text>
+    <rect class="ext" x="960" y="764" width="16" height="12" rx="3"/><text class="s" x="984" y="774">external service / input</text>
+    <rect class="comp" x="960" y="784" width="16" height="12" rx="3"/><text class="s" x="984" y="794">compute step (deterministic)</text>
+    <rect class="llm" x="960" y="804" width="16" height="12" rx="3"/><text class="s" x="984" y="814">LLM step (Vertex AI)</text>
+    <rect class="store" x="960" y="824" width="16" height="12" rx="3"/><text class="s" x="984" y="834">storage</text>
   </svg>
   </div>
 
-  <div class="notes">
-    <div class="note"><b>Daily flow</b><p>Scheduler fires the job. The job pulls the SQLite snapshot from Cloud Storage, runs steps 1–6, merges Telegram feedback from Firestore, and uploads the snapshot again with a generation lock.</p></div>
-    <div class="note"><b>Jobs and career fit</b><p>Job boards are polled every day. Haiku extracts skills, stack and salary. Each week the skill trends are compared with the private skills inventory, and the result goes into the Monday market-fit report.</p></div>
-    <div class="note"><b>Feedback loop</b><p>Button clicks reach the webhook and are stored in Firestore. Each run merges them into the scores, and once a week the profile is rewritten from them for you to review.</p></div>
-    <div class="note"><b>Cost</b><p>Infrastructure is about $0–1/mo on free tiers. LLM tokens are about $15–35/mo, mostly the Opus brief writer.</p></div>
+  <div id="detail" class="detail" aria-live="polite"><p class="muted">Click a block in the diagram to see what it does and why it's there.</p></div>
+
+  <h2>How the three lanes relate</h2>
+  <div class="callout">
+    <p>The lanes are <b>three separate runs of the same container</b>, each on its own schedule. They never call each other: they only read and write the SQLite database. Inside a lane the steps run in order.</p>
+    <ol>
+      <li><b>② Jobs (05:00)</b> polls the job boards, extracts new postings and updates the skill statistics.</li>
+      <li><b>① Brief (06:00)</b> reads those results for the brief's career section. The 18:00 run is a lighter update that only covers what changed since morning.</li>
+      <li><b>③ Weekly (Mon 07:00)</b> reads the past week of ① stories and ② postings to compute trends and your market fit, then writes two reports: State of the field and Market fit.</li>
+    </ol>
+    <p class="muted">Because the job runs with parallelism 1, only one run at a time can write the database. A run that finds the snapshot locked waits, or fails and retries.</p>
   </div>
+
+  <h2>Block reference</h2>
+  <div id="ref"></div>
+
+  <h2>What we store and why</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Data</th><th>Where</th><th>Kept</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Source registry state &amp; health</td><td>SQLite</td><td>always</td><td>Catch sources that go dead or move (AINews has moved twice this year)</td></tr>
+      <tr><td>Items: URL, title, short excerpt, metadata, engagement</td><td>SQLite</td><td>metadata 1 yr · excerpt 30 days</td><td>Dedup against history, quote and cite sources, re-score after a prompt change</td></tr>
+      <tr><td>Embeddings (768-d, int8)</td><td>SQLite</td><td>90 days</td><td>Catch semantic duplicates and attach new items to existing stories</td></tr>
+      <tr><td>Stories: centroid, heat, first/last seen</td><td>SQLite</td><td>always (small)</td><td>Link follow-ups to the original story, judge novelty against the last 14 days, keep trend history</td></tr>
+      <tr><td>Scores: judge JSON + prompt version</td><td>SQLite</td><td>1 yr</td><td>Ranking, evals, debugging prompt changes</td></tr>
+      <tr><td>Briefs: text, story IDs, Telegram message IDs</td><td>SQLite + GCS archive</td><td>always</td><td>Novelty checks, a searchable archive, matching a button click back to its story</td></tr>
+      <tr><td>Job postings: company, title, location, first/last seen, text hash</td><td>SQLite</td><td>always</td><td>Spot new and closed postings, measure how long roles stay open</td></tr>
+      <tr><td>Job extractions: structured JSON + schema version</td><td>SQLite</td><td>always</td><td>Skill trends; re-extract when the schema changes</td></tr>
+      <tr><td>Skill statistics (weekly aggregates)</td><td>SQLite</td><td>always</td><td>Trend lines and market fit, with no need to recompute history</td></tr>
+      <tr><td>Feedback: clicks, mutes</td><td>Firestore → merged into SQLite</td><td>always</td><td>Personalisation now; training data for a re-ranker later</td></tr>
+      <tr><td><b>Your profile</b>: skills, projects, portfolio, targets + version history</td><td>Firestore (weekly export to a private GCS bucket)</td><td>always, versioned</td><td>Market fit and personalisation; undo any edit. Kept out of the public repo</td></tr>
+      <tr><td>Run reports: counts, cost, errors</td><td>SQLite</td><td>1 yr</td><td>Cost tracking, failure alerts</td></tr>
+      <tr><td>Secrets: bot token, keys</td><td>Secret Manager</td><td>—</td><td>Nothing secret in code or the public repo</td></tr>
+      <tr><td class="muted">Not stored</td><td colspan="3" class="muted">Full article bodies beyond short excerpts (copyright), raw HTML, and anything personal in the public repo. The database grows to about 1–1.5 GB after a year with pruning, which fits the 5 GB GCS free tier and downloads in seconds.</td></tr>
+    </tbody>
+  </table></div>
 </main>
+
+<script>
+const BLOCKS = [
+  ["Sources", [
+    ["src-vendor","Vendors & changelogs","RSS/Atom feeds and page diffs of official blogs, API changelogs and release notes: OpenAI, Anthropic, Google, Mistral, HF, and the cloud providers.","The primary source for launches, price changes and deprecations, which are the news most likely to affect your code."],
+    ["src-news","Newsletters","Curated digests: AINews, TLDR AI, Simon Willison, Import AI, Interconnects and others.","Their links count as votes for what matters, and AINews recaps chatter on X and Discord that we don't pull directly. Each link is resolved to the original article, so newsletters never create duplicate stories."],
+    ["src-research","Research","The HF Daily Papers API (community upvotes) plus arXiv cs.CL/LG/AI feeds.","Upvotes filter the hundreds of daily papers down to the few that matter; arXiv covers the long tail."],
+    ["src-code","Models & code","GitHub releases.atom for about 25 key repos, HF trending models and spaces, and changes to OpenRouter's model list.","Usually the first sign of a new model, SDK version or price change, often hours before any blog post."],
+    ["src-community","Community & big picture","HN (Algolia), Reddit RSS, Bluesky lists, plus business, policy and compute outlets.","What practitioners are arguing about, plus the big-picture layer: funding, regulation, chips and energy."],
+    ["src-jobs","Job boards","The public job-board APIs of Greenhouse, Lever and Ashby for 150–300 companies, HN Who's hiring, and SerpApi Google Jobs.","Data straight from employers: legal, free, with full descriptions and often salary. SerpApi adds broader coverage of LinkedIn and Indeed listings without scraping them."]
+  ]],
+  ["Orchestration", [
+    ["scheduler","Cloud Scheduler","Three cron triggers, which is the free quota: ① the brief at 06:00 and 18:00, ② jobs at 05:00, ③ the weekly reports Mondays at 07:00.","Managed cron with no server to run. Jobs finish before the morning brief, so the brief can include fresh postings."],
+    ["job","Cloud Run Job","One container image with three modes (run daily | jobs | weekly), 1 vCPU / 2 GiB, parallelism 1.","Pay-per-run, so it fits the free tier. Running a single writer means the SQLite snapshot is never written by two runs at once."]
+  ]],
+  ["① Daily brief", [
+    ["a1","1 · Ingest","Fetches every source, using conditional GET so unchanged feeds aren't re-downloaded. Parses feeds and extracts article text with trafilatura. Records the health of each source.","Incremental fetching keeps runs cheap, and the health check catches feeds that move or die."],
+    ["a2","2 · Dedup","Three passes: canonical URL, then MinHash near-duplicate text, then embedding similarity against the last 72 hours.","The same launch arrives 5–10 times. Each pass is cheap enough to run before the next, so the LLM never sees a duplicate."],
+    ["a3","3 · Cluster & heat","Adds each item to an existing story or starts a new one. Heat counts the distinct sources covering a story, weighted by their authority, and decays over 24 hours.","Stable story IDs let follow-ups attach to yesterday's story. Heat measures importance regardless of your profile."],
+    ["a4","4 · Score (Haiku 5.5)","Rules first cut the field to 150–300 stories. Haiku then scores each for relevance, novelty and actionability, and assigns a layer from big picture down to low-level. Your profile sits in a cached prompt.","A cheap model for bulk judgement. A quota per layer keeps the brief broad, not limited to your own role."],
+    ["a5","5 · Write brief (Opus 5.5)","Writes the brief from the top stories, given source excerpts as cited documents, plus a career section built from ② data.","Writing the summary is where quality matters most, and it's one call a day, so the strongest model is affordable."],
+    ["a6","6 · Verify & publish","Removes sentences without a citation, checks every number and version against its source, and resolves links. Then posts to the channel with feedback buttons and stores the message IDs.","Summaries have to be trustworthy. The stored message IDs connect each button click to its story."]
+  ]],
+  ["② Jobs", [
+    ["b1","J1 · Poll & diff","Fetches every tracked job board and compares it with yesterday: new, changed and closed postings.","Only new postings need LLM work. Closing dates show how long roles stay open."],
+    ["b2","J2 · Extract (Haiku 5.5)","Turns each new posting into strict JSON: role family, skills, frameworks, cloud, seniority, salary, remote policy, plus quotes as evidence.","Converts free text into comparable fields. Cheap enough for hundreds of postings a day."],
+    ["b3","J3 · Aggregate","Normalises skills to a taxonomy, updates the skill counts, and flags postings that match your filters on region, remote policy and role.","Precomputed statistics keep the brief's career section and the weekly report fast and cheap."]
+  ]],
+  ["③ Weekly", [
+    ["c1","W1 · Trends & fit","Finds topic bursts against 7- and 28-day baselines and measures skill demand and its week-over-week change. Compares that with your profile to get coverage, missing skills and rising skills.","Answers 'am I keeping up?' with data rather than a feeling."],
+    ["c2","W2 · Write reports (Opus 5.5)","Writes the 'State of the field' summary and the market-fit report, with concrete suggestions on what to learn or build.","A week is long enough for trends to show and daily noise to average out."],
+    ["c3","W3 · Publish","Posts the reports to the channel. Suggested profile updates go to your private chat for approval.","You stay in control of what your profile says."]
+  ]],
+  ["Storage & platform", [
+    ["gcs","Cloud Storage","Holds the SQLite database snapshot: downloaded at the start of a run and uploaded at the end, but only if no other run has changed it in between. Also holds the brief archive and weekly profile exports.","SQLite is the simplest database for a single writer, and GCS keeps it durable for free. Writing SQLite directly over GCS FUSE is unsafe because FUSE has no file locking."],
+    ["fs","Firestore","Stores feedback clicks, your versioned profile (skills, projects, portfolio, targets), and bot state such as edits waiting for approval.","The bot is stateless and can run several copies at once, and Firestore handles small simultaneous writes on the free tier. Every run merges this data into SQLite."],
+    ["bot","tg-bot (Cloud Run service)","Receives Telegram updates by webhook: button clicks, commands and profile edits. It acknowledges straight away and hands slow work, such as LLM parsing or reading a repo, to Cloud Tasks.","Scales to zero, so it costs about $0, yet buttons respond instantly. Polling Telegram instead would need an always-on instance at about $12/mo."],
+    ["platform","Platform services","Secret Manager for the bot token and keys, Artifact Registry for the image, Cloud Tasks for async bot work, Logging, and a $5 budget alert.","Keeps secrets out of the public repo, adds a cost guardrail, and needs no servers."],
+    ["vertex","Vertex AI","Claude Haiku 5.5 for scoring, extraction and parsing bot edits; Claude Opus 5.5 for writing (Sonnet 5.5 is the cheaper option); gemini-embedding-001; speech for voice notes and an optional audio brief.","One billing account and IAM authentication, with no API keys. The global endpoint charges Anthropic's list prices."]
+  ]],
+  ["Delivery & control", [
+    ["channel","Telegram channel","Carries the daily brief (full in the morning, changes only in the evening) and the weekly reports. Each story has 👍 👎 🔇 buttons, and long versions go on a Telegraph page.","Telegram is the delivery channel you chose. Channels support rich messages up to 32k characters, plus inline buttons."],
+    ["you","You · private bot chat","Commands, plus plain-text or voice edits to your profile, each shown as a diff preview with an ✅ Apply button. Also /fit, /gaps and /jd (paste a job description to see how you match).","Keeps your skills and projects current from your phone, without syncing a local folder."],
+    ["github","GitHub","The public repo, Actions CI (tests, lint, prompt regression tests), Terraform for all GCP resources, and deploys via Workload Identity Federation.","Reproducible infrastructure with no long-lived keys, and visible portfolio evidence."]
+  ]]
+];
+const byId = {};
+const ref = document.getElementById('ref');
+for (const [group, items] of BLOCKS) {
+  const h = document.createElement('h3'); h.textContent = group; ref.appendChild(h);
+  const g = document.createElement('div'); g.className = 'grid'; ref.appendChild(g);
+  for (const [id, name, what, why] of items) {
+    byId[id] = {name, what, why};
+    const c = document.createElement('div'); c.className = 'card'; c.id = 'card-' + id;
+    c.innerHTML = `<b></b><p><span class="lbl">What:</span> <span class="w"></span></p><p><span class="lbl">Why:</span> <span class="y"></span></p>`;
+    c.querySelector('b').textContent = name; c.querySelector('.w').textContent = what; c.querySelector('.y').textContent = why;
+    g.appendChild(c);
+  }
+}
+const detail = document.getElementById('detail');
+function select(id) {
+  const b = byId[id]; if (!b) return;
+  document.querySelectorAll('.blk.sel, .card.sel').forEach(e => e.classList.remove('sel'));
+  document.querySelectorAll(`.blk[data-id="${id}"]`).forEach(e => e.classList.add('sel'));
+  document.getElementById('card-' + id)?.classList.add('sel');
+  detail.innerHTML = `<p class="k"></p><p><span class="lbl muted">What:</span> <span class="w"></span></p><p><span class="lbl muted">Why:</span> <span class="y"></span></p>`;
+  detail.querySelector('.k').textContent = b.name; detail.querySelector('.w').textContent = b.what; detail.querySelector('.y').textContent = b.why;
+}
+document.querySelectorAll('.blk').forEach(el => {
+  el.addEventListener('click', e => { e.stopPropagation(); select(el.dataset.id); });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(el.dataset.id); } });
+});
+</script>
 </body>
 </html>
