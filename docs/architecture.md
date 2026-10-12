@@ -10,6 +10,8 @@
 | **Hosting** | **GCP, on a personal project with no organization** (not a work account), in us-central1. This replaces the Hetzner VPS in §5. See the deployment below. |
 | **LLMs** | All models through **Vertex AI**, on the global endpoint where possible (same prices as Anthropic). Claude Haiku 5.5 for triage and job extraction. Claude Opus 5.5 writes the brief; Claude Sonnet 5.5 is a cheaper option. `gemini-embedding-001` at 768 dimensions for embeddings. Vertex has no Anthropic Message Batches API; Vertex batch prediction can be used instead, at +10% because batch doesn't run on the global endpoint. |
 | **Scope** | **From the big picture down to low-level detail**, not only the user's role. The brief has fixed layers, each with its own ranking quota, so stories relevant to one role don't crowd out the rest (see below). |
+| **Markets** | Jobs and market research cover **USA, Canada, UK, Switzerland and UAE**. Remote roles are tagged separately. Policy news follows the same five markets plus the EU AI Act. |
+| **Profile editing** | **Option B, decided:** you send a plain-text or voice message to the bot, an LLM turns it into a proposed change, and you confirm it. See "Profile management" below. |
 | **New module** | **Career fit.** It compares a private skills inventory against the requirements extracted by the jobs pipeline (§3.6) and produces a weekly market-fit report. |
 
 ### Deployment on GCP (serverless, ≈ $0–1/month infra)
@@ -93,12 +95,24 @@ The full table with retention periods is in [architecture-diagram.html](architec
 | C. Telegram Mini App | A button opens a small web form to edit skill levels and projects in bulk. Authenticated with Telegram's signed `initData` | Medium-high | Best UI for bulk edits, and written in **TypeScript**, which closes a portfolio gap |
 | D. Private Git repo or Google Sheet as the source of truth | Edit YAML on GitHub mobile, or a Sheet; the job reads it | Low | No bot work, but the edits happen outside Telegram |
 
-**Recommended:** B as the main path, plus A for quick operations: `/skills`, `/gaps`, `/fit`, `/jd <paste>` (match score against a JD), `/undo`, `/export`. C comes later as a TypeScript portfolio piece.
+**Decided (2026-10-12):** B is the main path, plus A for quick operations: `/skills`, `/gaps`, `/fit`, `/jd <paste>` (match score against a JD), `/undo`, `/export`. C comes later as a TypeScript portfolio piece.
 
 **Security:**
 - Profile commands are accepted only from your Telegram user ID, and only in the private chat, never the channel.
 - Every change is shown as a diff before it is applied, and every change is versioned.
 - Slow work (LLM parsing, reading a repo) goes through Cloud Tasks so the webhook can answer immediately.
+
+**Flow for option B:**
+1. Telegram sends the message to the webhook. The webhook answers immediately (200 plus "⏳ parsing…") and queues the work in Cloud Tasks.
+2. Input is normalised first:
+   - **Voice notes:** the audio is transcribed with a Gemini audio model on Vertex.
+   - **URLs:** a GitHub repo's README and dependency files, or a public page, are fetched as *data*.
+   - **PDFs:** the text is extracted.
+3. Claude Haiku 5.5 receives the current profile JSON and the input. It returns a **strict-schema patch**, a list of operations: `add` / `update` / `remove` on `skills`, `projects`, `targets` or `interests`. Each operation carries a reason and evidence.
+4. The patch is validated against the profile schema. If the input is ambiguous (for example, "which project?"), the bot asks one clarifying question instead of guessing.
+5. The bot replies with a readable diff and buttons: ✅ Apply · ✏️ Edit · ❌ Cancel.
+6. **Apply** writes a new version in a Firestore transaction. `/undo` restores the previous version, and `/history` lists the versions.
+7. The next pipeline run reads the new profile version.
 
 **Profile model:**
 

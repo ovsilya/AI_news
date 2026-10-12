@@ -77,7 +77,7 @@
 <body>
 <main>
   <h1>AI_news: architecture</h1>
-  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Draft v0.3 · 2026-10-12. <b>Click any block</b> for what it does and why.</p>
+  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Markets: USA · Canada · UK · Switzerland · UAE. Draft v0.4 · 2026-10-12. <b>Click any block</b> for what it does and why.</p>
 
   <div class="frame">
   <svg viewBox="0 0 1240 870" role="img" aria-label="Architecture diagram: sources feed one Cloud Run job image that runs in three scheduled modes on GCP, calls Vertex AI, stores state in Cloud Storage and Firestore, and posts to a Telegram channel; a Telegram bot webhook collects feedback and profile edits">
@@ -100,9 +100,9 @@
     <g class="blk" data-id="src-community" tabindex="0"><rect class="ext" x="20" y="405" width="230" height="60" rx="8"/>
       <text class="t" x="34" y="429">Community &amp; big picture</text><text class="s" x="34" y="448">HN · Reddit · business · policy</text></g>
 
-    <text class="h" x="20" y="525">Job market</text>
+    <text class="h" x="20" y="525">Job market · US · CA · UK · CH · UAE</text>
     <g class="blk" data-id="src-jobs" tabindex="0"><rect class="ext" x="20" y="535" width="230" height="60" rx="8"/>
-      <text class="t" x="34" y="559">Job boards</text><text class="s" x="34" y="578">Greenhouse · Lever · Ashby · SerpApi</text></g>
+      <text class="t" x="34" y="559">Job boards</text><text class="s" x="34" y="578">ATS APIs · SerpApi · alert emails</text></g>
 
     <path class="a" d="M250 135 H272 M250 210 H272 M250 285 H272 M250 360 H272 M250 435 H272 M272 135 V435"/>
     <path class="a" d="M272 202 H336" marker-end="url(#arr)"/>
@@ -160,7 +160,7 @@
     <text class="s" x="880" y="358" text-anchor="end">feeds the next brief's career section via the DB</text>
     <g class="blk" data-id="b1" tabindex="0"><rect class="comp" x="340" y="366" width="166" height="64" rx="8"/>
       <text class="t" x="423" y="388" text-anchor="middle">J1 · Poll &amp; diff</text>
-      <text class="s" x="423" y="406" text-anchor="middle">all tracked job boards</text>
+      <text class="s" x="423" y="406" text-anchor="middle">5 markets, all boards</text>
       <text class="s" x="423" y="421" text-anchor="middle">new · changed · closed</text></g>
     <g class="blk" data-id="b2" tabindex="0"><rect class="llm" x="527" y="366" width="166" height="64" rx="8"/>
       <text class="t" x="610" y="388" text-anchor="middle">J2 · Extract</text>
@@ -229,7 +229,7 @@
       <text class="s" x="687" y="804" text-anchor="middle">001 · 768-d</text>
       <rect class="comp" x="762" y="747" width="122" height="70" rx="7"/>
       <text class="t" x="823" y="771" text-anchor="middle">Speech</text>
-      <text class="s" x="823" y="789" text-anchor="middle">voice-note input</text>
+      <text class="s" x="823" y="789" text-anchor="middle">voice transcription</text>
       <text class="s" x="823" y="804" text-anchor="middle">optional TTS brief</text></g>
 
     <!-- ===== Delivery ===== -->
@@ -244,9 +244,9 @@
     <path class="a" d="M1090 346 V376" marker-end="url(#arr)"/>
     <g class="blk" data-id="you" tabindex="0"><rect class="ext" x="960" y="380" width="260" height="90" rx="8"/>
       <text class="t" x="976" y="404">You · private bot chat</text>
-      <text class="s" x="976" y="422">/skill /project /fit /gaps /jd</text>
-      <text class="s" x="976" y="437">plain-text or voice edits</text>
-      <text class="s" x="976" y="452">→ diff preview → ✅ apply</text></g>
+      <text class="s" x="976" y="422">text or voice → LLM → change</text>
+      <text class="s" x="976" y="437">diff preview → ✅ apply · /undo</text>
+      <text class="s" x="976" y="452">/skills /gaps /fit /jd</text></g>
     <path class="a fb" d="M1090 474 V607 H904" marker-start="url(#arr)" marker-end="url(#arr)"/>
     <text class="s" x="1098" y="530">clicks · commands</text>
     <text class="s" x="1098" y="545">edits · bot replies</text>
@@ -276,6 +276,19 @@
       <li><b>③ Weekly (Mon 07:00)</b> reads the past week of ① stories and ② postings to compute trends and your market fit, then writes two reports: State of the field and Market fit.</li>
     </ol>
     <p class="muted">Because the job runs with parallelism 1, only one run at a time can write the database. A run that finds the snapshot locked waits, or fails and retries.</p>
+  </div>
+
+  <h2>How profile edits work (option B)</h2>
+  <div class="callout">
+    <ol>
+      <li><b>You send</b> a plain-text message, voice note, GitHub repo link or PDF in the private chat with the bot. For example: “Shipped an MCP server with FastMCP on Cloud Run”.</li>
+      <li><b>The webhook</b> replies “⏳ parsing…” straight away and queues the work in Cloud Tasks.</li>
+      <li><b>The input is normalised:</b> voice is transcribed; repo READMEs and dependency files, or PDF text, are fetched and treated as <i>data</i>, never as instructions.</li>
+      <li><b>Haiku 5.5</b> receives your current profile JSON and the input, and returns a strict-schema list of <code>add</code> / <code>update</code> / <code>remove</code> changes, each with a reason and evidence. If anything is ambiguous, the bot asks one clarifying question instead of guessing.</li>
+      <li><b>The bot shows the diff</b> with three buttons: ✅ Apply · ✏️ Edit · ❌ Cancel.</li>
+      <li><b>Apply</b> writes a new profile version in a Firestore transaction. <code>/undo</code> goes back one version and <code>/history</code> lists them. The next pipeline run uses the new version.</li>
+    </ol>
+    <p class="muted">The weekly run can also <i>suggest</i> changes, for example “you 👍’d six MCP stories; add MCP = portfolio?”. These come to the same private chat for your approval.</p>
   </div>
 
   <h2>Block reference</h2>
@@ -310,8 +323,8 @@ const BLOCKS = [
     ["src-news","Newsletters","Curated digests: AINews, TLDR AI, Simon Willison, Import AI, Interconnects and others.","Their links count as votes for what matters, and AINews recaps chatter on X and Discord that we don't pull directly. Each link is resolved to the original article, so newsletters never create duplicate stories."],
     ["src-research","Research","The HF Daily Papers API (community upvotes) plus arXiv cs.CL/LG/AI feeds.","Upvotes filter the hundreds of daily papers down to the few that matter; arXiv covers the long tail."],
     ["src-code","Models & code","GitHub releases.atom for about 25 key repos, HF trending models and spaces, and changes to OpenRouter's model list.","Usually the first sign of a new model, SDK version or price change, often hours before any blog post."],
-    ["src-community","Community & big picture","HN (Algolia), Reddit RSS, Bluesky lists, plus business, policy and compute outlets.","What practitioners are arguing about, plus the big-picture layer: funding, regulation, chips and energy."],
-    ["src-jobs","Job boards","The public job-board APIs of Greenhouse, Lever and Ashby for 150–300 companies, HN Who's hiring, and SerpApi Google Jobs.","Data straight from employers: legal, free, with full descriptions and often salary. SerpApi adds broader coverage of LinkedIn and Indeed listings without scraping them."]
+    ["src-community","Community & big picture","HN (Algolia), Reddit RSS, Bluesky lists, plus business and funding outlets, and policy trackers for the US, Canada, UK, Switzerland, UAE and the EU AI Act. (The source list is being verified.)","What practitioners are arguing about, plus the big-picture layer: funding, regulation, chips and energy."],
+    ["src-jobs","Job boards","Covers five markets: USA, Canada, UK, Switzerland and UAE. The public job-board APIs of Greenhouse, Lever and Ashby cover AI-native companies. SerpApi Google Jobs searches each market and indirectly covers LinkedIn, Indeed, jobs.ch and Bayt. Job-alert emails arrive in a Gmail label. Enterprise systems such as Workday are being evaluated.","Data straight from employers: legal, free, with full descriptions and often salary. SerpApi and alert emails fill the big-tech, bank and enterprise gaps without scraping LinkedIn or Indeed. Your alert emails are legal to parse because they are sent to you."]
   ]],
   ["Orchestration", [
     ["scheduler","Cloud Scheduler","Three cron triggers, which is the free quota: ① the brief at 06:00 and 18:00, ② jobs at 05:00, ③ the weekly reports Mondays at 07:00.","Managed cron with no server to run. Jobs finish before the morning brief, so the brief can include fresh postings."],
@@ -326,9 +339,9 @@ const BLOCKS = [
     ["a6","6 · Verify & publish","Removes sentences without a citation, checks every number and version against its source, and resolves links. Then posts to the channel with feedback buttons and stores the message IDs.","Summaries have to be trustworthy. The stored message IDs connect each button click to its story."]
   ]],
   ["② Jobs", [
-    ["b1","J1 · Poll & diff","Fetches every tracked job board and compares it with yesterday: new, changed and closed postings.","Only new postings need LLM work. Closing dates show how long roles stay open."],
+    ["b1","J1 · Poll & diff","Fetches every tracked job board and the SerpApi searches for all five markets, parses new alert emails, and compares the result with yesterday: new, changed and closed postings.","Only new postings need LLM work. Closing dates show how long roles stay open."],
     ["b2","J2 · Extract (Haiku 5.5)","Turns each new posting into strict JSON: role family, skills, frameworks, cloud, seniority, salary, remote policy, plus quotes as evidence.","Converts free text into comparable fields. Cheap enough for hundreds of postings a day."],
-    ["b3","J3 · Aggregate","Normalises skills to a taxonomy, updates the skill counts, and flags postings that match your filters on region, remote policy and role.","Precomputed statistics keep the brief's career section and the weekly report fast and cheap."]
+    ["b3","J3 · Aggregate","Normalises skills to a taxonomy and updates skill counts for each market (US / CA / UK / CH / UAE, with remote roles counted separately). Flags postings that match your role, seniority and remote filters.","Precomputed statistics keep the brief's career section and the weekly report fast and cheap."]
   ]],
   ["③ Weekly", [
     ["c1","W1 · Trends & fit","Finds topic bursts against 7- and 28-day baselines and measures skill demand and its week-over-week change. Compares that with your profile to get coverage, missing skills and rising skills.","Answers 'am I keeping up?' with data rather than a feeling."],
@@ -338,13 +351,13 @@ const BLOCKS = [
   ["Storage & platform", [
     ["gcs","Cloud Storage","Holds the SQLite database snapshot: downloaded at the start of a run and uploaded at the end, but only if no other run has changed it in between. Also holds the brief archive and weekly profile exports.","SQLite is the simplest database for a single writer, and GCS keeps it durable for free. Writing SQLite directly over GCS FUSE is unsafe because FUSE has no file locking."],
     ["fs","Firestore","Stores feedback clicks, your versioned profile (skills, projects, portfolio, targets), and bot state such as edits waiting for approval.","The bot is stateless and can run several copies at once, and Firestore handles small simultaneous writes on the free tier. Every run merges this data into SQLite."],
-    ["bot","tg-bot (Cloud Run service)","Receives Telegram updates by webhook: button clicks, commands and profile edits. It acknowledges straight away and hands slow work, such as LLM parsing or reading a repo, to Cloud Tasks.","Scales to zero, so it costs about $0, yet buttons respond instantly. Polling Telegram instead would need an always-on instance at about $12/mo."],
+    ["bot","tg-bot (Cloud Run service)","Receives Telegram updates by webhook: button clicks, commands and profile edits. It acknowledges straight away and hands slow work to Cloud Tasks: transcribing voice notes, fetching repos and PDFs, and the Haiku call that drafts a profile change.","Scales to zero, so it costs about $0, yet buttons respond instantly. Polling Telegram instead would need an always-on instance at about $12/mo."],
     ["platform","Platform services","Secret Manager for the bot token and keys, Artifact Registry for the image, Cloud Tasks for async bot work, Logging, and a $5 budget alert.","Keeps secrets out of the public repo, adds a cost guardrail, and needs no servers."],
     ["vertex","Vertex AI","Claude Haiku 5.5 for scoring, extraction and parsing bot edits; Claude Opus 5.5 for writing (Sonnet 5.5 is the cheaper option); gemini-embedding-001; speech for voice notes and an optional audio brief.","One billing account and IAM authentication, with no API keys. The global endpoint charges Anthropic's list prices."]
   ]],
   ["Delivery & control", [
     ["channel","Telegram channel","Carries the daily brief (full in the morning, changes only in the evening) and the weekly reports. Each story has 👍 👎 🔇 buttons, and long versions go on a Telegraph page.","Telegram is the delivery channel you chose. Channels support rich messages up to 32k characters, plus inline buttons."],
-    ["you","You · private bot chat","Commands, plus plain-text or voice edits to your profile, each shown as a diff preview with an ✅ Apply button. Also /fit, /gaps and /jd (paste a job description to see how you match).","Keeps your skills and projects current from your phone, without syncing a local folder."],
+    ["you","You · private bot chat","Option B (decided): describe a change in plain text or a voice note, or send a GitHub link or a PDF. An LLM turns it into a proposed profile change, and you approve or reject it (✅ Apply · ✏️ Edit · ❌ Cancel). Commands: /skills, /gaps, /fit, /jd (paste a job description to see how you match), /undo, /history.","Keeps your skills and projects current from your phone. Every change is previewed before it is applied and versioned, so it can be undone. Only your Telegram account, in the private chat, can edit the profile."],
     ["github","GitHub","The public repo, Actions CI (tests, lint, prompt regression tests), Terraform for all GCP resources, and deploys via Workload Identity Federation.","Reproducible infrastructure with no long-lived keys, and visible portfolio evidence."]
   ]]
 ];
