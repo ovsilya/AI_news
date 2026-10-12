@@ -5,7 +5,7 @@ A personal daily brief for ML / GenAI / LLM engineers and Forward Deployed Engin
 ## Docs
 
 - [Research](docs/research.md) — landscape of existing products, data sources, job-market data, pipeline building blocks, deployment options ([sources](docs/research-sources.md))
-- [Architecture proposal](docs/architecture.md) — system design, deployment, cost estimate, roadmap
+- [Architecture proposal](docs/architecture.md) — system design, deployment, cost estimate, roadmap ([diagram](docs/architecture-diagram.html))
 
 ## Status
 

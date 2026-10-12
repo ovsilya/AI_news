@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI_news Architecture</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1f; --muted: #5f6368; --line: #8a8f98;
+    --border: #d5d7db; --gcp: #eef3fb; --gcp-border: #9db5dc;
+    --llm: #f3ecfd; --llm-border: #9a7ad1; --store: #eaf6ef; --store-border: #6fae8a;
+    --ext: #fdf3e6; --ext-border: #d39b4a; --job: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141518; --panel: #1c1e22; --ink: #e8e9eb; --muted: #a0a4ab; --line: #7d838c;
+      --border: #3a3e45; --gcp: #18202c; --gcp-border: #3f5a85;
+      --llm: #261d36; --llm-border: #8c6cc6; --store: #16271e; --store-border: #4f8d69;
+      --ext: #2b2216; --ext-border: #b07f38; --job: #1c1e22;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141518; --panel: #1c1e22; --ink: #e8e9eb; --muted: #a0a4ab; --line: #7d838c;
+    --border: #3a3e45; --gcp: #18202c; --gcp-border: #3f5a85;
+    --llm: #261d36; --llm-border: #8c6cc6; --store: #16271e; --store-border: #4f8d69;
+    --ext: #2b2216; --ext-border: #b07f38; --job: #1c1e22;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lede { color: var(--muted); margin: 0 0 16px; }
+  .frame { background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+           padding: 12px; overflow-x: auto; }
+  svg { display: block; width: 100%; min-width: 920px; height: auto; }
+  svg text { fill: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .t { font-size: 13.5px; font-weight: 600; }
+  .s { font-size: 11.5px; fill: var(--muted); }
+  .h { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; fill: var(--muted); }
+  .ext   { fill: var(--ext);   stroke: var(--ext-border); }
+  .comp  { fill: var(--job);   stroke: var(--border); }
+  .llm   { fill: var(--llm);   stroke: var(--llm-border); }
+  .store { fill: var(--store); stroke: var(--store-border); }
+  .gcp   { fill: var(--gcp);   stroke: var(--gcp-border); stroke-dasharray: 6 4; }
+  .jobbox{ fill: none; stroke: var(--gcp-border); }
+  rect { stroke-width: 1.2; }
+  .a { fill: none; stroke: var(--line); stroke-width: 1.6; }
+  .a.fb { stroke-dasharray: 5 4; }
+  .tip { fill: var(--line); }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
+  .note { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .note b { display: block; margin-bottom: 4px; }
+  .note p { margin: 0; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>AI_news: architecture</h1>
+  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Draft v0.2 · 2026-10-12.</p>
+
+  <div class="frame">
+  <svg viewBox="0 0 1240 845" role="img" aria-label="Architecture diagram: sources feed a Cloud Run pipeline on GCP that calls Vertex AI and posts the brief to a Telegram channel; feedback returns through a webhook into Firestore">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path class="tip" d="M0,0 L10,5 L0,10 z"/>
+      </marker>
+    </defs>
+
+    <!-- ===== Sources ===== -->
+    <text class="h" x="20" y="92">Sources (~60)</text>
+    <rect class="ext" x="20" y="105" width="230" height="60" rx="8"/>
+    <text class="t" x="34" y="129">Vendors &amp; changelogs</text>
+    <text class="s" x="34" y="148">OpenAI · Anthropic · Google · HF</text>
+
+    <rect class="ext" x="20" y="180" width="230" height="60" rx="8"/>
+    <text class="t" x="34" y="204">Newsletters</text>
+    <text class="s" x="34" y="223">AINews · TLDR · Simon W. → votes</text>
+
+    <rect class="ext" x="20" y="255" width="230" height="60" rx="8"/>
+    <text class="t" x="34" y="279">Research</text>
+    <text class="s" x="34" y="298">HF Daily Papers · arXiv</text>
+
+    <rect class="ext" x="20" y="330" width="230" height="60" rx="8"/>
+    <text class="t" x="34" y="354">Models &amp; code</text>
+    <text class="s" x="34" y="373">GitHub releases · HF · OpenRouter</text>
+
+    <rect class="ext" x="20" y="405" width="230" height="60" rx="8"/>
+    <text class="t" x="34" y="429">Community &amp; big picture</text>
+    <text class="s" x="34" y="448">HN · Reddit RSS · Bluesky · policy</text>
+
+    <text class="h" x="20" y="525">Job market</text>
+    <rect class="ext" x="20" y="535" width="230" height="60" rx="8"/>
+    <text class="t" x="34" y="559">Job boards</text>
+    <text class="s" x="34" y="578">Greenhouse · Lever · Ashby · HN</text>
+
+    <rect class="ext" x="20" y="650" width="230" height="64" rx="8"/>
+    <text class="t" x="34" y="674">Your laptop</text>
+    <text class="s" x="34" y="692">job-search folder → sync script</text>
+    <text class="s" x="34" y="707">(private profile &amp; skills)</text>
+
+    <!-- source bus -->
+    <path class="a" d="M250 135 H272 M250 210 H272 M250 285 H272 M250 360 H272 M250 435 H272 M272 135 V435"/>
+    <path class="a" d="M272 197 H336" marker-end="url(#arr)"/>
+    <path class="a" d="M250 565 H292 V437 H336" marker-end="url(#arr)"/>
+    <path class="a" d="M250 682 H306 V590 H316" marker-end="url(#arr)"/>
+
+    <!-- ===== GCP boundary ===== -->
+    <rect class="gcp" x="290" y="15" width="630" height="815" rx="14"/>
+    <text class="h" x="306" y="38">Google Cloud · personal project · us-central1</text>
+
+    <rect class="comp" x="320" y="50" width="580" height="50" rx="8"/>
+    <text class="t" x="336" y="72">Cloud Scheduler</text>
+    <text class="s" x="336" y="89">brief 06:00 &amp; 18:00 · daily jobs poll · weekly trends &amp; fit (3 free jobs)</text>
+    <path class="a" d="M610 100 V116" marker-end="url(#arr)"/>
+
+    <rect class="jobbox" x="320" y="120" width="580" height="375" rx="10"/>
+    <text class="h" x="336" y="145">Cloud Run Job · pipeline (1 vCPU / 2 GiB)</text>
+
+    <!-- row 1 -->
+    <rect class="comp" x="340" y="165" width="166" height="64" rx="8"/>
+    <text class="t" x="423" y="187" text-anchor="middle">1 · Ingest</text>
+    <text class="s" x="423" y="205" text-anchor="middle">RSS · APIs · page diffs</text>
+    <text class="s" x="423" y="220" text-anchor="middle">source health checks</text>
+
+    <rect class="comp" x="537" y="165" width="166" height="64" rx="8"/>
+    <text class="t" x="620" y="187" text-anchor="middle">2 · Dedup</text>
+    <text class="s" x="620" y="205" text-anchor="middle">URL canon → MinHash</text>
+    <text class="s" x="620" y="220" text-anchor="middle">→ embeddings (cos ≥ .88)</text>
+
+    <rect class="comp" x="734" y="165" width="166" height="64" rx="8"/>
+    <text class="t" x="817" y="187" text-anchor="middle">3 · Cluster &amp; heat</text>
+    <text class="s" x="817" y="205" text-anchor="middle">stable story IDs</text>
+    <text class="s" x="817" y="220" text-anchor="middle">distinct sources, 24 h decay</text>
+
+    <path class="a" d="M506 197 H533" marker-end="url(#arr)"/>
+    <path class="a" d="M703 197 H730" marker-end="url(#arr)"/>
+    <path class="a" d="M817 229 V257 H423 V281" marker-end="url(#arr)"/>
+
+    <!-- row 2 -->
+    <rect class="llm" x="340" y="285" width="166" height="64" rx="8"/>
+    <text class="t" x="423" y="307" text-anchor="middle">4 · Score</text>
+    <text class="s" x="423" y="325" text-anchor="middle">Haiku 5.5 vs profile</text>
+    <text class="s" x="423" y="340" text-anchor="middle">relevance · novelty · layer</text>
+
+    <rect class="llm" x="537" y="285" width="166" height="64" rx="8"/>
+    <text class="t" x="620" y="307" text-anchor="middle">5 · Write brief</text>
+    <text class="s" x="620" y="325" text-anchor="middle">Opus 5.5 + citations</text>
+    <text class="s" x="620" y="340" text-anchor="middle">5 layers, broad → deep</text>
+
+    <rect class="comp" x="734" y="285" width="166" height="64" rx="8"/>
+    <text class="t" x="817" y="307" text-anchor="middle">6 · Verify &amp; publish</text>
+    <text class="s" x="817" y="325" text-anchor="middle">drop uncited sentences</text>
+    <text class="s" x="817" y="340" text-anchor="middle">check numbers &amp; links</text>
+
+    <path class="a" d="M506 317 H533" marker-end="url(#arr)"/>
+    <path class="a" d="M703 317 H730" marker-end="url(#arr)"/>
+
+    <!-- row 3: jobs lane -->
+    <rect class="llm" x="340" y="405" width="166" height="64" rx="8"/>
+    <text class="t" x="423" y="427" text-anchor="middle">J1 · Jobs extract</text>
+    <text class="s" x="423" y="445" text-anchor="middle">Haiku 5.5, strict JSON</text>
+    <text class="s" x="423" y="460" text-anchor="middle">skills · stack · salary</text>
+
+    <rect class="comp" x="537" y="405" width="166" height="64" rx="8"/>
+    <text class="t" x="620" y="427" text-anchor="middle">J2 · Trends &amp; fit</text>
+    <text class="s" x="620" y="445" text-anchor="middle">skill shares, topic bursts</text>
+    <text class="s" x="620" y="460" text-anchor="middle">vs private skills.yaml</text>
+
+    <rect class="llm" x="734" y="405" width="166" height="64" rx="8"/>
+    <text class="t" x="817" y="427" text-anchor="middle">Weekly reports</text>
+    <text class="s" x="817" y="445" text-anchor="middle">state of the field</text>
+    <text class="s" x="817" y="460" text-anchor="middle">market fit (Mondays)</text>
+
+    <path class="a" d="M506 437 H533" marker-end="url(#arr)"/>
+    <path class="a" d="M703 437 H730" marker-end="url(#arr)"/>
+    <path class="a" d="M620 405 V353" marker-end="url(#arr)"/>
+    <path class="a" d="M817 405 V353" marker-end="url(#arr)"/>
+
+    <!-- storage row -->
+    <rect class="store" x="320" y="540" width="200" height="64" rx="8"/>
+    <text class="t" x="336" y="562">Cloud Storage</text>
+    <text class="s" x="336" y="580">SQLite snapshot (gen-locked)</text>
+    <text class="s" x="336" y="595">private profile bucket</text>
+
+    <rect class="store" x="540" y="540" width="160" height="64" rx="8"/>
+    <text class="t" x="556" y="562">Firestore</text>
+    <text class="s" x="556" y="580">feedback inbox</text>
+    <text class="s" x="556" y="595">(free tier)</text>
+
+    <rect class="comp" x="720" y="540" width="180" height="64" rx="8"/>
+    <text class="t" x="736" y="562">Cloud Run service</text>
+    <text class="s" x="736" y="580">tg-webhook, scale to zero</text>
+    <text class="s" x="736" y="595">secret_token check</text>
+
+    <path class="a" d="M420 503 V536" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <path class="a" d="M620 540 V499" marker-end="url(#arr)"/>
+    <path class="a" d="M720 572 H704" marker-end="url(#arr)"/>
+
+    <rect class="comp" x="320" y="630" width="580" height="36" rx="8"/>
+    <text class="s" x="610" y="653" text-anchor="middle">Secret Manager · Artifact Registry · Cloud Logging · Budget alert ($5)</text>
+
+    <!-- Vertex AI -->
+    <rect class="llm" x="320" y="690" width="580" height="122" rx="10"/>
+    <text class="h" x="336" y="714">Vertex AI · global endpoint · all LLM steps (purple)</text>
+    <rect class="comp" x="336" y="728" width="135" height="68" rx="7"/>
+    <text class="t" x="403" y="752" text-anchor="middle">Haiku 5.5</text>
+    <text class="s" x="403" y="770" text-anchor="middle">triage · scoring</text>
+    <text class="s" x="403" y="785" text-anchor="middle">job extraction</text>
+    <rect class="comp" x="478" y="728" width="135" height="68" rx="7"/>
+    <text class="t" x="545" y="752" text-anchor="middle">Opus 5.5</text>
+    <text class="s" x="545" y="770" text-anchor="middle">writes the brief</text>
+    <text class="s" x="545" y="785" text-anchor="middle">(Sonnet 5.5 option)</text>
+    <rect class="comp" x="620" y="728" width="135" height="68" rx="7"/>
+    <text class="t" x="687" y="752" text-anchor="middle">Embeddings</text>
+    <text class="s" x="687" y="770" text-anchor="middle">gemini-embedding</text>
+    <text class="s" x="687" y="785" text-anchor="middle">001 · 768-d</text>
+    <rect class="comp" x="762" y="728" width="122" height="68" rx="7"/>
+    <text class="t" x="823" y="752" text-anchor="middle">Chirp 3 HD</text>
+    <text class="s" x="823" y="770" text-anchor="middle">optional audio</text>
+    <text class="s" x="823" y="785" text-anchor="middle">brief (TTS)</text>
+
+    <!-- ===== Delivery ===== -->
+    <text class="h" x="960" y="270">Delivery</text>
+    <path class="a" d="M900 317 H956" marker-end="url(#arr)"/>
+    <rect class="ext" x="960" y="282" width="260" height="84" rx="8"/>
+    <text class="t" x="976" y="306">Telegram channel</text>
+    <text class="s" x="976" y="324">bot posts via sendRichMessage</text>
+    <text class="s" x="976" y="339">👍 👎 🔇 buttons on each story</text>
+    <text class="s" x="976" y="354">Telegraph page for long-form</text>
+
+    <path class="a" d="M1090 366 V401" marker-end="url(#arr)"/>
+    <rect class="ext" x="960" y="405" width="260" height="60" rx="8"/>
+    <text class="t" x="976" y="429">You &amp; subscribers</text>
+    <text class="s" x="976" y="448">read · react · click feedback</text>
+
+    <path class="a fb" d="M1090 465 V572 H904" marker-end="url(#arr)"/>
+    <text class="s" x="1098" y="520">callback_query</text>
+    <text class="s" x="1098" y="535">→ webhook</text>
+
+    <rect class="ext" x="960" y="615" width="260" height="68" rx="8"/>
+    <text class="t" x="976" y="639">GitHub · ovsilya/AI_news</text>
+    <text class="s" x="976" y="657">Actions CI · Terraform</text>
+    <text class="s" x="976" y="672">deploy via Workload Identity</text>
+    <path class="a" d="M960 648 H904" marker-end="url(#arr)"/>
+
+    <!-- legend -->
+    <text class="h" x="960" y="730">Legend</text>
+    <rect class="ext" x="960" y="742" width="16" height="12" rx="3"/><text class="s" x="984" y="752">external service / input</text>
+    <rect class="comp" x="960" y="762" width="16" height="12" rx="3"/><text class="s" x="984" y="772">compute step (deterministic)</text>
+    <rect class="llm" x="960" y="782" width="16" height="12" rx="3"/><text class="s" x="984" y="792">LLM step (Vertex AI)</text>
+    <rect class="store" x="960" y="802" width="16" height="12" rx="3"/><text class="s" x="984" y="812">storage</text>
+  </svg>
+  </div>
+
+  <div class="notes">
+    <div class="note"><b>Daily flow</b><p>Scheduler fires the job. The job pulls the SQLite snapshot from Cloud Storage, runs steps 1–6, merges Telegram feedback from Firestore, and uploads the snapshot again with a generation lock.</p></div>
+    <div class="note"><b>Jobs and career fit</b><p>Job boards are polled every day. Haiku extracts skills, stack and salary. Each week the skill trends are compared with the private skills inventory, and the result goes into the Monday market-fit report.</p></div>
+    <div class="note"><b>Feedback loop</b><p>Button clicks reach the webhook and are stored in Firestore. Each run merges them into the scores, and once a week the profile is rewritten from them for you to review.</p></div>
+    <div class="note"><b>Cost</b><p>Infrastructure is about $0–1/mo on free tiers. LLM tokens are about $15–35/mo, mostly the Opus brief writer.</p></div>
+  </div>
+</main>
+</body>
+</html>
