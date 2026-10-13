@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI_news Decisions</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1f; --muted: #5f6368; --line: #8a8f98;
+    --border: #d5d7db; --gcp: #eef3fb; --gcp-border: #9db5dc; --sel: #2f6fdb;
+    --llm: #f3ecfd; --llm-border: #9a7ad1; --store: #eaf6ef; --store-border: #6fae8a;
+    --ext: #fdf3e6; --ext-border: #d39b4a; --job: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141518; --panel: #1c1e22; --ink: #e8e9eb; --muted: #a0a4ab; --line: #7d838c;
+      --border: #3a3e45; --gcp: #18202c; --gcp-border: #3f5a85; --sel: #6ea2ff;
+      --llm: #261d36; --llm-border: #8c6cc6; --store: #16271e; --store-border: #4f8d69;
+      --ext: #2b2216; --ext-border: #b07f38; --job: #1c1e22;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141518; --panel: #1c1e22; --ink: #e8e9eb; --muted: #a0a4ab; --line: #7d838c;
+    --border: #3a3e45; --gcp: #18202c; --gcp-border: #3f5a85; --sel: #6ea2ff;
+    --llm: #261d36; --llm-border: #8c6cc6; --store: #16271e; --store-border: #4f8d69;
+    --ext: #2b2216; --ext-border: #b07f38; --job: #1c1e22;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
+  .top { margin: 0 0 16px; font-size: 14px; font-weight: 600; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lede { color: var(--muted); margin: 0 0 16px; max-width: 80ch; }
+  .tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 640px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  td:first-child { width: 34%; font-weight: 600; }
+  td:nth-child(2) { white-space: nowrap; color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+  @media (max-width: 640px) {
+    table { min-width: 0; }
+    thead { display: none; }
+    tr { display: block; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    tr:last-child { border-bottom: none; }
+    td { display: block; padding: 0; border: none; width: auto !important; }
+    td:nth-child(2) { margin: 2px 0 4px; font-size: 13px; }
+    td:nth-child(2)::before { content: "Since "; }
+  }
+  .foot { margin-top: 24px; font-size: 14px; }
+  a { color: var(--sel); }
+</style>
+</head>
+<body>
+<main>
+  <p class="top" id="top"><a href="architecture-diagram.html">← Architecture diagram</a></p>
+  <h1>AI_news: recent decisions</h1>
+  <p class="lede">What changed since v0.6, and why. The <a href="architecture-diagram.html">architecture diagram</a> and its block cards already reflect these.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Decision</th><th>Since</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Workday career sites added: 32 banks, insurers, pharma and big-tech employers, searched for AI roles</td><td>v1.0</td><td>These employers don&#x27;t use the simpler job-board APIs, and they hire many GenAI engineers and FDEs (Salesforce alone has FDE roles in five markets). robots.txt decides which career sites are used, so RBC&#x27;s disallowed main site is left out. Hosts are searched four at a time to keep the daily run short.</td></tr>
+      <tr><td>Jobs lane starts with Greenhouse, Lever and Ashby: 97 employers</td><td>v0.9</td><td>Their public APIs return each employer&#x27;s full list, so new and closed postings are exact. Workday search is ranked by relevance, so v1.0 searches within each tenant&#x27;s own country filter and closes a posting only when its own page says it is gone.</td></tr>
+      <tr><td>Target roles and markets filtered by title and location, then refined by the model</td><td>v0.9</td><td>Keeps about 1,600 of 13,000 postings. Solutions and research titles count only at AI companies or when the title names AI; the model then judges the role family from the duties.</td></tr>
+      <tr><td>Numbers computed in code, notes written by the model</td><td>v0.9</td><td>Skills map to canonical names (&quot;k8s&quot; is Kubernetes), and every number in the report comes from the data. The model only explains, and its sentences are number-checked.</td></tr>
+      <tr><td>Rising and falling skills wait for two weeks of tracking</td><td>v0.9</td><td>During the first backfill the earlier period holds only postings still open; comparing it with this week would invent trends.</td></tr>
+      <tr><td>Gemini on Vertex AI instead of Claude</td><td>v0.6</td><td>Claude on Vertex needs an Anthropic access request with business details; Google&#x27;s own models are available straight away. Claude stays as an optional provider.</td></tr>
+      <tr><td>Judge on Gemini 3.1 Flash-Lite, editor on 3.5 Flash-Lite</td><td>v0.7</td><td>The cheapest model is enough for bulk scoring. Writing explanations benefits from a slightly stronger model, for 2–3 cents a brief. About $2–3 a month in total.</td></tr>
+      <tr><td>Spending guard in the app: an off switch plus per-run, per-day and per-month caps</td><td>v0.6</td><td>No surprise bills while tuning. Each call is refused before it is sent if its worst case would break a cap; failed calls are still logged with their cost.</td></tr>
+      <tr><td>Budget alerts in CAD on the shared project, no kill switch</td><td>v0.6</td><td>The billing account is in CAD, and unlinking billing would stop everything else in the project. Gemini has no per-project quota to lower, so the app&#x27;s caps are the real-time limit.</td></tr>
+      <tr><td>A teaching-style brief, at most 15 items</td><td>v0.8</td><td>You&#x27;re learning these topics. Each story has What happened, What is it? and a Comment from a pro written as your supervisor guiding your career.</td></tr>
+      <tr><td>A Trends &amp; future of work section, with seven new sources</td><td>v0.7</td><td>Where AI is heading and how it changes tech work and jobs are the topics you most want. Trend stories are ranked without actionability, because there is rarely anything to do about a trend today.</td></tr>
+      <tr><td>One story per source; every source gets a candidate slot</td><td>v0.7</td><td>Stops one vendor&#x27;s blog from filling the brief, and lets small sources reach the judge. The multi-outlet jobs search may lead three stories.</td></tr>
+      <tr><td>Article text for stories that arrive as headlines</td><td>v0.8</td><td>A headline can&#x27;t be explained. Pages are fetched once, robots.txt is honoured, and only the main text is kept. Paywalled pages and Google News links stay headline-only.</td></tr>
+      <tr><td>Whole stories packed into as few Telegram messages as fit, a contents list first</td><td>v0.8</td><td>One message per story meant 15 notifications on the phone (silent ones still show). Packing up to Telegram&#x27;s 4,096 characters fits 14 stories in 8 messages, and only the first one makes a sound.</td></tr>
+      <tr><td>Each story shows its date and how much of it the editor read</td><td>v0.8</td><td>You see how fresh a story is, and whether its summary comes from the full article, a paper abstract, an excerpt or only a headline, so you know when to open the link.</td></tr>
+      <tr><td>Every number checked in every paragraph and bullet, ignoring formatting</td><td>v0.7</td><td>The model can&#x27;t add a number the sources don&#x27;t contain, and &quot;$0.30&quot; vs &quot;$0.3&quot; no longer drops a correct sentence.</td></tr>
+      <tr><td>Keyword filters on broad search feeds</td><td>v0.7</td><td>The Reuters search matched any article mentioning AI: 40 of 113 items were off-topic. The jobs search now keeps only headlines about work and jobs.</td></tr>
+      <tr><td>Reddit: 30 s between requests and one retry after a minute</td><td>v0.8</td><td>Quick retries after a 429 only extended Reddit&#x27;s block.</td></tr>
+      <tr><td>Test posts can be cleared from the channel (ainews tg-clean)</td><td>v0.8</td><td>Tuning runs left a channel full of old tries. The command keeps the latest sent brief, asks before deleting, and lists what Telegram wouldn&#x27;t let it remove: a bot may delete only its own posts, and only within 48 hours.</td></tr>
+      <tr><td>Run by hand before deploying (ainews run, send, --redo)</td><td>v0.8</td><td>A few days of tuning quality first. --redo rebuilds the latest brief cheaply because judge scores are reused.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="foot"><a href="#top">↑ Top</a> · <a href="architecture-diagram.html">Architecture diagram</a> · <a href="jobs/index.html">How the job search works</a></p>
+</main>
+</body>
+</html>
