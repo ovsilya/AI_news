@@ -9,7 +9,7 @@
 | Source | Access | Risk | Notes |
 |---|---|---|---|
 | Greenhouse / Lever / Ashby public APIs ✓ | No key | Low | AI-native companies; full description, often salary |
-| **Workday** career-site JSON ✓ | `POST https://{t}.wd{N}.myworkdayjobs.com/wday/cxs/{t}/{site}/jobs`. Limit is 20 per page. Details come from `GET …/job/{externalPath}` | Low–med (undocumented, but robots.txt allows the path) | 19 tenants probed. Full description, salary range when posted, `remoteType`. Most banks, pharma and NVIDIA use it |
+| **Workday** career-site JSON ✓ | `POST https://{t}.wd{N}.myworkdayjobs.com/wday/cxs/{t}/{site}/jobs`. Limit is 20 per page. Details come from `GET …/job/{externalPath}` | Low–med (undocumented, but robots.txt allows the path) | **Live (v1.0):** 32 employers polled daily. Full description, salary range when posted, `remoteType`. Most banks, pharma and NVIDIA use it |
 | **SuccessFactors** ✓ | `sitemap.xml` plus individual job pages | Low (sitemap) / med (the RSS path is disallowed in robots.txt) | Swiss Re, Zurich Insurance, Scotiabank |
 | **Oracle Recruiting** ✓ | `hcmRestApi/.../recruitingCEJobRequisitions` | Med (documented as an authenticated API) | JPMorgan (611 "machine learning" hits) |
 | **SmartRecruiters** ✓ | `api.smartrecruiters.com/v1/companies/{id}/postings` | Low–med | ServiceNow, Bosch, Delivery Hero |
@@ -65,3 +65,18 @@ If none of these finds the posting, keep only the fields from the email, for sta
 | UAE | TII (Phenom), Core42 (SuccessFactors), partially verified | G42, Presight, Inception, AI71, MBZUAI, ADNOC, e&, du, Emirates NBD, FAB, Careem, Talabat |
 
 Phase 3 builds a slug prober that tries every candidate against all of these job-board systems, so these lists grow automatically.
+
+**Update 2026-10-13: Workday is live.** `ainews jobs-probe --workday` tried 70 tenants; it reads each tenant's robots.txt, which lists the career sites crawlers may use. 32 employers are now polled (see [config/companies.yaml](../config/companies.yaml)):
+- **US:** NVIDIA, Salesforce, Workday, Adobe, Intel, Autodesk, HP, PayPal, Visa, Mastercard, Capital One, Wells Fargo (tenant `wf`), BlackRock, Accenture, PwC US, Genentech (on Roche's tenant).
+- **Canada:** TD, BMO, CIBC, Manulife, Sun Life, Thomson Reuters.
+- **UK:** Barclays, LSEG, AstraZeneca, GSK, Unilever.
+- **Switzerland:** Roche, Novartis, Julius Baer, Logitech, Swisscom.
+- **UAE:** no local employer found on Workday; UAE roles come from global employers (Salesforce has FDE roles in Dubai).
+
+Corrections to the table above:
+- **RBC:** robots.txt disallows its main site (`RBCGLOBAL1`) and allows only early-talent roles, so it is left out.
+- **"lloyds"** is Lloyd's of London, not Lloyds Banking Group.
+- **ABB and Disney:** ABB showed no allowed site. Disney has one, but it is left out as off-target.
+- **Not on Workday, or no site that robots.txt allows:** Citi, Dell, AMD, Qualcomm, EY, KPMG, Deloitte, Scotiabank, Telus, Shopify, HSBC, NatWest, BP, Vodafone, Sky, BT, UBS, Nestlé, Zurich, Swiss Re, G42, ADNOC, e&, Emirates NBD, FAB, Mubadala and Careem. SerpApi and alert emails cover them.
+- **Sibling sites:** Sun Life's and Julius Baer's other sites repeat the same postings, so only one site is polled for each.
+- **PwC global:** its site has no country filter, and only 1 in 60 of its AI postings was in our markets, so only PwC US is polled.

@@ -1,10 +1,11 @@
 # Employers whose own job boards lane ② polls daily. Public posting APIs only, no keys.
-#   ats:       greenhouse | lever | ashby   (find new ones with `ainews jobs-probe <slug> …`)
-#   board:     the slug in the board's URL
+#   ats:       greenhouse | lever | ashby | workday
+#              (find new ones with `ainews jobs-probe <slug> …` or `ainews jobs-probe --workday <tenant> …`)
+#   board:     the slug in the board's URL; Workday: "tenant.wdN/Site", a career site robots.txt allows
 #   ai_native: an AI company; its solutions, research and "technical staff" roles count as AI roles.
 #              Set false for other tech companies: there only titles that name AI or ML count.
 #   region:    eu for Lever's EU instance
-# Probed 2026-10-12. Workday, SuccessFactors and the other enterprise boards (banks, pharma, NVIDIA)
+# Probed 2026-10-12 (Workday 2026-10-13). SuccessFactors, Oracle and the other enterprise boards
 # come in a later step; see docs/job-sources-markets.md.
 
 companies:
@@ -116,3 +117,46 @@ companies:
   - {id: scandit, name: Scandit, ats: greenhouse, board: scandit, ai_native: false}
   # 2,500 postings, almost all defence hardware: a large daily download for a few AI roles.
   - {id: anduril, name: Anduril, ats: greenhouse, board: andurilindustries, ai_native: false, enabled: false}
+
+  # Workday career sites: banks, insurers, pharma and big tech. Searched for AI keywords within our
+  # countries, not listed in full (see src/ainews/jobs/workday.py). Not on Workday, or robots.txt
+  # allows no job site: Citi, Dell, AMD, Qualcomm, EY, KPMG, Deloitte, RBC, Scotiabank, Telus,
+  # Shopify, HSBC, NatWest, BP, Vodafone, Sky, BT, UBS, Nestlé, Zurich, Swiss Re, ABB, and the UAE
+  # employers tried (G42, ADNOC, e&, Emirates NBD, FAB, Mubadala, Careem). PwC's global site has no
+  # country filter and 1 in 60 of its AI postings was in our markets, so only its US site is polled.
+  # US
+  - {id: nvidia, name: NVIDIA, ats: workday, board: "nvidia.wd5/NVIDIAExternalCareerSite"}
+  - {id: salesforce, name: Salesforce, ats: workday, board: "salesforce.wd12/External_Career_Site", ai_native: false}
+  - {id: workday, name: Workday, ats: workday, board: "workday.wd5/Workday", ai_native: false}
+  - {id: adobe, name: Adobe, ats: workday, board: "adobe.wd5/external_experienced", ai_native: false}
+  - {id: intel, name: Intel, ats: workday, board: "intel.wd1/External", ai_native: false}
+  - {id: autodesk, name: Autodesk, ats: workday, board: "autodesk.wd1/Ext", ai_native: false}
+  - {id: hp, name: HP, ats: workday, board: "hp.wd5/ExternalCareerSite", ai_native: false}
+  - {id: paypal, name: PayPal, ats: workday, board: "paypal.wd1/jobs", ai_native: false}
+  - {id: visa, name: Visa, ats: workday, board: "visa.wd5/Visa", ai_native: false}
+  - {id: mastercard, name: Mastercard, ats: workday, board: "mastercard.wd1/CorporateCareers", ai_native: false}
+  - {id: capitalone, name: Capital One, ats: workday, board: "capitalone.wd12/Capital_One", ai_native: false}
+  - {id: wellsfargo, name: Wells Fargo, ats: workday, board: "wf.wd1/WellsFargoJobs", ai_native: false}
+  - {id: blackrock, name: BlackRock, ats: workday, board: "blackrock.wd1/BlackRock_Professional", ai_native: false}
+  - {id: accenture, name: Accenture, ats: workday, board: "accenture.wd103/AccentureCareers", ai_native: false}
+  - {id: pwc-us, name: PwC US, ats: workday, board: "pwc.wd3/US_Experienced_Careers", ai_native: false}
+  - {id: genentech, name: Genentech, ats: workday, board: "roche.wd3/ROG-A2O-GENE", ai_native: false}
+  # Canada
+  - {id: td, name: TD Bank, ats: workday, board: "td.wd3/TD_Bank_Careers", ai_native: false}
+  - {id: bmo, name: BMO, ats: workday, board: "bmo.wd3/External", ai_native: false}
+  - {id: cibc, name: CIBC, ats: workday, board: "cibc.wd3/search", ai_native: false}
+  - {id: manulife, name: Manulife, ats: workday, board: "manulife.wd3/MFCJH_Jobs", ai_native: false}
+  - {id: sunlife, name: Sun Life, ats: workday, board: "sunlife.wd3/Experienced-Jobs", ai_native: false}
+  - {id: thomsonreuters, name: Thomson Reuters, ats: workday, board: "thomsonreuters.wd5/External_Career_Site", ai_native: false}
+  # UK
+  - {id: barclays, name: Barclays, ats: workday, board: "barclays.wd3/External_Career_Site_Barclays", ai_native: false}
+  - {id: lseg, name: LSEG, ats: workday, board: "lseg.wd3/Careers", ai_native: false}
+  - {id: astrazeneca, name: AstraZeneca, ats: workday, board: "astrazeneca.wd3/Careers", ai_native: false}
+  - {id: gsk, name: GSK, ats: workday, board: "gsk.wd5/GSKCareers", ai_native: false}
+  - {id: unilever, name: Unilever, ats: workday, board: "unilever.wd3/Unilever_Experienced_Professionals", ai_native: false}
+  # Switzerland
+  - {id: roche, name: Roche, ats: workday, board: "roche.wd3/roche-ext", ai_native: false}
+  - {id: novartis, name: Novartis, ats: workday, board: "novartis.wd3/Novartis_Careers", ai_native: false}
+  - {id: juliusbaer, name: Julius Baer, ats: workday, board: "juliusbaer.wd3/External", ai_native: false}
+  - {id: logitech, name: Logitech, ats: workday, board: "logitech.wd5/Logitech", ai_native: false}
+  - {id: swisscom, name: Swisscom, ats: workday, board: "swisscom.wd103/SwisscomExternalCareers", ai_native: false}

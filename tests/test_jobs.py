@@ -2,6 +2,7 @@ import json
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
+import httpx
 import pytest
 
 from ainews.config import ROOT
@@ -9,7 +10,8 @@ from ainews.deliver.render import TELEGRAM_LIMIT, visible_len
 from ainews.jobs.boards import Company, Posting, parse_ashby, parse_greenhouse, parse_lever
 from ainews.jobs.extract import Skills, extract_postings
 from ainews.jobs.filters import markets, role_family
-from ainews.jobs.poll import store_board
+from ainews.jobs import workday
+from ainews.jobs.poll import poll_workday, store_board
 from ainews.jobs.report import build_weekly
 from ainews.jobs.stats import market_stats, wilson
 
@@ -93,6 +95,106 @@ def test_poll_diff_new_changed_closed(conn):
     # It comes back: open again.
     store_board(conn, CO, [_posting(1, text="Python, RAG and MCP"), _posting(2)], at=t2)
     assert conn.execute("SELECT COUNT(*) FROM job_postings WHERE closed_at IS NULL").fetchone()[0] == 2
+
+
+WD = Company("bank", "Big Bank", "workday", "bank.wd3/Careers", ai_native=False)
+WD_FACETS = [{"facetParameter": "locationMainGroup", "values": [
+    {"facetParameter": "locationHierarchy1", "values": [
+        {"descriptor": "United States of America", "id": "us1"}, {"descriptor": "Germany", "id": "de1"},
+        {"descriptor": "Canada", "id": "ca1"}]},
+    {"facetParameter": "timeType", "values": [{"descriptor": "Full time", "id": "ft"}]}]},
+    # A city list with one entry named like a country: not a country filter.
+    {"facetParameter": "locations", "values": [{"descriptor": c, "id": c} for c in
+                                               ("Basel", "Boston", "Berlin", "Paris", "Madrid", "Toronto",
+                                                "Lisbon", "Vienna", "Seattle", "Oslo", "Prague", "United Kingdom")]}]
+
+
+def _wd_item(req, title, place):
+    return {"title": title, "externalPath": f"/job/{place}/{title.replace(' ', '-')}_{req}", "bulletFields": [req]}
+
+
+class FakeWorkday:
+    """Search results and job pages of one Workday site; records what was asked."""
+
+    def __init__(self):
+        self.items = [_wd_item("R1", "Forward Deployed Engineer", "New-York"), _wd_item("R2", "Bank Teller", "Ohio"),
+                      _wd_item("R3", "Machine Learning Engineer", "Berlin")]
+        self.pages = {"R1": {"title": "Forward Deployed Engineer", "location": "New York", "posted": True,
+                             "country": {"descriptor": "United States of America"}, "startDate": "2026-10-09",
+                             "jobDescription": "<p>Python, RAG and agents.</p>",
+                             "externalUrl": "https://bank.wd3.myworkdayjobs.com/en-US/Careers"
+                                            "/job/New-York/Forward-Deployed-Engineer_R1"},
+                      "R3": {"title": "Machine Learning Engineer", "location": "Berlin", "posted": True,
+                             "country": {"descriptor": "Germany"}}}
+        self.searches, self.reads = [], []
+
+    def post_json(self, url, payload):
+        assert url == "https://bank.wd3.myworkdayjobs.com/wday/cxs/bank/Careers/jobs"
+        self.searches.append(payload)
+        if payload["limit"] == 1:
+            return {"total": 3, "facets": WD_FACETS, "jobPostings": self.items[:1]}
+        page = self.items[payload["offset"]:payload["offset"] + payload["limit"]]
+        return {"total": len(self.items) if payload["offset"] == 0 else 0, "jobPostings": page}
+
+    def get(self, url, conditional=True):
+        path = url.removeprefix("https://bank.wd3.myworkdayjobs.com/wday/cxs/bank/Careers")
+        req = path.rsplit("_", 1)[-1]
+        self.reads.append(req)
+        if req not in self.pages:
+            raise httpx.HTTPStatusError("gone", request=httpx.Request("GET", url),
+                                        response=httpx.Response(404, request=httpx.Request("GET", url)))
+        return type("R", (), {"text": json.dumps({"jobPostingInfo": self.pages[req]})})()
+
+
+class AllowAll:
+    def allowed(self, url):
+        return True
+
+
+def test_workday_robots_and_country_facet():
+    robots = "Sitemap: x\r\nUser-agent: *\r\nAllow: /Careers/\r\nallow: /Careers_Students/\r\nDisallow: /Global/\r\n"
+    assert workday.allowed_sites(robots) == ["Careers", "Careers_Students"]
+    assert workday.country_facet(WD_FACETS) == ("locationHierarchy1", ["us1", "ca1"])
+    assert workday.country_facet(WD_FACETS[1:]) is None
+    named = [{"facetParameter": "Location_Country", "descriptor": "Location Country",
+              "values": [{"descriptor": c, "id": c} for c in ("Switzerland", "Singapore", "Spain", "Hong Kong", "India",
+                                                               "Poland", "Japan", "Italy", "Monaco", "Israel", "Chile")]}]
+    assert workday.country_facet(named) == ("Location_Country", ["Switzerland"])   # one match, but named country
+    assert workday.Site.parse("bank.wd3/Careers").api == "https://bank.wd3.myworkdayjobs.com/wday/cxs/bank/Careers"
+
+
+def test_workday_poll_reads_once_and_checks_before_closing(conn):
+    wd = FakeWorkday()
+    t0 = NOW.isoformat()
+    first = poll_workday(conn, WD, wd, AllowAll(), at=t0)
+    # Searched within our countries only; the teller is dropped by title, the Berlin job after reading it.
+    assert all(s["appliedFacets"] == {"locationHierarchy1": ["us1", "ca1"]} for s in wd.searches[1:])
+    assert (first["listed"], first["new"], first["closed"]) == (2, 1, 0) and sorted(wd.reads) == ["R1", "R3"]
+    row = conn.execute("SELECT * FROM job_postings").fetchone()
+    assert row["key"] == "bank:R1" and json.loads(row["markets"]) == ["US"] and row["posted_at"].startswith("2026-10-09")
+    assert "RAG" in row["description"]
+
+    # Next day: nothing is read again, neither the stored posting nor the skipped one.
+    wd.reads.clear()
+    second = poll_workday(conn, WD, wd, AllowAll(), at=(NOW + timedelta(hours=24)).isoformat())
+    assert (second["matching"], second["new"], wd.reads) == (1, 0, [])
+
+    # It drops out of the search results: past the grace period its own page is asked first.
+    wd.items = wd.items[1:]
+    t2 = (NOW + timedelta(hours=62)).isoformat()
+    third = poll_workday(conn, WD, wd, AllowAll(), at=t2)
+    assert third["closed"] == 0 and wd.reads == ["R1"]
+    assert conn.execute("SELECT last_seen FROM job_postings").fetchone()[0] == t2     # still open
+    del wd.pages["R1"]
+    fourth = poll_workday(conn, WD, wd, AllowAll(), at=(NOW + timedelta(hours=100)).isoformat())
+    assert fourth["closed"] == 1
+
+
+def test_store_board_leaves_unknown_postings_open(conn):
+    store_board(conn, CO, [_posting(1)], at=NOW.isoformat())
+    later = (NOW + timedelta(hours=48)).isoformat()
+    assert store_board(conn, CO, [], at=later, still_open=lambda row: None)["closed"] == 0
+    assert store_board(conn, CO, [], at=later, still_open=lambda row: False)["closed"] == 1
 
 
 class FakeLLM:

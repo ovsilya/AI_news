@@ -833,7 +833,7 @@
       "id": "src-jobs",
       "slug": "job-boards",
       "name": "Job boards",
-      "what": "Live now: the Greenhouse, Lever and Ashby job-board APIs for 97 employers, mostly AI companies (config/companies.yaml): about 13,000 open postings, about 1,600 of them in your target roles and markets. Next, for all five markets: the career-site endpoints of Workday, SuccessFactors, Oracle Recruiting and SmartRecruiters (banks, pharma, NVIDIA and other enterprises); SerpApi Google Jobs twice a week (free tier); and your job-alert emails read through Gmail. Extras: the Reed API (UK, daily), swissdevjobs.ch RSS (CH, daily) and USAJobs (US, weekly). The UAE relies on SerpApi plus alert emails.",
+      "what": "Live now: the Greenhouse, Lever and Ashby job-board APIs for 97 employers, mostly AI companies, and the Workday career sites of 32 banks, insurers, pharma and big-tech employers such as NVIDIA, Salesforce, Capital One, TD, Barclays and Roche (config/companies.yaml). Together about 2,400 open postings in your target roles and markets. Next, for all five markets: SuccessFactors, Oracle Recruiting and SmartRecruiters career sites; SerpApi Google Jobs twice a week (free tier); and your job-alert emails read through Gmail. Extras: the Reed API (UK, daily), swissdevjobs.ch RSS (CH, daily) and USAJobs (US, weekly). The UAE relies on SerpApi plus alert emails, and on global employers' UAE roles (Salesforce has FDE roles in Dubai).",
       "why": "Data straight from employers: legal, free, with full descriptions and often salary. SerpApi and alert emails fill the big-tech, bank and enterprise gaps without scraping LinkedIn or Indeed. Your alert emails are legal to parse because they are sent to you.",
       "sources": [
         {
@@ -861,9 +861,9 @@
           ]
         },
         {
-          "name": "Workday career sites (e.g. NVIDIA)",
+          "name": "Workday career sites (32 employers)",
           "url": "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite",
-          "how": "Career-site JSON, POST …/wday/cxs/{tenant}/{site}/jobs (undocumented; robots.txt allows)",
+          "how": "Career-site JSON: POST …/wday/cxs/{tenant}/{site}/jobs searched for AI keywords within our countries; GET …/job/… for each new posting (undocumented; robots.txt allows the path and lists the sites)",
           "methods": [
             "career-json"
           ]
@@ -1070,7 +1070,7 @@
       "name": "Career-site JSON",
       "how": "Large employers' career sites (Workday, Oracle Recruiting) load their job lists from a JSON endpoint in the browser. We call the same endpoint: Workday POST …/wday/cxs/{tenant}/{site}/jobs with a search text, 20 results per page; Oracle hcmRestApi/…/recruitingCEJobRequisitions.",
       "why": "Banks, pharma, NVIDIA and many other large employers don't use Greenhouse or Lever, and their roles matter most in CH, UK and CA. The endpoints return full descriptions and salary ranges, robots.txt allows the path, and it is the employer's own site, so no job-board terms are involved.",
-      "watch": "Undocumented, so it can change without notice. We send a few requests per tenant per day with polite delays, identify ourselves in the User-Agent, and health-check each tenant.",
+      "watch": "Undocumented, so it can change without notice. Per site and day: seven keyword searches (usually 10–70 requests), up to 60 new postings read and up to 30 closure checks, one request a second, with our User-Agent. Only the career sites robots.txt allows are used (RBC's main site is disallowed, so RBC is out). Each site's status is recorded in job_boards.",
       "plain": "When you open a big company's careers page (say NVIDIA's, which runs on a system called Workday), your browser quietly asks the site for the list of jobs in a data format. Our collector sends the same request your browser would, slowly and politely. Why: large banks, pharma and tech companies don't use the simpler job-board APIs, and this is the company's own job list, complete with full descriptions and often salaries, not a third-party job board with its own rules."
     },
     {

@@ -146,7 +146,7 @@ The current list is strong on models, research and tools (layers 2–3). It is w
 - **Business, funding, policy and trends:** 22 sources, including policy feeds for the US, CA, UK, CH, UAE and the EU, and trend sources on where AI is heading and how it changes tech work and jobs.
 - **Compute and low-level systems:** 15 sources.
 
-**Jobs: not yet.**
+**Jobs:** live since v0.9 (Greenhouse, Lever, Ashby); Workday added in v1.0, see §3.6.
 
 The Greenhouse/Lever/Ashby APIs cover AI-native companies well. They miss:
 - **Big tech**, which runs its own career sites.
@@ -339,10 +339,11 @@ Failures are logged to Langfuse.
 
 **Implemented (v0.9, first part of Phase 3):**
 - **J1 poll & diff** (`ainews jobs`): the public Greenhouse, Lever and Ashby APIs of 97 employers, found with `ainews jobs-probe`. About 13,000 postings are listed; a title filter (role family) and a location filter (US, CA, UK, CH, UAE, remote) keep about 1,600. Solutions and research titles count only at AI companies or when the title names AI. A posting missing for 36 hours from successful polls is closed.
+- **J1 Workday (v1.0):** the career sites of 32 banks, insurers, pharma and big-tech employers (NVIDIA, Salesforce, Capital One, TD, Barclays, Roche…), found with `ainews jobs-probe --workday`, which reads the career sites each tenant's robots.txt allows. Workday has no full list, so each site is searched for seven AI keywords within our countries (the tenant's own country filter; a few tenants have none, and there the location is checked after reading), 20 results a page, stopping at the first page with no matching titles. Each new posting is read once (up to 60 per site per run); one that has dropped out of the results is closed only when its own page says it is gone (up to 30 checks per site per run). Hosts run four at a time, one request a second each: about 800 matching postings, about 4 minutes a day.
 - **J2 extract:** Gemini 3.1 Flash-Lite, five postings per call, strict JSON ([prompts/job_extract.md](../prompts/job_extract.md)): role family judged from the duties, seniority, years, required and preferred skills, customer-facing work, travel, remote policy, visa, salary and a one-line summary. Skills map to canonical names ([config/skills.yaml](../config/skills.yaml)); the board's own salary wins. About $0.001 per posting, at most 200 per run.
 - **J3 / W1 statistics** (code, not the model): skill shares in open target postings, by role family and market; seniority, remote and customer-facing shares; median posted pay ranges; top employers; fit against `private/skills.yaml` (demand-weighted coverage of the top 30 skills, biggest gaps). Rising and falling skills compare this week's postings with the four weeks before (non-overlapping Wilson 95% intervals) and wait for two weeks of tracking.
 - **W2 / W3 report** (`ainews weekly`): tables printed from the statistics; Gemini 3.5 Flash-Lite writes three notes (market, skills, and a Comment from a pro on your fit), number-checked against the statistics. Stored in `reports`; `--send` or `ainews send --report` posts it.
-- **Not yet:** Workday and the other enterprise career sites (Workday search is ranked by relevance and often hides locations, so it needs country filters to diff reliably), SerpApi Google Jobs, Reed, swissdevjobs, job-alert emails, HN Who's hiring, and "notable new postings" in the daily brief.
+- **Not yet:** the other enterprise career sites (SuccessFactors, Oracle Recruiting, SmartRecruiters), SerpApi Google Jobs, Reed, swissdevjobs, job-alert emails, HN Who's hiring, and "notable new postings" in the daily brief.
 
 ### 3.7 Trends
 
@@ -467,7 +468,7 @@ AI_news/
 | **0. Baseline** (day 1) | A Claude Code routine / scheduled prompt that writes a daily brief | Something to compare against immediately |
 | **1. MVP** (week 1) | Source registry; collectors for RSS, HF Papers, HN, GitHub releases, OpenRouter; SQLite; URL + MinHash dedup; Haiku judge; Opus editor; Telegram delivery. Runs locally on a schedule | A real daily brief |
 | **2. Quality** (week 2–3) | Embedding dedup and stable stories, heat score, aggregator-link resolution, feedback buttons, citation verification, Langfuse, static archive + email. Deploy to VPS | Less noise, a feedback loop, production setup |
-| **3. Jobs** (week 3–4) | Company list builder, ATS polling, Haiku extraction, weekly skills-trend report, HN Who's hiring. *v0.9: Greenhouse, Lever and Ashby polling for 97 employers, Gemini extraction and the weekly report are done; Workday, SerpApi, alert emails and HN Who's hiring are next.* | The feature nobody else has |
+| **3. Jobs** (week 3–4) | Company list builder, ATS polling, Haiku extraction, weekly skills-trend report, HN Who's hiring. *v0.9: Greenhouse, Lever and Ashby polling for 97 employers, Gemini extraction and the weekly report are done. v1.0: Workday career sites for 32 more. SerpApi, alert emails and HN Who's hiring are next.* | The feature nobody else has |
 | **4. Trends & polish** | Burst detection, weekly "State of the field", golden-set evals, profile auto-rewrite, page-diff collectors, optional audio | A brief that compounds over time |
 
 ## 9. Open decisions

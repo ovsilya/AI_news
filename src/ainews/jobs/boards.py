@@ -1,7 +1,8 @@
 """Employers' own job boards: the public posting APIs of Greenhouse, Lever and Ashby.
 
 Each returns the employer's full list of open postings, so a posting missing from today's list has
-closed. No keys, no scraping: these APIs are published for exactly this use."""
+closed. No keys, no scraping: these APIs are published for exactly this use. Workday career sites
+have no full list; they are searched instead (workday.py)."""
 from __future__ import annotations
 
 import html
@@ -14,7 +15,8 @@ import yaml
 
 from ..collectors import html_to_text
 
-ATS = ("greenhouse", "lever", "ashby")
+LIST_ATS = ("greenhouse", "lever", "ashby")   # boards that return their full list of open postings
+ATS = LIST_ATS + ("workday",)
 DESCRIPTION_CHARS = 12_000
 PERIODS = {"1 YEAR": "year", "1 MONTH": "month", "1 HOUR": "hour", "per-year-salary": "year",
            "per-month-salary": "month", "per-hour-wage": "hour"}
@@ -25,7 +27,7 @@ class Company:
     id: str
     name: str
     ats: str
-    board: str            # the slug in the board's URL, e.g. boards.greenhouse.io/<board>
+    board: str            # the slug in the board's URL, e.g. boards.greenhouse.io/<board>; Workday: "tenant.wdN/Site"
     ai_native: bool = True   # an AI company: its solutions and research roles count as AI roles
     enabled: bool = True
     region: str = ""      # "eu" for Lever's EU instance
@@ -172,7 +174,7 @@ def fetch_postings(c: Company, fetcher) -> list[Posting]:
 def probe(slug: str, fetcher) -> list[tuple[str, int]]:
     """Which boards answer for this slug, with their number of open postings: [(ats, count)]."""
     found = []
-    for ats, region in [(a, "") for a in ATS] + [("lever", "eu")]:
+    for ats, region in [(a, "") for a in LIST_ATS] + [("lever", "eu")]:
         try:
             n = len(fetch_postings(Company(slug, slug, ats, slug, region=region), fetcher))
         except Exception:

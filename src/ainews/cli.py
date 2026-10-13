@@ -190,7 +190,8 @@ def cmd_jobs(args, settings) -> None:
         fetcher.close()
     print(f"polled {stats['boards']} boards ({stats['errors']} errors): {stats['listed']} postings listed, "
           f"{stats['matching']} in your target roles and markets; {stats['new']} new, {stats['changed']} changed, "
-          f"{stats['closed']} closed")
+          f"{stats['closed']} closed" + (f"; {stats['waiting']} Workday postings wait for the next run"
+                                         if stats.get("waiting") else ""))
     if not args.no_llm:
         from .jobs.extract import Skills, extract_postings
         from .llm import LLMDisabled, make_llm
@@ -217,6 +218,22 @@ def cmd_jobs_probe(args, settings) -> None:
     from .jobs.boards import probe
 
     fetcher = Fetcher(None, timeout=60, retries=1)
+    if args.workday:
+        from .jobs import workday
+
+        try:
+            for tenant in args.slugs:
+                sites = workday.probe(tenant, fetcher)
+                if not sites:
+                    print(f"# {tenant}: no Workday career site that robots.txt allows")
+                name = tenant.split(".")[0]
+                for board, n in sites:
+                    site = board.split("/", 1)[1]
+                    cid = name if len(sites) == 1 else f"{name}-{site.lower()}"
+                    print(f'  - {{id: {cid}, name: {name}, ats: workday, board: "{board}", ai_native: false}}   # {n} open')
+        finally:
+            fetcher.close()
+        return
     try:
         for slug in args.slugs:
             hits = probe(slug, fetcher)
@@ -366,8 +383,9 @@ def main(argv: list[str] | None = None) -> None:
     j.add_argument("--only", help="comma-separated company ids")
     j.add_argument("--no-llm", action="store_true", help="poll and diff only; no model calls")
     j.add_argument("--max-extract", type=int, help="postings the model reads this run (default 200)")
-    jp = sub.add_parser("jobs-probe", help="check which job board (Greenhouse, Lever, Ashby) an employer uses")
-    jp.add_argument("slugs", nargs="+")
+    jp = sub.add_parser("jobs-probe", help="check which job board (Greenhouse, Lever, Ashby, Workday) an employer uses")
+    jp.add_argument("slugs", nargs="+", help="board slugs, or Workday tenants with --workday (e.g. nvidia or nvidia.wd5)")
+    jp.add_argument("--workday", action="store_true", help="find the tenants' Workday career sites")
     w = sub.add_parser("weekly", help="build the weekly jobs report (local file; --send to post)")
     w.add_argument("--no-llm", action="store_true", help="tables only, no model commentary")
     w.add_argument("--send", action="store_true", help="post to the Telegram channel")

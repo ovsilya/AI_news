@@ -64,12 +64,31 @@ class Fetcher:
             if row and row["last_modified"]:
                 hdrs["If-Modified-Since"] = row["last_modified"]
 
+        r = self._send("GET", url, headers=hdrs, params=params)
+        if r.status_code == 304:
+            return Response(304, None, str(r.url))
+        r.raise_for_status()
+        if conditional and self.conn is not None:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO http_cache VALUES (?, ?, ?, ?)",
+                (cache_key, r.headers.get("ETag"), r.headers.get("Last-Modified"), now()),
+            )
+        return Response(r.status_code, r.text, str(r.url))
+
+    def post_json(self, url: str, payload: dict) -> dict:
+        """POST a JSON body and return the JSON reply (career-site search APIs such as Workday's)."""
+        r = self._send("POST", url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"}, json=payload)
+        r.raise_for_status()
+        return r.json()
+
+    def _send(self, method: str, url: str, **kw) -> httpx.Response:
+        """One request with per-host spacing, retrying transport errors, 429 and 5xx with backoff."""
         host = urlsplit(url).netloc
         delay, retries = SLOW_429.get(host, (2.0, self.retries))
         for attempt in range(retries + 1):
             self._space(host)
             try:
-                r = self.client.get(url, headers=hdrs, params=params)
+                r = self.client.request(method, url, **kw)
             except httpx.TransportError as exc:
                 if attempt == retries:
                     raise
@@ -84,17 +103,8 @@ class Fetcher:
                 self.sleep(float(retry_after) if retry_after.isdigit() else delay)
                 delay *= 2
                 continue
-            break
-
-        if r.status_code == 304:
-            return Response(304, None, str(r.url))
-        r.raise_for_status()
-        if conditional and self.conn is not None:
-            self.conn.execute(
-                "INSERT OR REPLACE INTO http_cache VALUES (?, ?, ?, ?)",
-                (cache_key, r.headers.get("ETag"), r.headers.get("Last-Modified"), now()),
-            )
-        return Response(r.status_code, r.text, str(r.url))
+            return r
+        return r
 
     def close(self) -> None:
         self.client.close()

@@ -137,8 +137,10 @@ def build_weekly(conn: sqlite3.Connection, settings, *, llm=None, now_dt: dateti
                 stats_run["budget_stop"] = str(exc)
         cost = llm.total_cost if llm is not None else 0.0
         title = f"AI jobs report · week to {now_dt.astimezone():%a} {now_dt.astimezone().day} {now_dt.astimezone():%b}"
-        footer = (f"From open postings on {len(companies)} employers' own job boards (Greenhouse, Lever, Ashby), "
-                  f"mostly AI companies; banks, pharma and big tech join with Workday next · run cost ${cost:.3f}")
+        n_wd = sum(c.ats == "workday" for c in companies)
+        footer = (f"From open postings on {len(companies)} employers' own job boards: {len(companies) - n_wd} mostly AI "
+                  f"companies (Greenhouse, Lever, Ashby)" + (f" and {n_wd} banks, pharma and big tech (Workday, "
+                  f"searched for AI roles)" if n_wd else "") + f" · run cost ${cost:.3f}")
         markdown, telegram = render(stats, notes, title, footer)
         report_id = conn.execute(
             "INSERT INTO reports (created_at, kind, stats, markdown, telegram_html, cost_usd) VALUES (?, ?, ?, ?, ?, ?)",

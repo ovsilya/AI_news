@@ -134,17 +134,17 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
 
 ## 5. Jobs lane and the weekly jobs report
 
-Nothing to sign up for: the employers' job boards (Greenhouse, Lever, Ashby) are public APIs.
+Nothing to sign up for: the employers' job boards (Greenhouse, Lever, Ashby) are public APIs, and the Workday career sites of banks, pharma and big tech answer the same JSON requests their own pages send.
 
 1. **Your skills.** `private/skills.yaml` lists the skills you `have` and are `learning`; the report's "Your fit" section compares them with what postings ask for. It was drafted from `private/profile.md`, so check it. Names follow [config/skills.yaml](../config/skills.yaml) (aliases such as `k8s` work).
 2. **Daily, after the brief:**
    ```bash
    .venv/bin/ainews jobs
    ```
-   It polls the 97 boards in [config/companies.yaml](../config/companies.yaml) (about 80 seconds), records new, changed and closed postings, and has Gemini 3.1 Flash-Lite read up to 200 new ones (about $0.001 each, so about $0.22 a run). The first runs work through a backlog of about 1,600 postings, so it takes about a week of daily runs to read them all. To go faster, run it more than once a day: each run stays within the daily cap.
+   It polls the 97 job boards (about 80 seconds) and the 32 Workday career sites (about 4 minutes; the first runs take longer while they read each new posting once) in [config/companies.yaml](../config/companies.yaml), records new, changed and closed postings, and has Gemini 3.1 Flash-Lite read up to 200 new ones (about $0.001 each, so about $0.22 a run). The first runs work through a backlog of about 2,400 postings, about 2,100 still unread on 2026-10-13, so it takes about ten daily runs to read them all. To go faster, run it more than once a day: each run stays within the daily cap.
 3. **Weekly, on Mondays:**
    ```bash
    .venv/bin/ainews weekly
    ```
    It writes `out/jobs-<date>.md` (about 1 cent for the notes). Read it, then post it with `ainews send --report`, or build and post in one go with `ainews weekly --send`. Rising and falling skills appear after two weeks of tracking.
-4. **Add an employer:** `ainews jobs-probe <slug> …` prints a ready-to-paste line for `config/companies.yaml` when the employer uses Greenhouse, Lever or Ashby.
+4. **Add an employer:** `ainews jobs-probe <slug> …` prints a ready-to-paste line for `config/companies.yaml` when the employer uses Greenhouse, Lever or Ashby. For a Workday employer, `ainews jobs-probe --workday <tenant> …` (the first part of its `*.myworkdayjobs.com` address, e.g. `nvidia`) lists the career sites its robots.txt allows, with their open postings; keep the main one and drop the sites that repeat it.
