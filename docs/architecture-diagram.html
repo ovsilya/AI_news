@@ -52,8 +52,8 @@
   .a.fb { stroke-dasharray: 5 4; }
   .tip { fill: var(--line); }
   .blk { cursor: pointer; outline: none; }
-  .blk:hover > rect:first-child, .blk:focus-visible > rect:first-child { stroke: var(--sel); stroke-width: 2; }
-  .blk.sel > rect:first-child { stroke: var(--sel); stroke-width: 2.6; }
+  .blk:hover > rect:first-of-type, .blk:focus-visible > rect:first-of-type { stroke: var(--sel); stroke-width: 2; }
+  .blk.sel > rect:first-of-type { stroke: var(--sel); stroke-width: 2.6; }
   .detail { margin-top: 12px; background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--sel);
             border-radius: 10px; padding: 12px 16px; min-height: 64px; }
   .detail .k { font-weight: 700; }
@@ -72,14 +72,25 @@
   th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { color: var(--muted); font-weight: 600; font-size: 13px; }
   tr:last-child td { border-bottom: none; }
+  .frame { position: relative; }
+  .pop { position: absolute; z-index: 5; width: min(360px, calc(100% - 24px)); background: var(--panel); color: var(--ink);
+         border: 1px solid var(--sel); border-radius: 10px; padding: 12px 14px; box-shadow: 0 8px 28px rgba(0,0,0,.18); font-size: 14px; }
+  .pop b { display: block; margin-bottom: 4px; padding-right: 24px; }
+  .pop p { margin: 4px 0; }
+  .pop .x { position: absolute; top: 6px; right: 8px; border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; line-height: 1; }
+  .pop .back { display: none; }
+  .card:target { border-color: var(--sel); box-shadow: 0 0 0 1px var(--sel); }
+  .card .back { font-size: 13px; margin-top: 6px; }
+  a { color: var(--sel); }
 </style>
 </head>
 <body>
 <main>
   <h1>AI_news: architecture</h1>
-  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Markets: USA · Canada · UK · Switzerland · UAE. Draft v0.5 · 2026-10-12. <b>Click any block</b> for what it does and why.</p>
+  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Markets: USA · Canada · UK · Switzerland · UAE. Draft v0.5 · 2026-10-12. <b>Hover</b> a block for a quick tooltip, or <b>click</b> it to see what it does and why.</p>
 
-  <div class="frame">
+  <div class="frame" id="diagram">
+  <div id="pop" class="pop" hidden role="dialog" aria-live="polite"></div>
   <svg viewBox="0 0 1240 870" role="img" aria-label="Architecture diagram: sources feed one Cloud Run job image that runs in three scheduled modes on GCP, calls Vertex AI, stores state in Cloud Storage and Firestore, and posts to a Telegram channel; a Telegram bot webhook collects feedback and profile edits">
     <defs>
       <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -89,24 +100,24 @@
 
     <!-- ===== Sources ===== -->
     <text class="h" x="20" y="90">Sources · ~70 feeds</text>
-    <g class="blk" data-id="src-vendor" tabindex="0"><rect class="ext" x="20" y="98" width="230" height="50" rx="8"/>
-      <text class="t" x="34" y="118">Vendors &amp; changelogs</text><text class="s" x="34" y="136">OpenAI · Anthropic · Google · HF</text></g>
-    <g class="blk" data-id="src-news" tabindex="0"><rect class="ext" x="20" y="156" width="230" height="50" rx="8"/>
-      <text class="t" x="34" y="176">Newsletters</text><text class="s" x="34" y="194">AINews · TLDR · Simon W. → votes</text></g>
-    <g class="blk" data-id="src-research" tabindex="0"><rect class="ext" x="20" y="214" width="230" height="50" rx="8"/>
-      <text class="t" x="34" y="234">Research</text><text class="s" x="34" y="252">HF Daily Papers · arXiv</text></g>
-    <g class="blk" data-id="src-code" tabindex="0"><rect class="ext" x="20" y="272" width="230" height="50" rx="8"/>
-      <text class="t" x="34" y="292">Models &amp; code</text><text class="s" x="34" y="310">GitHub releases · HF · OpenRouter</text></g>
-    <g class="blk" data-id="src-community" tabindex="0"><rect class="ext" x="20" y="330" width="230" height="50" rx="8"/>
-      <text class="t" x="34" y="350">Community</text><text class="s" x="34" y="368">HN · Reddit · Bluesky · YouTube</text></g>
-    <g class="blk" data-id="src-biz" tabindex="0"><rect class="ext" x="20" y="388" width="230" height="50" rx="8"/>
-      <text class="t" x="34" y="408">Business &amp; policy</text><text class="s" x="34" y="426">Bloomberg · Crunchbase · 5-mkt policy</text></g>
-    <g class="blk" data-id="src-systems" tabindex="0"><rect class="ext" x="20" y="446" width="230" height="50" rx="8"/>
-      <text class="t" x="34" y="466">Compute &amp; systems</text><text class="s" x="34" y="484">SemiAnalysis · PyTorch · vLLM · NVIDIA</text></g>
+    <a class="blk" href="#card-src-vendor" data-id="src-vendor"><title>Vendors &amp; changelogs: RSS/Atom feeds and page diffs of official blogs, API changelogs and release notes: OpenAI, Anthropic, Google, Mistral, HF, and the cloud providers.</title><rect class="ext" x="20" y="98" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="118">Vendors &amp; changelogs</text><text class="s" x="34" y="136">OpenAI · Anthropic · Google · HF</text></a>
+    <a class="blk" href="#card-src-news" data-id="src-news"><title>Newsletters: Curated digests: AINews, TLDR AI, Simon Willison, Import AI, Interconnects and others.</title><rect class="ext" x="20" y="156" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="176">Newsletters</text><text class="s" x="34" y="194">AINews · TLDR · Simon W. → votes</text></a>
+    <a class="blk" href="#card-src-research" data-id="src-research"><title>Research: The HF Daily Papers API (community upvotes) plus arXiv cs.CL/LG/AI feeds.</title><rect class="ext" x="20" y="214" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="234">Research</text><text class="s" x="34" y="252">HF Daily Papers · arXiv</text></a>
+    <a class="blk" href="#card-src-code" data-id="src-code"><title>Models &amp; code: GitHub releases.atom for about 25 key repos, HF trending models and spaces, and changes to OpenRouter's model list.</title><rect class="ext" x="20" y="272" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="292">Models &amp; code</text><text class="s" x="34" y="310">GitHub releases · HF · OpenRouter</text></a>
+    <a class="blk" href="#card-src-community" data-id="src-community"><title>Community: HN (Algolia, filtered by points), r/LocalLLaMA and r/MachineLearning RSS, Bluesky researcher lists, and YouTube channel RSS.</title><rect class="ext" x="20" y="330" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="350">Community</text><text class="s" x="34" y="368">HN · Reddit · Bluesky · YouTube</text></a>
+    <a class="blk" href="#card-src-biz" data-id="src-biz"><title>Business &amp; policy: 15 verified feeds. Business: The Information, Bloomberg Tech, Reuters (via Google News), TechCrunch AI, Crunchbase News, Techmeme. Policy for each market: the Federal Register and US state AI bills, UK AISI and DSIT, Canada ISED, the Swiss federal news service, UAE AI news, and the EU AI Act Newsletter. Safety: Transformer, METR.</title><rect class="ext" x="20" y="388" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="408">Business &amp; policy</text><text class="s" x="34" y="426">Bloomberg · Crunchbase · 5-mkt policy</text></a>
+    <a class="blk" href="#card-src-systems" data-id="src-systems"><title>Compute &amp; systems: 15 verified feeds. Compute: SemiAnalysis, Chips and Cheese, NVIDIA Technical Blog, AMD ROCm, ServeTheHome, The Next Platform, Latitude Media (energy). Systems: PyTorch blog and dev-discuss, vLLM, LMSYS/SGLang, release feeds for Triton, FlashAttention, CUTLASS and TensorRT-LLM, GPU MODE, Lei Mao, Thinking Machines.</title><rect class="ext" x="20" y="446" width="230" height="50" rx="8"/>
+      <text class="t" x="34" y="466">Compute &amp; systems</text><text class="s" x="34" y="484">SemiAnalysis · PyTorch · vLLM · NVIDIA</text></a>
 
     <text class="h" x="20" y="525">Job market · US · CA · UK · CH · UAE</text>
-    <g class="blk" data-id="src-jobs" tabindex="0"><rect class="ext" x="20" y="535" width="230" height="60" rx="8"/>
-      <text class="t" x="34" y="559">Job boards</text><text class="s" x="34" y="578">ATS · Workday · SerpApi · alerts</text></g>
+    <a class="blk" href="#card-src-jobs" data-id="src-jobs"><title>Job boards: Five markets. In every market: the Greenhouse/Lever/Ashby job-board APIs (AI-native companies); the career-site endpoints of Workday, SuccessFactors, Oracle Recruiting and SmartRecruiters (banks, pharma, NVIDIA and other enterprises); SerpApi Google Jobs twice a week (free tier); and your job-alert emails read through Gmail. Extras: the Reed API (UK, daily), swissdevjobs.ch RSS (CH, daily) and USAJobs (US, weekly). The UAE relies on SerpApi plus alert emails.</title><rect class="ext" x="20" y="535" width="230" height="60" rx="8"/>
+      <text class="t" x="34" y="559">Job boards</text><text class="s" x="34" y="578">ATS · Workday · SerpApi · alerts</text></a>
 
     <path class="a" d="M250 123 H272 M250 181 H272 M250 239 H272 M250 297 H272 M250 355 H272 M250 413 H272 M250 471 H272 M272 123 V471"/>
     <path class="a" d="M272 202 H336" marker-end="url(#arr)"/>
@@ -116,44 +127,44 @@
     <rect class="gcp" x="290" y="15" width="630" height="835" rx="14"/>
     <text class="h" x="306" y="38">Google Cloud · personal project · us-central1</text>
 
-    <g class="blk" data-id="scheduler" tabindex="0"><rect class="comp" x="320" y="50" width="580" height="50" rx="8"/>
+    <a class="blk" href="#card-scheduler" data-id="scheduler"><title>Cloud Scheduler: Three cron triggers, which is the free quota: ① the brief at 06:00 and 18:00, ② jobs at 05:00, ③ the weekly reports Mondays at 07:00.</title><rect class="comp" x="320" y="50" width="580" height="50" rx="8"/>
       <text class="t" x="336" y="72">Cloud Scheduler · 3 free jobs</text>
-      <text class="s" x="336" y="89">① brief 06:00 &amp; 18:00 · ② jobs daily 05:00 · ③ weekly Mon 07:00</text></g>
+      <text class="s" x="336" y="89">① brief 06:00 &amp; 18:00 · ② jobs daily 05:00 · ③ weekly Mon 07:00</text></a>
     <path class="a" d="M610 100 V116" marker-end="url(#arr)"/>
 
-    <g class="blk" data-id="job" tabindex="0"><rect class="jobbox" x="320" y="120" width="580" height="428" rx="10"/>
-      <text class="h" x="336" y="142">Cloud Run Job · one image, three modes · single writer</text></g>
+    <a class="blk" href="#card-job" data-id="job"><title>Cloud Run Job: One container image with three modes (run daily | jobs | weekly), 1 vCPU / 2 GiB, parallelism 1.</title><rect class="jobbox" x="320" y="120" width="580" height="428" rx="10"/>
+      <text class="h" x="336" y="142">Cloud Run Job · one image, three modes · single writer</text></a>
 
     <!-- lane 1 -->
     <text class="lane" x="340" y="162">① Daily brief · 06:00 &amp; 18:00</text>
-    <g class="blk" data-id="a1" tabindex="0"><rect class="comp" x="340" y="170" width="166" height="64" rx="8"/>
+    <a class="blk" href="#card-a1" data-id="a1"><title>1 · Ingest: Fetches every source, using conditional GET so unchanged feeds aren't re-downloaded. Parses feeds and extracts article text with trafilatura. Records the health of each source.</title><rect class="comp" x="340" y="170" width="166" height="64" rx="8"/>
       <text class="t" x="423" y="192" text-anchor="middle">1 · Ingest</text>
       <text class="s" x="423" y="210" text-anchor="middle">RSS · APIs · page diffs</text>
-      <text class="s" x="423" y="225" text-anchor="middle">source health checks</text></g>
-    <g class="blk" data-id="a2" tabindex="0"><rect class="comp" x="527" y="170" width="166" height="64" rx="8"/>
+      <text class="s" x="423" y="225" text-anchor="middle">source health checks</text></a>
+    <a class="blk" href="#card-a2" data-id="a2"><title>2 · Dedup: Three passes: canonical URL, then MinHash near-duplicate text, then embedding similarity against the last 72 hours.</title><rect class="comp" x="527" y="170" width="166" height="64" rx="8"/>
       <text class="t" x="610" y="192" text-anchor="middle">2 · Dedup</text>
       <text class="s" x="610" y="210" text-anchor="middle">URL canon → MinHash</text>
-      <text class="s" x="610" y="225" text-anchor="middle">→ embeddings (cos ≥ .88)</text></g>
-    <g class="blk" data-id="a3" tabindex="0"><rect class="comp" x="714" y="170" width="166" height="64" rx="8"/>
+      <text class="s" x="610" y="225" text-anchor="middle">→ embeddings (cos ≥ .88)</text></a>
+    <a class="blk" href="#card-a3" data-id="a3"><title>3 · Cluster &amp; heat: Adds each item to an existing story or starts a new one. Heat counts the distinct sources covering a story, weighted by their authority, and decays over 24 hours.</title><rect class="comp" x="714" y="170" width="166" height="64" rx="8"/>
       <text class="t" x="797" y="192" text-anchor="middle">3 · Cluster &amp; heat</text>
       <text class="s" x="797" y="210" text-anchor="middle">stable story IDs</text>
-      <text class="s" x="797" y="225" text-anchor="middle">distinct sources, 24 h decay</text></g>
+      <text class="s" x="797" y="225" text-anchor="middle">distinct sources, 24 h decay</text></a>
     <path class="a" d="M506 202 H523" marker-end="url(#arr)"/>
     <path class="a" d="M693 202 H710" marker-end="url(#arr)"/>
     <path class="a" d="M797 234 V248 H423 V258" marker-end="url(#arr)"/>
 
-    <g class="blk" data-id="a4" tabindex="0"><rect class="llm" x="340" y="262" width="166" height="64" rx="8"/>
+    <a class="blk" href="#card-a4" data-id="a4"><title>4 · Score (Haiku 5.5): Rules first cut the field to 150–300 stories. Haiku then scores each for relevance, novelty and actionability, and assigns a layer from big picture down to low-level. Your profile sits in a cached prompt.</title><rect class="llm" x="340" y="262" width="166" height="64" rx="8"/>
       <text class="t" x="423" y="284" text-anchor="middle">4 · Score</text>
       <text class="s" x="423" y="302" text-anchor="middle">Haiku 5.5 vs profile</text>
-      <text class="s" x="423" y="317" text-anchor="middle">relevance · novelty · layer</text></g>
-    <g class="blk" data-id="a5" tabindex="0"><rect class="llm" x="527" y="262" width="166" height="64" rx="8"/>
+      <text class="s" x="423" y="317" text-anchor="middle">relevance · novelty · layer</text></a>
+    <a class="blk" href="#card-a5" data-id="a5"><title>5 · Write brief (Opus 5.5): Writes the brief from the top stories, given source excerpts as cited documents, plus a career section built from ② data.</title><rect class="llm" x="527" y="262" width="166" height="64" rx="8"/>
       <text class="t" x="610" y="284" text-anchor="middle">5 · Write brief</text>
       <text class="s" x="610" y="302" text-anchor="middle">Opus 5.5 + citations</text>
-      <text class="s" x="610" y="317" text-anchor="middle">5 layers, broad → deep</text></g>
-    <g class="blk" data-id="a6" tabindex="0"><rect class="comp" x="714" y="262" width="166" height="64" rx="8"/>
+      <text class="s" x="610" y="317" text-anchor="middle">5 layers, broad → deep</text></a>
+    <a class="blk" href="#card-a6" data-id="a6"><title>6 · Verify &amp; publish: Removes sentences without a citation, checks every number and version against its source, and resolves links. Then posts to the channel with feedback buttons and stores the message IDs.</title><rect class="comp" x="714" y="262" width="166" height="64" rx="8"/>
       <text class="t" x="797" y="284" text-anchor="middle">6 · Verify &amp; publish</text>
       <text class="s" x="797" y="302" text-anchor="middle">drop uncited sentences</text>
-      <text class="s" x="797" y="317" text-anchor="middle">check numbers &amp; links</text></g>
+      <text class="s" x="797" y="317" text-anchor="middle">check numbers &amp; links</text></a>
     <path class="a" d="M506 294 H523" marker-end="url(#arr)"/>
     <path class="a" d="M693 294 H710" marker-end="url(#arr)"/>
 
@@ -162,18 +173,18 @@
     <!-- lane 2 -->
     <text class="lane" x="340" y="358">② Jobs · daily 05:00</text>
     <text class="s" x="880" y="358" text-anchor="end">feeds the next brief's career section via the DB</text>
-    <g class="blk" data-id="b1" tabindex="0"><rect class="comp" x="340" y="366" width="166" height="64" rx="8"/>
+    <a class="blk" href="#card-b1" data-id="b1"><title>J1 · Poll &amp; diff: Fetches every tracked job board and the SerpApi searches for all five markets, parses new alert emails, and compares the result with yesterday: new, changed and closed postings.</title><rect class="comp" x="340" y="366" width="166" height="64" rx="8"/>
       <text class="t" x="423" y="388" text-anchor="middle">J1 · Poll &amp; diff</text>
       <text class="s" x="423" y="406" text-anchor="middle">5 markets, all boards</text>
-      <text class="s" x="423" y="421" text-anchor="middle">new · changed · closed</text></g>
-    <g class="blk" data-id="b2" tabindex="0"><rect class="llm" x="527" y="366" width="166" height="64" rx="8"/>
+      <text class="s" x="423" y="421" text-anchor="middle">new · changed · closed</text></a>
+    <a class="blk" href="#card-b2" data-id="b2"><title>J2 · Extract (Haiku 5.5): Turns each new posting into strict JSON: role family, skills, frameworks, cloud, seniority, salary, remote policy, plus quotes as evidence.</title><rect class="llm" x="527" y="366" width="166" height="64" rx="8"/>
       <text class="t" x="610" y="388" text-anchor="middle">J2 · Extract</text>
       <text class="s" x="610" y="406" text-anchor="middle">Haiku 5.5, strict JSON</text>
-      <text class="s" x="610" y="421" text-anchor="middle">skills · stack · salary</text></g>
-    <g class="blk" data-id="b3" tabindex="0"><rect class="comp" x="714" y="366" width="166" height="64" rx="8"/>
+      <text class="s" x="610" y="421" text-anchor="middle">skills · stack · salary</text></a>
+    <a class="blk" href="#card-b3" data-id="b3"><title>J3 · Aggregate: Normalises skills to a taxonomy and updates skill counts for each market (US / CA / UK / CH / UAE, with remote roles counted separately). Flags postings that match your role, seniority and remote filters.</title><rect class="comp" x="714" y="366" width="166" height="64" rx="8"/>
       <text class="t" x="797" y="388" text-anchor="middle">J3 · Aggregate</text>
       <text class="s" x="797" y="406" text-anchor="middle">skill taxonomy, counts</text>
-      <text class="s" x="797" y="421" text-anchor="middle">flag matching postings</text></g>
+      <text class="s" x="797" y="421" text-anchor="middle">flag matching postings</text></a>
     <path class="a" d="M506 398 H523" marker-end="url(#arr)"/>
     <path class="a" d="M693 398 H710" marker-end="url(#arr)"/>
 
@@ -182,42 +193,42 @@
     <!-- lane 3 -->
     <text class="lane" x="340" y="462">③ Weekly · Mon 07:00</text>
     <text class="s" x="880" y="462" text-anchor="end">reads a week of ① + ② history via the DB</text>
-    <g class="blk" data-id="c1" tabindex="0"><rect class="comp" x="340" y="470" width="166" height="64" rx="8"/>
+    <a class="blk" href="#card-c1" data-id="c1"><title>W1 · Trends &amp; fit: Finds topic bursts against 7- and 28-day baselines and measures skill demand and its week-over-week change. Compares that with your profile to get coverage, missing skills and rising skills.</title><rect class="comp" x="340" y="470" width="166" height="64" rx="8"/>
       <text class="t" x="423" y="492" text-anchor="middle">W1 · Trends &amp; fit</text>
       <text class="s" x="423" y="510" text-anchor="middle">topic bursts, skill shifts</text>
-      <text class="s" x="423" y="525" text-anchor="middle">vs your profile</text></g>
-    <g class="blk" data-id="c2" tabindex="0"><rect class="llm" x="527" y="470" width="166" height="64" rx="8"/>
+      <text class="s" x="423" y="525" text-anchor="middle">vs your profile</text></a>
+    <a class="blk" href="#card-c2" data-id="c2"><title>W2 · Write reports (Opus 5.5): Writes the 'State of the field' summary and the market-fit report, with concrete suggestions on what to learn or build.</title><rect class="llm" x="527" y="470" width="166" height="64" rx="8"/>
       <text class="t" x="610" y="492" text-anchor="middle">W2 · Write reports</text>
       <text class="s" x="610" y="510" text-anchor="middle">Opus 5.5</text>
-      <text class="s" x="610" y="525" text-anchor="middle">field · market fit</text></g>
-    <g class="blk" data-id="c3" tabindex="0"><rect class="comp" x="714" y="470" width="166" height="64" rx="8"/>
+      <text class="s" x="610" y="525" text-anchor="middle">field · market fit</text></a>
+    <a class="blk" href="#card-c3" data-id="c3"><title>W3 · Publish: Posts the reports to the channel. Suggested profile updates go to your private chat for approval.</title><rect class="comp" x="714" y="470" width="166" height="64" rx="8"/>
       <text class="t" x="797" y="492" text-anchor="middle">W3 · Publish</text>
       <text class="s" x="797" y="510" text-anchor="middle">channel: reports</text>
-      <text class="s" x="797" y="525" text-anchor="middle">private: profile hints</text></g>
+      <text class="s" x="797" y="525" text-anchor="middle">private: profile hints</text></a>
     <path class="a" d="M506 502 H523" marker-end="url(#arr)"/>
     <path class="a" d="M693 502 H710" marker-end="url(#arr)"/>
 
     <!-- storage -->
-    <g class="blk" data-id="gcs" tabindex="0"><rect class="store" x="320" y="575" width="175" height="64" rx="8"/>
+    <a class="blk" href="#card-gcs" data-id="gcs"><title>Cloud Storage: Holds the SQLite database snapshot: downloaded at the start of a run and uploaded at the end, but only if no other run has changed it in between. Also holds the brief archive and weekly profile exports.</title><rect class="store" x="320" y="575" width="175" height="64" rx="8"/>
       <text class="t" x="336" y="597">Cloud Storage</text>
       <text class="s" x="336" y="615">SQLite snapshot (locked)</text>
-      <text class="s" x="336" y="630">brief archive · exports</text></g>
-    <g class="blk" data-id="fs" tabindex="0"><rect class="store" x="510" y="575" width="190" height="64" rx="8"/>
+      <text class="s" x="336" y="630">brief archive · exports</text></a>
+    <a class="blk" href="#card-fs" data-id="fs"><title>Firestore: Stores feedback clicks, your versioned profile (skills, projects, portfolio, targets), and bot state such as edits waiting for approval.</title><rect class="store" x="510" y="575" width="190" height="64" rx="8"/>
       <text class="t" x="526" y="597">Firestore</text>
       <text class="s" x="526" y="615">feedback · your profile</text>
-      <text class="s" x="526" y="630">(versioned) · bot state</text></g>
-    <g class="blk" data-id="bot" tabindex="0"><rect class="comp" x="725" y="575" width="175" height="64" rx="8"/>
+      <text class="s" x="526" y="630">(versioned) · bot state</text></a>
+    <a class="blk" href="#card-bot" data-id="bot"><title>tg-bot (Cloud Run service): Receives Telegram updates by webhook: button clicks, commands and profile edits. It acknowledges straight away and hands slow work to Cloud Tasks: transcribing voice notes, fetching repos and PDFs, and the Haiku call that drafts a profile change.</title><rect class="comp" x="725" y="575" width="175" height="64" rx="8"/>
       <text class="t" x="741" y="597">tg-bot (Cloud Run)</text>
       <text class="s" x="741" y="615">webhook → Cloud Tasks</text>
-      <text class="s" x="741" y="630">scale to zero</text></g>
+      <text class="s" x="741" y="630">scale to zero</text></a>
     <path class="a" d="M407 552 V571" marker-start="url(#arr)" marker-end="url(#arr)"/>
     <path class="a" d="M605 575 V552" marker-end="url(#arr)"/>
     <path class="a" d="M725 607 H704" marker-start="url(#arr)" marker-end="url(#arr)"/>
 
-    <g class="blk" data-id="platform" tabindex="0"><rect class="comp" x="320" y="660" width="580" height="36" rx="8"/>
-      <text class="s" x="610" y="683" text-anchor="middle">Secret Manager · Artifact Registry · Cloud Tasks · Logging · Budget alert ($5)</text></g>
+    <a class="blk" href="#card-platform" data-id="platform"><title>Platform services: Secret Manager for the bot token and keys, Artifact Registry for the image, Cloud Tasks for async bot work, Logging, and a $5 budget alert.</title><rect class="comp" x="320" y="660" width="580" height="36" rx="8"/>
+      <text class="s" x="610" y="683" text-anchor="middle">Secret Manager · Artifact Registry · Cloud Tasks · Logging · Budget alert ($5)</text></a>
 
-    <g class="blk" data-id="vertex" tabindex="0"><rect class="llm" x="320" y="715" width="580" height="120" rx="10"/>
+    <a class="blk" href="#card-vertex" data-id="vertex"><title>Vertex AI: Claude Haiku 5.5 for scoring, extraction and parsing bot edits; Claude Opus 5.5 for writing (Sonnet 5.5 is the cheaper option); gemini-embedding-001; speech for voice notes and an optional audio brief.</title><rect class="llm" x="320" y="715" width="580" height="120" rx="10"/>
       <text class="h" x="336" y="735">Vertex AI · global endpoint · all LLM steps (purple)</text>
       <rect class="comp" x="336" y="747" width="135" height="70" rx="7"/>
       <text class="t" x="403" y="771" text-anchor="middle">Haiku 5.5</text>
@@ -234,31 +245,31 @@
       <rect class="comp" x="762" y="747" width="122" height="70" rx="7"/>
       <text class="t" x="823" y="771" text-anchor="middle">Speech</text>
       <text class="s" x="823" y="789" text-anchor="middle">voice transcription</text>
-      <text class="s" x="823" y="804" text-anchor="middle">optional TTS brief</text></g>
+      <text class="s" x="823" y="804" text-anchor="middle">optional TTS brief</text></a>
 
     <!-- ===== Delivery ===== -->
     <text class="h" x="960" y="250">Delivery</text>
     <path class="a" d="M880 294 H956" marker-end="url(#arr)"/>
     <path class="a" d="M880 502 H940 V330 H956" marker-end="url(#arr)"/>
-    <g class="blk" data-id="channel" tabindex="0"><rect class="ext" x="960" y="262" width="260" height="84" rx="8"/>
+    <a class="blk" href="#card-channel" data-id="channel"><title>Telegram channel: Carries the daily brief (full in the morning, changes only in the evening) and the weekly reports. Each story has 👍 👎 🔇 buttons, and long versions go on a Telegraph page.</title><rect class="ext" x="960" y="262" width="260" height="84" rx="8"/>
       <text class="t" x="976" y="286">Telegram channel</text>
       <text class="s" x="976" y="304">daily brief · weekly reports</text>
       <text class="s" x="976" y="319">👍 👎 🔇 buttons on each story</text>
-      <text class="s" x="976" y="334">Telegraph page for long-form</text></g>
+      <text class="s" x="976" y="334">Telegraph page for long-form</text></a>
     <path class="a" d="M1090 346 V376" marker-end="url(#arr)"/>
-    <g class="blk" data-id="you" tabindex="0"><rect class="ext" x="960" y="380" width="260" height="90" rx="8"/>
+    <a class="blk" href="#card-you" data-id="you"><title>You · private bot chat: Option B (decided): describe a change in plain text or a voice note, or send a GitHub link or a PDF. An LLM turns it into a proposed profile change, and you approve or reject it (✅ Apply · ✏️ Edit · ❌ Cancel). Commands: /skills, /gaps, /fit, /jd (paste a job description to see how you match), /undo, /history.</title><rect class="ext" x="960" y="380" width="260" height="90" rx="8"/>
       <text class="t" x="976" y="404">You · private bot chat</text>
       <text class="s" x="976" y="422">text or voice → LLM → change</text>
       <text class="s" x="976" y="437">diff preview → ✅ apply · /undo</text>
-      <text class="s" x="976" y="452">/skills /gaps /fit /jd</text></g>
+      <text class="s" x="976" y="452">/skills /gaps /fit /jd</text></a>
     <path class="a fb" d="M1090 474 V607 H904" marker-start="url(#arr)" marker-end="url(#arr)"/>
     <text class="s" x="1098" y="530">clicks · commands</text>
     <text class="s" x="1098" y="545">edits · bot replies</text>
 
-    <g class="blk" data-id="github" tabindex="0"><rect class="ext" x="960" y="645" width="260" height="66" rx="8"/>
+    <a class="blk" href="#card-github" data-id="github"><title>GitHub: The public repo, Actions CI (tests, lint, prompt regression tests), Terraform for all GCP resources, and deploys via Workload Identity Federation.</title><rect class="ext" x="960" y="645" width="260" height="66" rx="8"/>
       <text class="t" x="976" y="669">GitHub · ovsilya/AI_news</text>
       <text class="s" x="976" y="687">Actions CI · Terraform</text>
-      <text class="s" x="976" y="702">deploy via Workload Identity</text></g>
+      <text class="s" x="976" y="702">deploy via Workload Identity</text></a>
     <path class="a" d="M960 678 H904" marker-end="url(#arr)"/>
 
     <text class="h" x="960" y="752">Legend</text>
@@ -269,7 +280,6 @@
   </svg>
   </div>
 
-  <div id="detail" class="detail" aria-live="polite"><p class="muted">Click a block in the diagram to see what it does and why it's there.</p></div>
 
   <h2>How the three lanes relate</h2>
   <div class="callout">
@@ -296,7 +306,59 @@
   </div>
 
   <h2>Block reference</h2>
-  <div id="ref"></div>
+  <div id="ref">
+  <h3>Sources</h3>
+  <div class="grid">
+    <div class="card" id="card-src-vendor"><b>Vendors &amp; changelogs</b><p><span class="lbl">What:</span> RSS/Atom feeds and page diffs of official blogs, API changelogs and release notes: OpenAI, Anthropic, Google, Mistral, HF, and the cloud providers.</p><p><span class="lbl">Why:</span> The primary source for launches, price changes and deprecations, which are the news most likely to affect your code.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-src-news"><b>Newsletters</b><p><span class="lbl">What:</span> Curated digests: AINews, TLDR AI, Simon Willison, Import AI, Interconnects and others.</p><p><span class="lbl">Why:</span> Their links count as votes for what matters, and AINews recaps chatter on X and Discord that we don&#x27;t pull directly. Each link is resolved to the original article, so newsletters never create duplicate stories.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-src-research"><b>Research</b><p><span class="lbl">What:</span> The HF Daily Papers API (community upvotes) plus arXiv cs.CL/LG/AI feeds.</p><p><span class="lbl">Why:</span> Upvotes filter the hundreds of daily papers down to the few that matter; arXiv covers the long tail.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-src-code"><b>Models &amp; code</b><p><span class="lbl">What:</span> GitHub releases.atom for about 25 key repos, HF trending models and spaces, and changes to OpenRouter&#x27;s model list.</p><p><span class="lbl">Why:</span> Usually the first sign of a new model, SDK version or price change, often hours before any blog post.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-src-community"><b>Community</b><p><span class="lbl">What:</span> HN (Algolia, filtered by points), r/LocalLLaMA and r/MachineLearning RSS, Bluesky researcher lists, and YouTube channel RSS.</p><p><span class="lbl">Why:</span> Shows what practitioners are arguing about, and how real adoption compares with the hype.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-src-biz"><b>Business &amp; policy</b><p><span class="lbl">What:</span> 15 verified feeds. Business: The Information, Bloomberg Tech, Reuters (via Google News), TechCrunch AI, Crunchbase News, Techmeme. Policy for each market: the Federal Register and US state AI bills, UK AISI and DSIT, Canada ISED, the Swiss federal news service, UAE AI news, and the EU AI Act Newsletter. Safety: Transformer, METR.</p><p><span class="lbl">Why:</span> The big-picture layer: funding, M&amp;A, regulation in the five markets you track, and AI safety. Paywalled outlets provide headlines only.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-src-systems"><b>Compute &amp; systems</b><p><span class="lbl">What:</span> 15 verified feeds. Compute: SemiAnalysis, Chips and Cheese, NVIDIA Technical Blog, AMD ROCm, ServeTheHome, The Next Platform, Latitude Media (energy). Systems: PyTorch blog and dev-discuss, vLLM, LMSYS/SGLang, release feeds for Triton, FlashAttention, CUTLASS and TensorRT-LLM, GPU MODE, Lei Mao, Thinking Machines.</p><p><span class="lbl">Why:</span> The low-level layer: chips, datacenters and energy, inference and kernels, quantization, and compilers.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-src-jobs"><b>Job boards</b><p><span class="lbl">What:</span> Five markets. In every market: the Greenhouse/Lever/Ashby job-board APIs (AI-native companies); the career-site endpoints of Workday, SuccessFactors, Oracle Recruiting and SmartRecruiters (banks, pharma, NVIDIA and other enterprises); SerpApi Google Jobs twice a week (free tier); and your job-alert emails read through Gmail. Extras: the Reed API (UK, daily), swissdevjobs.ch RSS (CH, daily) and USAJobs (US, weekly). The UAE relies on SerpApi plus alert emails.</p><p><span class="lbl">Why:</span> Data straight from employers: legal, free, with full descriptions and often salary. SerpApi and alert emails fill the big-tech, bank and enterprise gaps without scraping LinkedIn or Indeed. Your alert emails are legal to parse because they are sent to you.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+  </div>
+  <h3>Orchestration</h3>
+  <div class="grid">
+    <div class="card" id="card-scheduler"><b>Cloud Scheduler</b><p><span class="lbl">What:</span> Three cron triggers, which is the free quota: ① the brief at 06:00 and 18:00, ② jobs at 05:00, ③ the weekly reports Mondays at 07:00.</p><p><span class="lbl">Why:</span> Managed cron with no server to run. Jobs finish before the morning brief, so the brief can include fresh postings.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-job"><b>Cloud Run Job</b><p><span class="lbl">What:</span> One container image with three modes (run daily | jobs | weekly), 1 vCPU / 2 GiB, parallelism 1.</p><p><span class="lbl">Why:</span> Pay-per-run, so it fits the free tier. Running a single writer means the SQLite snapshot is never written by two runs at once.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+  </div>
+  <h3>① Daily brief</h3>
+  <div class="grid">
+    <div class="card" id="card-a1"><b>1 · Ingest</b><p><span class="lbl">What:</span> Fetches every source, using conditional GET so unchanged feeds aren&#x27;t re-downloaded. Parses feeds and extracts article text with trafilatura. Records the health of each source.</p><p><span class="lbl">Why:</span> Incremental fetching keeps runs cheap, and the health check catches feeds that move or die.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-a2"><b>2 · Dedup</b><p><span class="lbl">What:</span> Three passes: canonical URL, then MinHash near-duplicate text, then embedding similarity against the last 72 hours.</p><p><span class="lbl">Why:</span> The same launch arrives 5–10 times. Each pass is cheap enough to run before the next, so the LLM never sees a duplicate.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-a3"><b>3 · Cluster &amp; heat</b><p><span class="lbl">What:</span> Adds each item to an existing story or starts a new one. Heat counts the distinct sources covering a story, weighted by their authority, and decays over 24 hours.</p><p><span class="lbl">Why:</span> Stable story IDs let follow-ups attach to yesterday&#x27;s story. Heat measures importance regardless of your profile.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-a4"><b>4 · Score (Haiku 5.5)</b><p><span class="lbl">What:</span> Rules first cut the field to 150–300 stories. Haiku then scores each for relevance, novelty and actionability, and assigns a layer from big picture down to low-level. Your profile sits in a cached prompt.</p><p><span class="lbl">Why:</span> A cheap model for bulk judgement. A quota per layer keeps the brief broad, not limited to your own role.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-a5"><b>5 · Write brief (Opus 5.5)</b><p><span class="lbl">What:</span> Writes the brief from the top stories, given source excerpts as cited documents, plus a career section built from ② data.</p><p><span class="lbl">Why:</span> Writing the summary is where quality matters most, and it&#x27;s one call a day, so the strongest model is affordable.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-a6"><b>6 · Verify &amp; publish</b><p><span class="lbl">What:</span> Removes sentences without a citation, checks every number and version against its source, and resolves links. Then posts to the channel with feedback buttons and stores the message IDs.</p><p><span class="lbl">Why:</span> Summaries have to be trustworthy. The stored message IDs connect each button click to its story.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+  </div>
+  <h3>② Jobs</h3>
+  <div class="grid">
+    <div class="card" id="card-b1"><b>J1 · Poll &amp; diff</b><p><span class="lbl">What:</span> Fetches every tracked job board and the SerpApi searches for all five markets, parses new alert emails, and compares the result with yesterday: new, changed and closed postings.</p><p><span class="lbl">Why:</span> Only new postings need LLM work. Closing dates show how long roles stay open.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-b2"><b>J2 · Extract (Haiku 5.5)</b><p><span class="lbl">What:</span> Turns each new posting into strict JSON: role family, skills, frameworks, cloud, seniority, salary, remote policy, plus quotes as evidence.</p><p><span class="lbl">Why:</span> Converts free text into comparable fields. Cheap enough for hundreds of postings a day.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-b3"><b>J3 · Aggregate</b><p><span class="lbl">What:</span> Normalises skills to a taxonomy and updates skill counts for each market (US / CA / UK / CH / UAE, with remote roles counted separately). Flags postings that match your role, seniority and remote filters.</p><p><span class="lbl">Why:</span> Precomputed statistics keep the brief&#x27;s career section and the weekly report fast and cheap.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+  </div>
+  <h3>③ Weekly</h3>
+  <div class="grid">
+    <div class="card" id="card-c1"><b>W1 · Trends &amp; fit</b><p><span class="lbl">What:</span> Finds topic bursts against 7- and 28-day baselines and measures skill demand and its week-over-week change. Compares that with your profile to get coverage, missing skills and rising skills.</p><p><span class="lbl">Why:</span> Answers &#x27;am I keeping up?&#x27; with data rather than a feeling.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-c2"><b>W2 · Write reports (Opus 5.5)</b><p><span class="lbl">What:</span> Writes the &#x27;State of the field&#x27; summary and the market-fit report, with concrete suggestions on what to learn or build.</p><p><span class="lbl">Why:</span> A week is long enough for trends to show and daily noise to average out.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-c3"><b>W3 · Publish</b><p><span class="lbl">What:</span> Posts the reports to the channel. Suggested profile updates go to your private chat for approval.</p><p><span class="lbl">Why:</span> You stay in control of what your profile says.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+  </div>
+  <h3>Storage &amp; platform</h3>
+  <div class="grid">
+    <div class="card" id="card-gcs"><b>Cloud Storage</b><p><span class="lbl">What:</span> Holds the SQLite database snapshot: downloaded at the start of a run and uploaded at the end, but only if no other run has changed it in between. Also holds the brief archive and weekly profile exports.</p><p><span class="lbl">Why:</span> SQLite is the simplest database for a single writer, and GCS keeps it durable for free. Writing SQLite directly over GCS FUSE is unsafe because FUSE has no file locking.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-fs"><b>Firestore</b><p><span class="lbl">What:</span> Stores feedback clicks, your versioned profile (skills, projects, portfolio, targets), and bot state such as edits waiting for approval.</p><p><span class="lbl">Why:</span> The bot is stateless and can run several copies at once, and Firestore handles small simultaneous writes on the free tier. Every run merges this data into SQLite.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-bot"><b>tg-bot (Cloud Run service)</b><p><span class="lbl">What:</span> Receives Telegram updates by webhook: button clicks, commands and profile edits. It acknowledges straight away and hands slow work to Cloud Tasks: transcribing voice notes, fetching repos and PDFs, and the Haiku call that drafts a profile change.</p><p><span class="lbl">Why:</span> Scales to zero, so it costs about $0, yet buttons respond instantly. Polling Telegram instead would need an always-on instance at about $12/mo.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-platform"><b>Platform services</b><p><span class="lbl">What:</span> Secret Manager for the bot token and keys, Artifact Registry for the image, Cloud Tasks for async bot work, Logging, and a $5 budget alert.</p><p><span class="lbl">Why:</span> Keeps secrets out of the public repo, adds a cost guardrail, and needs no servers.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-vertex"><b>Vertex AI</b><p><span class="lbl">What:</span> Claude Haiku 5.5 for scoring, extraction and parsing bot edits; Claude Opus 5.5 for writing (Sonnet 5.5 is the cheaper option); gemini-embedding-001; speech for voice notes and an optional audio brief.</p><p><span class="lbl">Why:</span> One billing account and IAM authentication, with no API keys. The global endpoint charges Anthropic&#x27;s list prices.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+  </div>
+  <h3>Delivery &amp; control</h3>
+  <div class="grid">
+    <div class="card" id="card-channel"><b>Telegram channel</b><p><span class="lbl">What:</span> Carries the daily brief (full in the morning, changes only in the evening) and the weekly reports. Each story has 👍 👎 🔇 buttons, and long versions go on a Telegraph page.</p><p><span class="lbl">Why:</span> Telegram is the delivery channel you chose. Channels support rich messages up to 32k characters, plus inline buttons.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-you"><b>You · private bot chat</b><p><span class="lbl">What:</span> Option B (decided): describe a change in plain text or a voice note, or send a GitHub link or a PDF. An LLM turns it into a proposed profile change, and you approve or reject it (✅ Apply · ✏️ Edit · ❌ Cancel). Commands: /skills, /gaps, /fit, /jd (paste a job description to see how you match), /undo, /history.</p><p><span class="lbl">Why:</span> Keeps your skills and projects current from your phone. Every change is previewed before it is applied and versioned, so it can be undone. Only your Telegram account, in the private chat, can edit the profile.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-github"><b>GitHub</b><p><span class="lbl">What:</span> The public repo, Actions CI (tests, lint, prompt regression tests), Terraform for all GCP resources, and deploys via Workload Identity Federation.</p><p><span class="lbl">Why:</span> Reproducible infrastructure with no long-lived keys, and visible portfolio evidence.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+  </div>
+  </div>
 
   <h2>What we store and why</h2>
   <div class="tablewrap"><table>
@@ -321,78 +383,36 @@
 </main>
 
 <script>
-const BLOCKS = [
-  ["Sources", [
-    ["src-vendor","Vendors & changelogs","RSS/Atom feeds and page diffs of official blogs, API changelogs and release notes: OpenAI, Anthropic, Google, Mistral, HF, and the cloud providers.","The primary source for launches, price changes and deprecations, which are the news most likely to affect your code."],
-    ["src-news","Newsletters","Curated digests: AINews, TLDR AI, Simon Willison, Import AI, Interconnects and others.","Their links count as votes for what matters, and AINews recaps chatter on X and Discord that we don't pull directly. Each link is resolved to the original article, so newsletters never create duplicate stories."],
-    ["src-research","Research","The HF Daily Papers API (community upvotes) plus arXiv cs.CL/LG/AI feeds.","Upvotes filter the hundreds of daily papers down to the few that matter; arXiv covers the long tail."],
-    ["src-code","Models & code","GitHub releases.atom for about 25 key repos, HF trending models and spaces, and changes to OpenRouter's model list.","Usually the first sign of a new model, SDK version or price change, often hours before any blog post."],
-    ["src-community","Community","HN (Algolia, filtered by points), r/LocalLLaMA and r/MachineLearning RSS, Bluesky researcher lists, and YouTube channel RSS.","Shows what practitioners are arguing about, and how real adoption compares with the hype."],
-    ["src-biz","Business & policy","15 verified feeds. Business: The Information, Bloomberg Tech, Reuters (via Google News), TechCrunch AI, Crunchbase News, Techmeme. Policy for each market: the Federal Register and US state AI bills, UK AISI and DSIT, Canada ISED, the Swiss federal news service, UAE AI news, and the EU AI Act Newsletter. Safety: Transformer, METR.","The big-picture layer: funding, M&A, regulation in the five markets you track, and AI safety. Paywalled outlets provide headlines only."],
-    ["src-systems","Compute & systems","15 verified feeds. Compute: SemiAnalysis, Chips and Cheese, NVIDIA Technical Blog, AMD ROCm, ServeTheHome, The Next Platform, Latitude Media (energy). Systems: PyTorch blog and dev-discuss, vLLM, LMSYS/SGLang, release feeds for Triton, FlashAttention, CUTLASS and TensorRT-LLM, GPU MODE, Lei Mao, Thinking Machines.","The low-level layer: chips, datacenters and energy, inference and kernels, quantization, and compilers."],
-    ["src-jobs","Job boards","Five markets. In every market: the Greenhouse/Lever/Ashby job-board APIs (AI-native companies); the career-site endpoints of Workday, SuccessFactors, Oracle Recruiting and SmartRecruiters (banks, pharma, NVIDIA and other enterprises); SerpApi Google Jobs twice a week (free tier); and your job-alert emails read through Gmail. Extras: the Reed API (UK, daily), swissdevjobs.ch RSS (CH, daily) and USAJobs (US, weekly). The UAE relies on SerpApi plus alert emails.","Data straight from employers: legal, free, with full descriptions and often salary. SerpApi and alert emails fill the big-tech, bank and enterprise gaps without scraping LinkedIn or Indeed. Your alert emails are legal to parse because they are sent to you."]
-  ]],
-  ["Orchestration", [
-    ["scheduler","Cloud Scheduler","Three cron triggers, which is the free quota: ① the brief at 06:00 and 18:00, ② jobs at 05:00, ③ the weekly reports Mondays at 07:00.","Managed cron with no server to run. Jobs finish before the morning brief, so the brief can include fresh postings."],
-    ["job","Cloud Run Job","One container image with three modes (run daily | jobs | weekly), 1 vCPU / 2 GiB, parallelism 1.","Pay-per-run, so it fits the free tier. Running a single writer means the SQLite snapshot is never written by two runs at once."]
-  ]],
-  ["① Daily brief", [
-    ["a1","1 · Ingest","Fetches every source, using conditional GET so unchanged feeds aren't re-downloaded. Parses feeds and extracts article text with trafilatura. Records the health of each source.","Incremental fetching keeps runs cheap, and the health check catches feeds that move or die."],
-    ["a2","2 · Dedup","Three passes: canonical URL, then MinHash near-duplicate text, then embedding similarity against the last 72 hours.","The same launch arrives 5–10 times. Each pass is cheap enough to run before the next, so the LLM never sees a duplicate."],
-    ["a3","3 · Cluster & heat","Adds each item to an existing story or starts a new one. Heat counts the distinct sources covering a story, weighted by their authority, and decays over 24 hours.","Stable story IDs let follow-ups attach to yesterday's story. Heat measures importance regardless of your profile."],
-    ["a4","4 · Score (Haiku 5.5)","Rules first cut the field to 150–300 stories. Haiku then scores each for relevance, novelty and actionability, and assigns a layer from big picture down to low-level. Your profile sits in a cached prompt.","A cheap model for bulk judgement. A quota per layer keeps the brief broad, not limited to your own role."],
-    ["a5","5 · Write brief (Opus 5.5)","Writes the brief from the top stories, given source excerpts as cited documents, plus a career section built from ② data.","Writing the summary is where quality matters most, and it's one call a day, so the strongest model is affordable."],
-    ["a6","6 · Verify & publish","Removes sentences without a citation, checks every number and version against its source, and resolves links. Then posts to the channel with feedback buttons and stores the message IDs.","Summaries have to be trustworthy. The stored message IDs connect each button click to its story."]
-  ]],
-  ["② Jobs", [
-    ["b1","J1 · Poll & diff","Fetches every tracked job board and the SerpApi searches for all five markets, parses new alert emails, and compares the result with yesterday: new, changed and closed postings.","Only new postings need LLM work. Closing dates show how long roles stay open."],
-    ["b2","J2 · Extract (Haiku 5.5)","Turns each new posting into strict JSON: role family, skills, frameworks, cloud, seniority, salary, remote policy, plus quotes as evidence.","Converts free text into comparable fields. Cheap enough for hundreds of postings a day."],
-    ["b3","J3 · Aggregate","Normalises skills to a taxonomy and updates skill counts for each market (US / CA / UK / CH / UAE, with remote roles counted separately). Flags postings that match your role, seniority and remote filters.","Precomputed statistics keep the brief's career section and the weekly report fast and cheap."]
-  ]],
-  ["③ Weekly", [
-    ["c1","W1 · Trends & fit","Finds topic bursts against 7- and 28-day baselines and measures skill demand and its week-over-week change. Compares that with your profile to get coverage, missing skills and rising skills.","Answers 'am I keeping up?' with data rather than a feeling."],
-    ["c2","W2 · Write reports (Opus 5.5)","Writes the 'State of the field' summary and the market-fit report, with concrete suggestions on what to learn or build.","A week is long enough for trends to show and daily noise to average out."],
-    ["c3","W3 · Publish","Posts the reports to the channel. Suggested profile updates go to your private chat for approval.","You stay in control of what your profile says."]
-  ]],
-  ["Storage & platform", [
-    ["gcs","Cloud Storage","Holds the SQLite database snapshot: downloaded at the start of a run and uploaded at the end, but only if no other run has changed it in between. Also holds the brief archive and weekly profile exports.","SQLite is the simplest database for a single writer, and GCS keeps it durable for free. Writing SQLite directly over GCS FUSE is unsafe because FUSE has no file locking."],
-    ["fs","Firestore","Stores feedback clicks, your versioned profile (skills, projects, portfolio, targets), and bot state such as edits waiting for approval.","The bot is stateless and can run several copies at once, and Firestore handles small simultaneous writes on the free tier. Every run merges this data into SQLite."],
-    ["bot","tg-bot (Cloud Run service)","Receives Telegram updates by webhook: button clicks, commands and profile edits. It acknowledges straight away and hands slow work to Cloud Tasks: transcribing voice notes, fetching repos and PDFs, and the Haiku call that drafts a profile change.","Scales to zero, so it costs about $0, yet buttons respond instantly. Polling Telegram instead would need an always-on instance at about $12/mo."],
-    ["platform","Platform services","Secret Manager for the bot token and keys, Artifact Registry for the image, Cloud Tasks for async bot work, Logging, and a $5 budget alert.","Keeps secrets out of the public repo, adds a cost guardrail, and needs no servers."],
-    ["vertex","Vertex AI","Claude Haiku 5.5 for scoring, extraction and parsing bot edits; Claude Opus 5.5 for writing (Sonnet 5.5 is the cheaper option); gemini-embedding-001; speech for voice notes and an optional audio brief.","One billing account and IAM authentication, with no API keys. The global endpoint charges Anthropic's list prices."]
-  ]],
-  ["Delivery & control", [
-    ["channel","Telegram channel","Carries the daily brief (full in the morning, changes only in the evening) and the weekly reports. Each story has 👍 👎 🔇 buttons, and long versions go on a Telegraph page.","Telegram is the delivery channel you chose. Channels support rich messages up to 32k characters, plus inline buttons."],
-    ["you","You · private bot chat","Option B (decided): describe a change in plain text or a voice note, or send a GitHub link or a PDF. An LLM turns it into a proposed profile change, and you approve or reject it (✅ Apply · ✏️ Edit · ❌ Cancel). Commands: /skills, /gaps, /fit, /jd (paste a job description to see how you match), /undo, /history.","Keeps your skills and projects current from your phone. Every change is previewed before it is applied and versioned, so it can be undone. Only your Telegram account, in the private chat, can edit the profile."],
-    ["github","GitHub","The public repo, Actions CI (tests, lint, prompt regression tests), Terraform for all GCP resources, and deploys via Workload Identity Federation.","Reproducible infrastructure with no long-lived keys, and visible portfolio evidence."]
-  ]]
-];
-const byId = {};
-const ref = document.getElementById('ref');
-for (const [group, items] of BLOCKS) {
-  const h = document.createElement('h3'); h.textContent = group; ref.appendChild(h);
-  const g = document.createElement('div'); g.className = 'grid'; ref.appendChild(g);
-  for (const [id, name, what, why] of items) {
-    byId[id] = {name, what, why};
-    const c = document.createElement('div'); c.className = 'card'; c.id = 'card-' + id;
-    c.innerHTML = `<b></b><p><span class="lbl">What:</span> <span class="w"></span></p><p><span class="lbl">Why:</span> <span class="y"></span></p>`;
-    c.querySelector('b').textContent = name; c.querySelector('.w').textContent = what; c.querySelector('.y').textContent = why;
-    g.appendChild(c);
-  }
-}
-const detail = document.getElementById('detail');
-function select(id) {
-  const b = byId[id]; if (!b) return;
-  document.querySelectorAll('.blk.sel, .card.sel').forEach(e => e.classList.remove('sel'));
-  document.querySelectorAll(`.blk[data-id="${id}"]`).forEach(e => e.classList.add('sel'));
-  document.getElementById('card-' + id)?.classList.add('sel');
-  detail.innerHTML = `<p class="k"></p><p><span class="lbl muted">What:</span> <span class="w"></span></p><p><span class="lbl muted">Why:</span> <span class="y"></span></p>`;
-  detail.querySelector('.k').textContent = b.name; detail.querySelector('.w').textContent = b.what; detail.querySelector('.y').textContent = b.why;
+// Enhancement only: without JS, each block is a link to its card below.
+const frame = document.getElementById('diagram');
+const pop = document.getElementById('pop');
+function clearSel() { document.querySelectorAll('.blk.sel, .card.sel').forEach(e => e.classList.remove('sel')); }
+function show(blk) {
+  const id = blk.dataset.id, card = document.getElementById('card-' + id);
+  if (!card) return;
+  clearSel(); blk.classList.add('sel'); card.classList.add('sel');
+  pop.innerHTML = '<button class="x" aria-label="Close">×</button>' + card.innerHTML +
+    '<p><a href="#card-' + id + '">Open in block reference ↓</a></p>';
+  pop.hidden = false;
+  pop.style.width = Math.min(360, frame.clientWidth - 24) + 'px';
+  const f = frame.getBoundingClientRect(), b = blk.getBoundingClientRect();
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  const minX = frame.scrollLeft + 8, maxX = frame.scrollLeft + frame.clientWidth - 8;
+  const bl = b.left - f.left + frame.scrollLeft, br = b.right - f.left + frame.scrollLeft;
+  const bt = b.top - f.top + frame.scrollTop, bb = b.bottom - f.top + frame.scrollTop;
+  let left, top;
+  if (br + 10 + w <= maxX) { left = br + 10; top = bt; }            // right of the block
+  else if (bl - 10 - w >= minX) { left = bl - 10 - w; top = bt; }    // left of the block
+  else { left = Math.min(Math.max(bl, minX), maxX - w); top = bb + 8; } // below the block
+  if (top + h > frame.scrollHeight - 8) top = Math.max(8, bt - h - 8);
+  pop.style.left = left + 'px'; pop.style.top = top + 'px';
+  pop.querySelector('.x').onclick = () => { pop.hidden = true; clearSel(); };
 }
 document.querySelectorAll('.blk').forEach(el => {
-  el.addEventListener('click', e => { e.stopPropagation(); select(el.dataset.id); });
-  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(el.dataset.id); } });
+  el.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); show(el); });
 });
+document.addEventListener('click', e => { if (!pop.hidden && !pop.contains(e.target)) { pop.hidden = true; clearSel(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { pop.hidden = true; clearSel(); } });
 </script>
 </body>
 </html>
