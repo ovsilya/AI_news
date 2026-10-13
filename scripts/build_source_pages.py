@@ -14,15 +14,76 @@ e = html.escape
 
 # Order of preference when a source offers more than one route (shown on methods.html).
 LADDER = [
-    ("Official feed", "RSS/Atom, release feeds", ["rss", "rss-filter", "releases"]),
-    ("Official or public API", "JSON, free key", ["json-api", "key-api"]),
-    ("Structured files the publisher already serves", "sitemaps, raw files, datasets, career-site JSON",
+    ("Official feed",
+     "The site publishes a list of its latest posts for programs to read. Easiest, free, and clearly allowed.",
+     ["rss", "rss-filter", "releases"]),
+    ("Official API",
+     "The site offers a door for programs that answers with clean data, sometimes after a free sign-up.",
+     ["json-api", "key-api"]),
+    ("Files the site already publishes for machines",
+     "Lists of pages, plain text files, data files, or the job data a careers page loads into your browser.",
      ["sitemap", "raw-diff", "dataset", "career-json"]),
-    ("Diff of a public page", "only when nothing above exists", ["page-diff"]),
-    ("Proxy", "a search feed, community feed or commit log stands in for a missing feed",
+    ("Compare copies of a page",
+     "No feed and no API: save the page each time and see what changed.",
+     ["page-diff"]),
+    ("Proxy (an indirect route)",
+     "Read something that stands in for the missing feed, such as a saved Google News search or a feed made by volunteers.",
      ["gnews", "community-feed", "commits"]),
-    ("Paid search", "only where the site forbids direct access", ["search-api", "x-search"]),
-    ("Email sent to you", "for job boards that forbid automated access", ["email"]),
+    ("Paid search",
+     "A company that collects the data legally on its side sells us search results. Used only where the site forbids programs.",
+     ["search-api", "x-search"]),
+    ("Emails sent to you",
+     "For job boards that allow no programs at all: they email you the jobs, and we read the emails.",
+     ["email"]),
+]
+
+# Plain-language glossary at the top of methods.html.
+GLOSSARY = [
+    ("Collector", "The small program in our pipeline that visits a source on a schedule and brings back what's new."),
+    ("Web page vs. data", "A web page is designed for people to look at. Data is designed for programs to read: "
+     "fixed labels such as title, date and link. Collectors always prefer data, because pages change their look often."),
+    ("Feed (RSS / Atom)", "A file a site publishes that lists its latest posts with title, date and link. "
+     "RSS and Atom are two formats for the same thing. Feed readers and our collector check it regularly."),
+    ("API", "A web address made for programs. You ask a question (\"ML jobs at NVIDIA\") and get data back instead of a page."),
+    ("JSON", "The text format most APIs answer in. It looks like \"title\": \"ML Engineer\", \"city\": \"Zurich\"."),
+    ("API key", "A free code you get by registering, which tells the provider who is making the request. Treated like a password."),
+    ("Release", "A new version of a piece of software, published with notes on what changed."),
+    ("Sitemap", "A list of every page on a website, published so that search engines such as Google can find them."),
+    ("Diff", "The difference between two copies of something. We compare today's copy with the last one and keep only what's new."),
+    ("Proxy", "An indirect source standing in for one we can't read directly, such as a Google News search instead of a missing feed."),
+    ("Scraping", "Having a program read pages meant for people and cut out the pieces it needs. Fragile, and many sites forbid it."),
+    ("robots.txt", "A small file where a site says which of its parts automated programs may and may not visit."),
+    ("Terms of service", "A site's rules of use. Several job boards (LinkedIn, Indeed) forbid any automated reading."),
+    ("Rate limit", "The most requests a site accepts in a given time. Going over it gets you slowed down or blocked."),
+]
+
+# Rules every collector follows: (rule, plain explanation, technical detail).
+RULES = [
+    ("Say who we are",
+     "When our program visits a site it introduces itself by name, with a link to this project, much like a delivery "
+     "driver wearing a uniform. If the site owner has a problem, they can contact us instead of simply blocking us.",
+     "A User-Agent header naming the bot with a contact URL."),
+    ("Only download what changed",
+     "Before downloading, the collector asks: \"has anything changed since my last visit?\" If not, the site replies "
+     "with a two-line \"nothing new\" and we skip the download. This saves time and bandwidth on both sides.",
+     "Conditional GET with ETag / If-Modified-Since; a 304 Not Modified reply means no download and no parsing."),
+    ("Don't overload anyone",
+     "We visit each site gently: one request at a time, with a pause in between. If a site says \"too many requests\" "
+     "or has a problem, we wait and try later, waiting longer after each failed try.",
+     "Per-host concurrency of 1, delays between requests, exponential backoff on HTTP 429 and 5xx."),
+    ("Follow the site's own rules",
+     "Feeds and APIs are made for programs, so using them is always fine. For anything else, the collector first reads "
+     "the site's robots.txt and stays out of any part the site asks programs to avoid.",
+     "robots.txt is checked for everything that isn't an official feed or API."),
+    ("Notice when a source goes quiet",
+     "Sources break silently. After a redesign, a feed can simply come back empty. Each source has an expected rhythm "
+     "(say, about one post a week). If it errors, returns nothing, or stays silent much longer than usual, it is flagged "
+     "in the weekly report so it can be fixed or replaced.",
+     "Source health check: zero items, errors, or no new items beyond the usual cadence raise an alert."),
+    ("Keep keys locked away",
+     "API keys work like passwords. They live in Google Secret Manager, a locked vault in our cloud account that the "
+     "program opens when it runs. They are never written into the code, which is public on GitHub.",
+     "Secrets come from Secret Manager at run time; never in the repo or the container image."),
 ]
 
 CSS = """
@@ -64,6 +125,15 @@ td:nth-child(2) a{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-s
 .callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px}
 .callout ol,.callout ul{margin:6px 0 0;padding-left:20px}
 .callout li{margin:3px 0}
+.m .plain{font-size:15.5px}
+.m details{margin-top:6px;font-size:14px}
+.m summary{cursor:pointer;color:var(--sel);font-weight:600;font-size:13.5px}
+.muted{color:var(--muted);font-size:13.5px}
+.callout ol li,.rules li{margin:8px 0}
+.words{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:6px 16px;margin:0}
+.words dt{font-weight:600}
+.words dd{margin:0}
+@media (max-width:560px){.words{grid-template-columns:1fr}.words dd{margin-bottom:8px}}
 .foot{margin-top:28px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
 """
 
@@ -101,9 +171,11 @@ def method_card(mid, used_by):
     m = METHODS[mid]
     return (
         f'<section class="m" id="m-{mid}"><h3>{e(m["name"])}</h3>'
+        f'<p class="plain">{e(m["plain"])}</p>'
+        f'<details><summary>Technical details</summary>'
         f'<p><span class="k">How it works:</span> {e(m["how"])}</p>'
         f'<p><span class="k">Why this method:</span> {e(m["why"])}</p>'
-        f'<p><span class="k">Watch-outs:</span> {e(m["watch"])}</p>'
+        f'<p><span class="k">Watch-outs:</span> {e(m["watch"])}</p></details>'
         f'<p class="used">{used_by}</p></section>'
     )
 
@@ -134,7 +206,7 @@ def block_page(b):
 <thead><tr><th>Source</th><th>Link</th><th>How it's retrieved</th></tr></thead>
 <tbody>{"".join(rows)}</tbody></table></div>
 <h2>Retrieval methods on this page</h2>
-<p class="lede">Why each source is fetched the way it is. The <a href="methods.html">methods overview</a> explains the order of preference and the rules every collector follows.</p>
+<p class="lede">Why each source is fetched the way it is. New to these terms? The <a href="methods.html">methods overview</a> starts with a <a href="methods.html#words">plain-language glossary</a>, then explains how a method is chosen and the rules every collector follows.</p>
 <div class="methods">{cards}</div>"""
     return page(b["name"] + " sources", b["slug"], body, f'#card-{b["id"]}')
 
@@ -147,9 +219,14 @@ def methods_page():
                 if b not in where[t]:
                     where[t].append(b)
     ladder = "".join(
-        f'<li><b>{e(name)}</b> ({e(note)}): '
-        + ", ".join(f'<a href="#m-{t}">{e(METHODS[t]["name"])}</a>' for t in ids) + "</li>"
+        f'<li><b>{e(name)}.</b> {e(note)}<br><span class="muted">Methods: '
+        + ", ".join(f'<a href="#m-{t}">{e(METHODS[t]["name"])}</a>' for t in ids) + "</span></li>"
         for name, note, ids in LADDER
+    )
+    words = "".join(f"<dt>{e(w)}</dt><dd>{e(d)}</dd>" for w, d in GLOSSARY)
+    rules = "".join(
+        f'<li><b>{e(r)}.</b> {e(plain)}<br><span class="muted">Technically: {e(tech)}</span></li>'
+        for r, plain, tech in RULES
     )
     order = [t for _, _, ids in LADDER for t in ids] + [t for t in METHODS if t not in sum((l[2] for l in LADDER), [])]
     cards = "".join(
@@ -157,22 +234,18 @@ def methods_page():
         for t in order
     )
     body = f"""<h1 id="top">Retrieval methods</h1>
-<p class="lede">How the collectors get data from each kind of source, and why that route was chosen over the alternatives.</p>
+<p class="lede">How the pipeline collects news, papers and job posts from about 100 sources, and why each source is read the way it is. Written for readers new to the topic: each method starts with a plain explanation, and the technical details are one click away.</p>
+<h2 id="words">Key words</h2>
+<div class="callout"><dl class="words">{words}</dl></div>
 <h2>How a method is chosen</h2>
 <div class="callout">
-<p>For each source we take the first route on this list that works. The criteria, in order: the site's terms and robots.txt allow it; it costs nothing or close to it; it doesn't break when the site is redesigned; it is fresh enough for a twice-daily brief; and it returns structured fields rather than HTML.</p>
+<p>Many sources can be read in more than one way. We go down this list and use the first option that works for that source. Options near the top are the ones the site itself offers to programs, so they are allowed, free, and rarely break. Options further down are used only when nothing above exists.</p>
 <ol>{ladder}</ol>
-<p>Never: logging in to a site, solving CAPTCHAs, scraping LinkedIn, Indeed, jobs.ch, Bayt or Naukrigulf, or opening links from alert emails.</p>
+<p>The checks behind this order: Is it allowed by the site's rules? Is it free or nearly free? Will it keep working if the site changes its design? Is it fresh enough for a brief twice a day? Does it return clean data rather than a page we'd have to pick apart?</p>
+<p><b>Never done:</b> logging in to a site as you, getting past \"are you a robot?\" checks (CAPTCHAs), scraping sites that forbid it (LinkedIn, Indeed, jobs.ch, Bayt, Naukrigulf), or clicking links inside job-alert emails, which would count as automated visits to those sites.</p>
 </div>
 <h2>Rules every collector follows</h2>
-<div class="callout"><ul>
-<li><b>Identify the bot.</b> A User-Agent naming the project with a contact URL, so site owners can reach us instead of blocking us.</li>
-<li><b>Conditional GET.</b> Send ETag / If-Modified-Since; a 304 reply means no download and no parsing.</li>
-<li><b>Rate limits per host.</b> One request at a time per host, delays between requests, exponential backoff on 429 and 5xx.</li>
-<li><b>robots.txt is respected</b> for anything that isn't an official feed or API.</li>
-<li><b>Source health check.</b> A source that returns zero items, errors, or nothing new for longer than its usual cadence raises an alert in the weekly report.</li>
-<li><b>Keys stay in Secret Manager</b>, never in the repo or the container image.</li>
-</ul></div>
+<div class="callout"><p>However a source is read, the collector behaves like a polite, well-identified visitor:</p><ul class="rules">{rules}</ul></div>
 <h2>All methods</h2>
 <div class="methods">{cards}</div>"""
     return page("Retrieval methods", "methods", body, "")

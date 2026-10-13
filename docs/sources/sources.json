@@ -918,126 +918,144 @@
    "name": "RSS / Atom feed",
    "how": "Fetch the publisher's feed with a feed-reader User-Agent and conditional headers (If-None-Match / If-Modified-Since). A 304 reply means nothing changed and costs nothing to parse. New items are recognised by GUID or link and passed to dedup.",
    "why": "The feed is the publisher's own machine-readable channel: allowed by design, stable for years, and it gives a clean title, date and link without parsing HTML. One cheap request per source per run.",
-   "watch": "Paywalled sites send only a headline and teaser, so the brief links out. A few feeds need a browser-like User-Agent (VentureBeat). Intermittent 404s are retried with backoff."
+   "watch": "Paywalled sites send only a headline and teaser, so the brief links out. A few feeds need a browser-like User-Agent (VentureBeat). Intermittent 404s are retried with backoff.",
+   "plain": "Most blogs and news sites publish a feed: a small file that lists their latest posts (title, date, link) in a standard format. RSS and Atom are two versions of the same idea. Our collector opens that file twice a day and keeps anything it hasn't seen before. It's like subscribing to a magazine instead of walking to the newsstand to check whether a new issue is out. Why we prefer it: the site publishes the feed precisely so that programs can read it, so it is allowed, free, and rarely breaks."
   },
   {
    "id": "rss-filter",
    "name": "Filtered feed",
    "how": "Same as an RSS/Atom feed, then keep only items whose title or category matches a keyword list, for example Bedrock and SageMaker for AWS, Technology and Gulf for Semafor, AI/KI for the Swiss federal news service.",
    "why": "Generalist feeds publish dozens of items a day and most are irrelevant. Filtering before the LLM stage keeps scoring cost and noise down, while still covering announcements that appear nowhere else.",
-   "watch": "Keyword lists drift. The weekly recall check flags stories we missed, and the list is widened when that happens."
+   "watch": "Keyword lists drift. The weekly recall check flags stories we missed, and the list is widened when that happens.",
+   "plain": "Some feeds include everything a big organisation announces. AWS, for example, posts dozens of updates a day, most of them unrelated to AI. We read the whole feed but keep only the items whose titles contain words we care about, such as \"Bedrock\" or \"AI\". Why: we still catch the important announcements, without paying the AI model to read hundreds of irrelevant ones."
   },
   {
    "id": "releases",
    "name": "Release feed per repo or package",
    "how": "GitHub publishes github.com/{owner}/{repo}/releases.atom for every repository with no authentication; PyPI publishes an RSS feed per package. We poll one feed per tracked repo or package.",
    "why": "A release is the earliest reliable sign that a model or feature has landed in the tools you actually use (vLLM often supports a new model before any blog post). The Atom feeds avoid the GitHub REST API limit of 60 unauthenticated requests per hour.",
-   "watch": "Release candidates and nightlies are noisy, so tags containing rc, dev or nightly are skipped unless they are major versions."
+   "watch": "Release candidates and nightlies are noisy, so tags containing rc, dev or nightly are skipped unless they are major versions.",
+   "plain": "When a software project ships a new version, GitHub (where most code is hosted) and PyPI (the store for Python packages) automatically add it to a release feed for that project. We follow the release feeds of the tools you use, such as vLLM and LangGraph. Why: a new version is often the very first sign that a new model or feature exists, sometimes days before anyone writes about it."
   },
   {
    "id": "json-api",
    "name": "Public JSON API (no key)",
    "how": "Call a public endpoint that returns JSON: HN Algolia search, HF Daily Papers and trending, OpenRouter /models, the Greenhouse, Lever, Ashby and SmartRecruiters job-board APIs, the Bluesky AppView, npm.",
    "why": "Fields we rank on (points, upvotes, prices, context length, salary, location) come back typed, with no scraping. Job-board APIs exist precisely so that postings get syndicated, so polling them is the intended use.",
-   "watch": "Respect each provider's rate limit and cache responses. A schema change shows up as zero items, which the source health check reports."
+   "watch": "Respect each provider's rate limit and cache responses. A schema change shows up as zero items, which the source health check reports.",
+   "plain": "Some sites have a door built for programs instead of people, called an API. You send a request to a special web address and get back clean, labelled data (title, upvotes, salary, city) instead of a page designed for human eyes. These public APIs need no sign-up. Why: we get exactly the fields we need with no guesswork. Job-board APIs like Greenhouse exist so that companies' jobs reach as many places as possible, so reading them is what they're for."
   },
   {
    "id": "key-api",
    "name": "Official API with a free key",
    "how": "Same as a public JSON API, but with a free registration key kept in Secret Manager: Reed, USAJobs, Adzuna, Semantic Scholar, Artificial Analysis (and Congress.gov later).",
    "why": "It is the provider's sanctioned route: the terms allow it, the data is complete (Reed returns full descriptions and salaries) and quotas are documented, so calls can be planned.",
-   "watch": "Quotas are tight on some (Artificial Analysis 100 requests a day, Adzuna 2,500 a month). Some require attribution, which goes in the brief's footer."
+   "watch": "Quotas are tight on some (Artificial Analysis 100 requests a day, Adzuna 2,500 a month). Some require attribution, which goes in the brief's footer.",
+   "plain": "The same kind of door for programs, but you first register for a free key: a code, like a library card, that tells the provider who is asking. It lets them count requests and keep usage fair. Why: it is the provider's official, approved route, and often returns the most complete data (Reed, for example, includes the full job description and salary)."
   },
   {
    "id": "page-diff",
    "name": "Page diff",
    "how": "Fetch the page, extract the main content as markdown, and compare it with the previous snapshot kept in GCS. Only the new or changed section is sent to the LLM.",
    "why": "Several important sources publish no feed at all: Anthropic Engineering, the Claude and Gemini API release notes, the Meta AI blog, The Batch. A diff turns a static page into a change feed for the price of one request per run.",
-   "watch": "Layout changes create false positives, so whitespace is normalised and navigation and footers are dropped. robots.txt is respected and each page is fetched at most twice a day."
+   "watch": "Layout changes create false positives, so whitespace is normalised and navigation and footers are dropped. robots.txt is respected and each page is fetched at most twice a day.",
+   "plain": "Some important pages have no feed. For example, Claude's API release notes are just a web page that gets longer over time. So we save a copy of the page every time we check and compare it with the previous copy; whatever is new is the news. Think of photographing a noticeboard every morning and circling what has been pinned since yesterday. Why: it is the only option for these pages, and it costs just one page visit per check."
   },
   {
    "id": "sitemap",
    "name": "Sitemap diff",
    "how": "Read sitemap.xml, which lists every URL on the site (often with a lastmod date), diff the URL set against the previous copy, then fetch only the new pages.",
    "why": "Sitemaps are published for crawlers, so they rarely change format and tell us exactly which URLs are new. That is sturdier than parsing a listing page. Used for Anthropic News and SuccessFactors career sites.",
-   "watch": "lastmod is sometimes missing or bumped on every page, so we diff the set of URLs, not the dates."
+   "watch": "lastmod is sometimes missing or bumped on every page, so we diff the set of URLs, not the dates.",
+   "plain": "Most websites publish a sitemap: a plain list of every page on the site, made for search engines such as Google. If the list contains an address that wasn't there last time, a new page (an article, a job) has been published, and we open only that page. Why: the list is meant to be read by programs, so it is reliable and allowed, and it tells us exactly what is new without reading the whole site."
   },
   {
    "id": "raw-diff",
    "name": "Raw file diff",
    "how": "Fetch the raw file (for example CHANGELOG.md on raw.githubusercontent.com), diff it against the last version, and parse the new version headings.",
    "why": "Some tools document releases only in a changelog file (Claude Code). A raw file is plain text, supports ETag caching and needs no HTML parsing.",
-   "watch": "Headings must follow a version pattern; if the format changes, the parser falls back to sending the raw diff to the LLM."
+   "watch": "Headings must follow a version pattern; if the format changes, the parser falls back to sending the raw diff to the LLM.",
+   "plain": "Some tools keep their version history in a single text file inside their code repository, called a changelog. We download that plain text file and look for new entries at the top. Why: it is the only place those tools announce changes, and a plain text file is the simplest thing to read reliably."
   },
   {
    "id": "gnews",
    "name": "Search proxy: Google News RSS",
    "how": "A saved Google News RSS search, for example site:reuters.com \"artificial intelligence\" when:7d. Each item links to a news.google.com redirect, which is resolved to the original URL before dedup.",
    "why": "For sources without a feed (Reuters) or topics without a single source (UAE AI, US state AI bills), a saved query is the cheapest legal way to get a headline stream: no key and no scraping of the publisher.",
-   "watch": "Headlines only. Unresolved redirects would break dedup. Google can change the format, so the health check watches the item count."
+   "watch": "Headlines only. Unresolved redirects would break dedup. Google can change the format, so the health check watches the item count.",
+   "plain": "Reuters, for example, offers no feed. But Google News lets you save a search (\"Reuters articles about AI from the last week\") and receive the results as a feed. We use that search feed as a stand-in for the missing one. This is what proxy means here: an indirect route to the same information. Google's links pass through a redirect first, so we follow each one to the original article. Why: it is free, needs no key, and doesn't involve copying the publisher's site."
   },
   {
    "id": "community-feed",
    "name": "Community scraper feed",
    "how": "Use an RSS file produced by an open-source project (Olshansk/rss-feeds on GitHub) that scrapes sites lacking feeds and commits the XML to the repo.",
    "why": "It provides a feed for blogs that have none (the AISI blog, and Anthropic News as a fallback) without us running a scraper. If it stops, only that one source is affected.",
-   "watch": "Third party, so it can go stale. The health check alerts when there has been no new item for a set number of days, and the page diff takes over."
+   "watch": "Third party, so it can go stale. The health check alerts when there has been no new item for a set number of days, and the page diff takes over.",
+   "plain": "For a few sites with no feed, volunteers run an open-source project that checks those sites and publishes a feed for them. We read that ready-made feed instead of building our own scraper. Why: someone else maintains it, at no cost to us. If the volunteers stop, only that one source is affected and we switch to comparing page copies (page diff)."
   },
   {
    "id": "commits",
    "name": "Repo-commits feed as a proxy",
    "how": "Some blogs are static sites built from a GitHub repo (LMSYS / SGLang). The repo's commits/main.atom lists every commit, and we keep commits that add a post.",
    "why": "There is no RSS, but a new post always means a commit. Free, no authentication.",
-   "watch": "Noisy (typo fixes, styling), so commits are filtered by message and by files added under the posts directory."
+   "watch": "Noisy (typo fixes, styling), so commits are filtered by message and by files added under the posts directory.",
+   "plain": "Some blogs are built from files kept on GitHub. Every new post means someone saved (\"committed\") a new file, and GitHub publishes a feed of those saves. So a new save that adds a post tells us a new article is out. Why: the blog has no feed of its own, but this one appears automatically and is free."
   },
   {
    "id": "dataset",
    "name": "Dataset snapshot diff",
    "how": "Download a published dataset (the Arena leaderboard on Hugging Face, the Indeed Hiring Lab CSV), store it, and diff it against the previous copy.",
    "why": "Leaderboards and labour-market indices are published as data, not articles. A diff yields facts with a source, such as 'model X entered the top 5' or 'AI share of postings up 0.4 points', and the CC-BY licences allow reuse with attribution.",
-   "watch": "Weekly or monthly cadence only. Column changes are caught by schema validation."
+   "watch": "Weekly or monthly cadence only. Column changes are caught by schema validation.",
+   "plain": "Some information is published as a data file, like a spreadsheet, rather than as an article. One example is the leaderboard that ranks AI models. We download it every week and compare it with last week's copy to spot changes such as \"a new model entered the top 5\". Why: the facts come straight from the source data, and the licence allows reuse as long as the source is credited."
   },
   {
    "id": "career-json",
    "name": "Career-site JSON",
    "how": "Large employers' career sites (Workday, Oracle Recruiting) load their job lists from a JSON endpoint in the browser. We call the same endpoint: Workday POST …/wday/cxs/{tenant}/{site}/jobs with a search text, 20 results per page; Oracle hcmRestApi/…/recruitingCEJobRequisitions.",
    "why": "Banks, pharma, NVIDIA and many other large employers don't use Greenhouse or Lever, and their roles matter most in CH, UK and CA. The endpoints return full descriptions and salary ranges, robots.txt allows the path, and it is the employer's own site, so no job-board terms are involved.",
-   "watch": "Undocumented, so it can change without notice. We send a few requests per tenant per day with polite delays, identify ourselves in the User-Agent, and health-check each tenant."
+   "watch": "Undocumented, so it can change without notice. We send a few requests per tenant per day with polite delays, identify ourselves in the User-Agent, and health-check each tenant.",
+   "plain": "When you open a big company's careers page (say NVIDIA's, which runs on a system called Workday), your browser quietly asks the site for the list of jobs in a data format. Our collector sends the same request your browser would, slowly and politely. Why: large banks, pharma and tech companies don't use the simpler job-board APIs, and this is the company's own job list, complete with full descriptions and often salaries, not a third-party job board with its own rules."
   },
   {
    "id": "search-api",
    "name": "Search API (SerpApi Google Jobs)",
    "how": "SerpApi runs Google Jobs searches for us (gl = us, ca, uk, ch, ae plus a location) and returns JSON, including apply_options links that point to the employer's own job page.",
    "why": "Google Jobs aggregates postings from boards we must not scrape (LinkedIn, Indeed, Bayt). SerpApi carries the scraping and legal risk, and we receive structured results. It is the main programmatic source for the UAE.",
-   "watch": "The free tier is 250 searches a month, hence the twice-weekly schedule. Descriptions may be truncated, so postings are enriched from the employer link."
+   "watch": "The free tier is 250 searches a month, hence the twice-weekly schedule. Descriptions may be truncated, so postings are enriched from the employer link.",
+   "plain": "LinkedIn and Indeed forbid programs from reading their sites. Google Jobs gathers job posts from across the web, and a company called SerpApi runs Google Jobs searches for its customers and returns the results as clean data. Why: we see jobs from everywhere without breaking anyone's rules ourselves. The free plan allows 250 searches a month, so we search twice a week."
   },
   {
    "id": "email",
    "name": "Job-alert emails via the Gmail API",
    "how": "You subscribe to alerts (LinkedIn, Indeed, jobs.ch, Bayt and others). A Gmail filter labels them; the pipeline reads that label with the gmail.readonly scope, parses each sender's template, strips tracking parameters and dedups.",
    "why": "It is the only terms-safe way to see what those boards show you, because they send it to you on purpose. The scope is read-only, and the pipeline never opens board links (that would be automated access); it looks for the employer's own posting instead.",
-   "watch": "The OAuth app must be set to 'In production', otherwise refresh tokens expire after 7 days. Template changes break parsers, so each sender has parser tests. Recruiter personal data is stripped."
+   "watch": "The OAuth app must be set to 'In production', otherwise refresh tokens expire after 7 days. Template changes break parsers, so each sender has parser tests. Recruiter personal data is stripped.",
+   "plain": "You sign up for job alerts on LinkedIn, Indeed and other boards, just as any job seeker would. The alerts arrive in your Gmail, and the pipeline reads them with read-only permission: it can read those emails but cannot send, change or delete anything. Why: the sites emailed you those jobs themselves, so this is fully within their rules. We never click the links in the emails; instead we look up each job on the company's own site."
   },
   {
    "id": "llm-parse",
    "name": "LLM extraction from free text",
    "how": "Text retrieved by another method (for example HN 'Who is hiring' comments via the Algolia API) is turned into a strict JSON record by Claude Haiku: company, title, location, remote, salary, skills.",
    "why": "Some valuable data has no structure at all. At $0.10 per million input tokens, parsing a few hundred comments a month costs cents, and the strict schema rejects invented fields.",
-   "watch": "Every record is validated against the schema and keeps a link to the source comment."
+   "watch": "Every record is validated against the schema and keeps a link to the source comment.",
+   "plain": "Some job posts are just a paragraph a person typed, such as the comments in Hacker News' monthly \"Who is hiring?\" thread. A cheap AI model (Claude Haiku) reads each one and fills in a fixed form: company, title, city, remote or not, salary, skills. Why: it turns messy text into data we can count and compare, for a few cents a month."
   },
   {
    "id": "link-votes",
    "name": "Links counted as votes",
    "how": "Outbound links in a newsletter are extracted, resolved to their canonical URL, and each adds a vote to the matching story cluster.",
    "why": "Newsletter editors have already filtered the day, so their picks are a strong importance signal. Counting links (rather than ingesting the newsletter's own summary) also stops a newsletter copy from becoming a duplicate story.",
-   "watch": "Sponsored links are dropped by a domain and keyword list."
+   "watch": "Sponsored links are dropped by a domain and keyword list.",
+   "plain": "Newsletters such as TLDR AI already pick out the day's important stories. Instead of copying their summaries, we note which articles they link to. Every newsletter that links to a story counts as one vote that the story matters. Why: it borrows the judgement of human editors, and because we always go to the original article, the same story isn't counted twice."
   },
   {
    "id": "x-search",
    "name": "xAI X Search (optional, paid)",
    "how": "Use xAI's API search tool to query recent posts from about 50 chosen researcher and lab accounts.",
    "why": "The official X API costs $200+ a month and scraping X breaks its terms; xAI's search tool is the cheapest sanctioned route at about $5–10 a month. It is optional because AINews already recaps X.",
-   "watch": "Paid per call, so it is capped by the budget alert."
+   "watch": "Paid per call, so it is capped by the budget alert.",
+   "plain": "X (formerly Twitter) charges a lot for official access to its data and forbids scraping. xAI, the company behind the Grok model, sells a cheap search over X posts. We could use it to follow about 50 researchers. Why optional: the AINews newsletter already summarises the important X discussions, so this is only worth paying for later."
   }
  ]
 }
