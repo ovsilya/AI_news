@@ -1,0 +1,118 @@
+# Employers whose own job boards lane ② polls daily. Public posting APIs only, no keys.
+#   ats:       greenhouse | lever | ashby   (find new ones with `ainews jobs-probe <slug> …`)
+#   board:     the slug in the board's URL
+#   ai_native: an AI company; its solutions, research and "technical staff" roles count as AI roles.
+#              Set false for other tech companies: there only titles that name AI or ML count.
+#   region:    eu for Lever's EU instance
+# Probed 2026-10-12. Workday, SuccessFactors and the other enterprise boards (banks, pharma, NVIDIA)
+# come in a later step; see docs/job-sources-markets.md.
+
+companies:
+  # Frontier labs and model companies
+  - {id: anthropic, name: Anthropic, ats: greenhouse, board: anthropic}
+  - {id: openai, name: OpenAI, ats: ashby, board: openai}
+  - {id: xai, name: xAI, ats: greenhouse, board: xai}
+  - {id: cohere, name: Cohere, ats: ashby, board: cohere}
+  - {id: thinking-machines, name: Thinking Machines Lab, ats: ashby, board: thinkingmachines}
+  - {id: reflection, name: Reflection AI, ats: ashby, board: reflectionai}
+  - {id: isomorphic, name: Isomorphic Labs, ats: greenhouse, board: isomorphiclabs}
+  - {id: physical-intelligence, name: Physical Intelligence, ats: ashby, board: physicalintelligence}
+  - {id: figure, name: Figure, ats: greenhouse, board: figureai}
+  - {id: wayve, name: Wayve, ats: ashby, board: wayve}
+  - {id: waabi, name: Waabi, ats: lever, board: waabi}
+  - {id: helsing, name: Helsing, ats: ashby, board: helsing}
+  - {id: aleph-alpha, name: Aleph Alpha, ats: ashby, board: alephalpha}
+  - {id: character, name: Character.AI, ats: ashby, board: character}
+
+  # AI applications and agents (many hire FDEs and applied AI engineers)
+  - {id: palantir, name: Palantir, ats: lever, board: palantir}
+  - {id: sierra, name: Sierra, ats: ashby, board: sierra}
+  - {id: decagon, name: Decagon, ats: ashby, board: decagon}
+  - {id: harvey, name: Harvey, ats: ashby, board: harvey}
+  - {id: legora, name: Legora, ats: ashby, board: legora}
+  - {id: glean, name: Glean, ats: greenhouse, board: gleanwork}
+  - {id: perplexity, name: Perplexity, ats: ashby, board: perplexity}
+  - {id: cursor, name: Cursor, ats: ashby, board: cursor}
+  - {id: cognition, name: Cognition, ats: ashby, board: cognition}
+  - {id: factory, name: Factory, ats: ashby, board: factory}
+  - {id: replit, name: Replit, ats: ashby, board: replit}
+  - {id: lovable, name: Lovable, ats: ashby, board: lovable}
+  - {id: writer, name: Writer, ats: ashby, board: writer}
+  - {id: cresta, name: Cresta, ats: greenhouse, board: cresta}
+  - {id: abridge, name: Abridge, ats: ashby, board: abridge}
+  - {id: ambience, name: Ambience Healthcare, ats: ashby, board: ambiencehealthcare}
+  - {id: elevenlabs, name: ElevenLabs, ats: ashby, board: elevenlabs}
+  - {id: synthesia, name: Synthesia, ats: ashby, board: synthesia}
+  - {id: deepgram, name: Deepgram, ats: ashby, board: deepgram}
+  - {id: assemblyai, name: AssemblyAI, ats: greenhouse, board: assemblyai}
+  - {id: speechmatics, name: Speechmatics, ats: greenhouse, board: speechmatics}
+  - {id: suno, name: Suno, ats: ashby, board: suno}
+  - {id: luma, name: Luma AI, ats: ashby, board: lumaai}
+  - {id: midjourney, name: Midjourney, ats: ashby, board: midjourney}
+  - {id: pika, name: Pika, ats: ashby, board: pika}
+  - {id: photoroom, name: Photoroom, ats: ashby, board: photoroom}
+  - {id: hume, name: Hume AI, ats: greenhouse, board: humeai}
+  - {id: articul8, name: Articul8, ats: ashby, board: articul8}
+  - {id: typeface, name: Typeface, ats: greenhouse, board: typeface}
+  - {id: dust, name: Dust, ats: ashby, board: dust}
+  - {id: faculty, name: Faculty, ats: ashby, board: faculty}
+  - {id: quantexa, name: Quantexa, ats: ashby, board: quantexa}
+  - {id: tractable, name: Tractable, ats: ashby, board: tractable}
+  - {id: shield-ai, name: Shield AI, ats: lever, board: shieldai}
+  - {id: observeai, name: Observe.AI, ats: greenhouse, board: observeai}
+
+  # Tooling, data and evals for AI engineering
+  - {id: langchain, name: LangChain, ats: ashby, board: langchain}
+  - {id: llamaindex, name: LlamaIndex, ats: ashby, board: llamaindex}
+  - {id: pinecone, name: Pinecone, ats: ashby, board: pinecone}
+  - {id: weaviate, name: Weaviate, ats: ashby, board: weaviate}
+  - {id: zilliz, name: Zilliz, ats: lever, board: zilliz}
+  - {id: unstructured, name: Unstructured, ats: ashby, board: unstructured}
+  - {id: braintrust, name: Braintrust, ats: ashby, board: braintrust}
+  - {id: arize, name: Arize AI, ats: greenhouse, board: arizeai}
+  - {id: snorkel, name: Snorkel AI, ats: greenhouse, board: snorkelai}
+  - {id: scale, name: Scale AI, ats: greenhouse, board: scaleai}
+  - {id: labelbox, name: Labelbox, ats: greenhouse, board: labelbox}
+  - {id: mercor, name: Mercor, ats: ashby, board: mercor}
+  - {id: turing, name: Turing, ats: greenhouse, board: turing}
+  - {id: invisible, name: Invisible Technologies, ats: greenhouse, board: invisible}
+  - {id: databricks, name: Databricks, ats: greenhouse, board: databricks}
+  - {id: dataiku, name: Dataiku, ats: greenhouse, board: dataiku}
+  - {id: n8n, name: n8n, ats: ashby, board: n8n}
+  - {id: unify, name: Unify, ats: ashby, board: unify}
+
+  # Inference and compute
+  - {id: together, name: Together AI, ats: greenhouse, board: togetherai}
+  - {id: baseten, name: Baseten, ats: ashby, board: baseten}
+  - {id: modal, name: Modal, ats: ashby, board: modal}
+  - {id: cerebras, name: Cerebras, ats: ashby, board: cerebras}
+  - {id: sambanova, name: SambaNova, ats: greenhouse, board: sambanovasystems}
+  - {id: graphcore, name: Graphcore, ats: greenhouse, board: graphcore}
+  - {id: lambda, name: Lambda, ats: ashby, board: lambda}
+  - {id: coreweave, name: CoreWeave, ats: greenhouse, board: coreweave}
+  - {id: crusoe, name: Crusoe, ats: ashby, board: crusoe}
+
+  # Tech companies building AI features (only AI-titled roles count)
+  - {id: stripe, name: Stripe, ats: greenhouse, board: stripe, ai_native: false}
+  - {id: datadog, name: Datadog, ats: greenhouse, board: datadog, ai_native: false}
+  - {id: mongodb, name: MongoDB, ats: greenhouse, board: mongodb, ai_native: false}
+  - {id: elastic, name: Elastic, ats: greenhouse, board: elastic, ai_native: false}
+  - {id: cloudflare, name: Cloudflare, ats: greenhouse, board: cloudflare, ai_native: false}
+  - {id: snowflake, name: Snowflake, ats: ashby, board: snowflake, ai_native: false}
+  - {id: figma, name: Figma, ats: greenhouse, board: figma, ai_native: false}
+  - {id: notion, name: Notion, ats: ashby, board: notion, ai_native: false}
+  - {id: intercom, name: Intercom, ats: greenhouse, board: intercom, ai_native: false}
+  - {id: gong, name: Gong, ats: greenhouse, board: gongio, ai_native: false}
+  - {id: clay, name: Clay, ats: ashby, board: claylabs, ai_native: false}
+  - {id: ramp, name: Ramp, ats: ashby, board: ramp, ai_native: false}
+  - {id: vercel, name: Vercel, ats: greenhouse, board: vercel, ai_native: false}
+  - {id: supabase, name: Supabase, ats: ashby, board: supabase, ai_native: false}
+  - {id: temporal, name: Temporal, ats: ashby, board: temporal, ai_native: false}
+  - {id: pigment, name: Pigment, ats: lever, board: pigment, ai_native: false}
+  - {id: monzo, name: Monzo, ats: greenhouse, board: monzo, ai_native: false}
+  - {id: wealthsimple, name: Wealthsimple, ats: ashby, board: wealthsimple, ai_native: false}
+  - {id: 1password, name: 1Password, ats: ashby, board: 1password, ai_native: false}
+  - {id: proton, name: Proton, ats: greenhouse, board: proton, ai_native: false}
+  - {id: scandit, name: Scandit, ats: greenhouse, board: scandit, ai_native: false}
+  # 2,500 postings, almost all defence hardware: a large daily download for a few AI roles.
+  - {id: anduril, name: Anduril, ats: greenhouse, board: andurilindustries, ai_native: false, enabled: false}

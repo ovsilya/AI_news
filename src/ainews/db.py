@@ -90,6 +90,44 @@ CREATE TABLE IF NOT EXISTS llm_calls (
 CREATE TABLE IF NOT EXISTS snapshots (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);
 -- Main text of article pages fetched for stories in a brief (status: ok | robots | empty | error).
 CREATE TABLE IF NOT EXISTS article_text (url TEXT PRIMARY KEY, text TEXT, status TEXT NOT NULL, fetched_at TEXT NOT NULL);
+
+-- Lane ② jobs. One row per employer board: what the last poll saw.
+CREATE TABLE IF NOT EXISTS job_boards (
+    company TEXT PRIMARY KEY, last_polled_at TEXT, last_status TEXT, listed INTEGER, matching INTEGER
+);
+-- Postings in a target role family and market. closed_at is set once a posting leaves the board.
+CREATE TABLE IF NOT EXISTS job_postings (
+    id INTEGER PRIMARY KEY,
+    key TEXT UNIQUE NOT NULL,        -- "<company>:<board job id>"
+    company TEXT NOT NULL,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    locations TEXT,                  -- JSON list, as the board gives them
+    markets TEXT NOT NULL,           -- JSON list: US, CA, UK, CH, AE, remote
+    title_family TEXT,               -- first guess from the title; the extraction refines it
+    department TEXT,
+    description TEXT,                -- plain text, capped
+    text_hash TEXT NOT NULL,
+    salary TEXT,                     -- JSON from the board, when it publishes one
+    posted_at TEXT,
+    first_seen TEXT NOT NULL,
+    last_seen TEXT NOT NULL,
+    closed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS job_postings_company ON job_postings(company, closed_at);
+-- What the model read from each posting (schema in prompts/job_extract.md); redone when the text changes.
+CREATE TABLE IF NOT EXISTS job_extractions (
+    posting_id INTEGER PRIMARY KEY REFERENCES job_postings(id),
+    prompt_version TEXT NOT NULL,
+    text_hash TEXT NOT NULL,
+    data TEXT NOT NULL,
+    extracted_at TEXT NOT NULL
+);
+-- Weekly reports (lane ③): the statistics they were written from, and what was sent.
+CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY, created_at TEXT NOT NULL, kind TEXT NOT NULL, stats TEXT NOT NULL,
+    markdown TEXT NOT NULL, telegram_html TEXT NOT NULL, telegram_message_ids TEXT, cost_usd REAL DEFAULT 0
+);
 """
 
 

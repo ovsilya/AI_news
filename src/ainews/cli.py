@@ -1,4 +1,5 @@
-"""Command line: `ainews collect | brief | run | send | health | sources | check | budget | tg-chats | tg-test | tg-clean`."""
+"""Command line: `ainews collect | brief | run | send | jobs | jobs-probe | weekly | health | sources | check | budget |
+tg-chats | tg-test | tg-clean`."""
 from __future__ import annotations
 
 import argparse
@@ -170,6 +171,95 @@ def cmd_budget(args, settings) -> None:
         print(f"  {r['purpose']:<8} {r['model']:<22} {r['n']:>4} calls  ${r['c']:.4f}")
 
 
+def cmd_jobs(args, settings) -> None:
+    """Lane ②: poll the employers' job boards, then let the model read new and changed postings."""
+    from .http import Fetcher
+    from .jobs.boards import load_companies
+    from .jobs.poll import poll_all
+
+    conn = db.connect(settings.db_path)
+    companies = load_companies(settings.companies_path)
+    if args.only:
+        wanted = set(args.only.split(","))
+        companies = [c for c in companies if c.id in wanted]
+    run_id = db.start_run(conn, "jobs")
+    fetcher = Fetcher(conn, timeout=60)   # some boards return 10+ MB
+    try:
+        stats = poll_all(conn, companies, fetcher)
+    finally:
+        fetcher.close()
+    print(f"polled {stats['boards']} boards ({stats['errors']} errors): {stats['listed']} postings listed, "
+          f"{stats['matching']} in your target roles and markets; {stats['new']} new, {stats['changed']} changed, "
+          f"{stats['closed']} closed")
+    if not args.no_llm:
+        from .jobs.extract import Skills, extract_postings
+        from .llm import LLMDisabled, make_llm
+
+        try:
+            llm = make_llm(settings, conn, run_id)
+        except LLMDisabled as exc:
+            print(f"extraction skipped: {exc}")
+        else:
+            limit = args.max_extract or settings.max_jobs_extract
+            stats["extract"] = extract_postings(conn, llm, model=settings.model_judge, prompts_dir=settings.prompts_dir,
+                                                skills=Skills(settings.skills_path), limit=limit)
+            left = conn.execute("SELECT COUNT(*) FROM job_postings p LEFT JOIN job_extractions e"
+                                " ON e.posting_id = p.id WHERE p.closed_at IS NULL AND e.posting_id IS NULL").fetchone()[0]
+            ex = stats["extract"]
+            print(f"extracted {ex['extracted']} postings ({ex['failed']} failed), {left} still to read;"
+                  f" cost ${llm.total_cost:.4f}" + (f"; stopped: {ex['budget_stop']}" if ex.get("budget_stop") else ""))
+    db.finish_run(conn, run_id, "ok", stats)
+
+
+def cmd_jobs_probe(args, settings) -> None:
+    """Find which job board an employer uses: prints a companies.yaml line for each hit."""
+    from .http import Fetcher
+    from .jobs.boards import probe
+
+    fetcher = Fetcher(None, timeout=60, retries=1)
+    try:
+        for slug in args.slugs:
+            hits = probe(slug, fetcher)
+            if not hits:
+                print(f"# {slug}: no Greenhouse, Lever or Ashby board")
+            for ats, n in hits:
+                region = ", region: eu" if ats == "lever-eu" else ""
+                print(f"  - {{id: {slug}, name: {slug}, ats: {ats.split('-')[0]}, board: {slug}{region}}}   # {n} open")
+    finally:
+        fetcher.close()
+
+
+def cmd_weekly(args, settings) -> None:
+    """Lane ③: the weekly jobs report (skills demand, pay, who's hiring, your fit)."""
+    import json
+
+    from .jobs.report import build_weekly
+
+    conn = db.connect(settings.db_path)
+    llm = None
+    if not args.no_llm:
+        from .llm import LLMDisabled, make_llm
+
+        try:
+            llm = make_llm(settings, conn)
+        except LLMDisabled as exc:
+            sys.exit(f"ainews: {exc}")
+    result = build_weekly(conn, settings, llm=llm)
+    settings.out_dir.mkdir(parents=True, exist_ok=True)
+    path = settings.out_dir / f"jobs-{datetime.now():%Y-%m-%d}.md"
+    path.write_text(result["markdown"], encoding="utf-8")
+    print(f"report #{result['report_id']}: {result['stats']['target_open']} open target postings · wrote {path}")
+    for w in result["warnings"]:
+        print(f"  - {w}")
+    if args.send:
+        from .deliver.telegram import Telegram
+
+        ids = Telegram(settings.telegram_bot_token, settings.telegram_chat_id).send_messages(result["telegram"])
+        conn.execute("UPDATE reports SET telegram_message_ids = ? WHERE id = ?", (json.dumps(ids), result["report_id"]))
+        conn.commit()
+        print(f"sent {len(ids)} Telegram messages")
+
+
 def cmd_tg_chats(args, settings) -> None:
     """Lists chats the bot has seen recently, to find the channel's chat ID."""
     from .deliver.telegram import Telegram
@@ -195,34 +285,43 @@ def cmd_send(args, settings) -> None:
     from .pipeline.brief import mark_sent
 
     conn = db.connect(settings.db_path)
-    row = conn.execute("SELECT id, telegram_html, telegram_message_ids FROM briefs ORDER BY id DESC LIMIT 1").fetchone()
+    table, what = ("reports", "jobs report") if args.report else ("briefs", "brief")
+    row = conn.execute(f"SELECT id, telegram_html, telegram_message_ids FROM {table} ORDER BY id DESC LIMIT 1").fetchone()
     if row is None:
-        sys.exit("ainews: no brief yet; run `ainews run` first")
+        sys.exit(f"ainews: no {what} yet; run `ainews {'weekly' if args.report else 'run'}` first")
     if row["telegram_message_ids"] and not args.force:
-        sys.exit(f"ainews: brief #{row['id']} was already sent; use --force to send it again")
+        sys.exit(f"ainews: {what} #{row['id']} was already sent; use --force to send it again")
     ids = Telegram(settings.telegram_bot_token, settings.telegram_chat_id).send_messages(json.loads(row["telegram_html"]))
-    mark_sent(conn, row["id"], ids)
-    print(f"sent brief #{row['id']} as {len(ids)} Telegram messages")
+    if args.report:
+        conn.execute("UPDATE reports SET telegram_message_ids = ? WHERE id = ?", (json.dumps(ids), row["id"]))
+        conn.commit()
+    else:
+        mark_sent(conn, row["id"], ids)
+    print(f"sent {what} #{row['id']} as {len(ids)} Telegram messages")
 
 
 def cmd_tg_clean(args, settings) -> None:
-    """Delete the channel's earlier posts (test runs, old tries), keeping the latest sent brief."""
+    """Delete the channel's earlier posts (test runs, old tries), keeping the latest sent brief and jobs report."""
     import json
 
     from .deliver.telegram import Telegram
 
     conn = db.connect(settings.db_path)
-    row = conn.execute("SELECT id, telegram_message_ids FROM briefs WHERE telegram_message_ids IS NOT NULL"
-                       " ORDER BY id DESC LIMIT 1").fetchone()
-    if row is None or not json.loads(row["telegram_message_ids"]):
+    kept = []
+    for table in ("briefs", "reports"):
+        row = conn.execute(f"SELECT telegram_message_ids FROM {table} WHERE telegram_message_ids IS NOT NULL"
+                           " ORDER BY id DESC LIMIT 1").fetchone()
+        if row and json.loads(row["telegram_message_ids"]):
+            kept.append(min(json.loads(row["telegram_message_ids"])))
+    if not kept:
         sys.exit("ainews: no sent brief to keep; nothing deleted")
-    first = min(json.loads(row["telegram_message_ids"]))
+    first = min(kept)
     if first <= 1:
         print("nothing older than the latest brief")
         return
-    # Channel message ids count up from 1, so everything below the latest brief's first message is older.
+    # Channel message ids count up from 1, so everything below the kept posts' first message is older.
     if not args.yes:
-        prompt = (f"Delete channel messages 1-{first - 1} and keep brief #{row['id']} (messages {first}+)?"
+        prompt = (f"Delete channel messages 1-{first - 1} and keep the latest brief and jobs report (messages {first}+)?"
                   " This can't be undone. [y/N] ")
         try:
             answer = input(prompt)
@@ -262,6 +361,16 @@ def main(argv: list[str] | None = None) -> None:
                        help="replace the latest brief: its stories can be used again (judge scores are reused)")
     sn = sub.add_parser("send", help="post the latest stored brief to Telegram")
     sn.add_argument("--force", action="store_true", help="send even if it was already sent")
+    sn.add_argument("--report", action="store_true", help="send the latest jobs report instead of the brief")
+    j = sub.add_parser("jobs", help="poll the employers' job boards and extract new postings")
+    j.add_argument("--only", help="comma-separated company ids")
+    j.add_argument("--no-llm", action="store_true", help="poll and diff only; no model calls")
+    j.add_argument("--max-extract", type=int, help="postings the model reads this run (default 200)")
+    jp = sub.add_parser("jobs-probe", help="check which job board (Greenhouse, Lever, Ashby) an employer uses")
+    jp.add_argument("slugs", nargs="+")
+    w = sub.add_parser("weekly", help="build the weekly jobs report (local file; --send to post)")
+    w.add_argument("--no-llm", action="store_true", help="tables only, no model commentary")
+    w.add_argument("--send", action="store_true", help="post to the Telegram channel")
     sub.add_parser("health", help="source health report")
     sub.add_parser("sources", help="list the source registry")
     sub.add_parser("check", help="verify Vertex AI and Telegram configuration (works even when the switch is off)")
@@ -288,7 +397,8 @@ def main(argv: list[str] | None = None) -> None:
 def _dispatch(args, settings) -> None:
     {"collect": cmd_collect, "brief": cmd_brief, "run": cmd_run, "health": cmd_health,
      "sources": cmd_sources, "check": cmd_check, "budget": cmd_budget, "tg-chats": cmd_tg_chats,
-     "tg-test": cmd_tg_test, "tg-clean": cmd_tg_clean, "send": cmd_send}[args.cmd](args, settings)
+     "tg-test": cmd_tg_test, "tg-clean": cmd_tg_clean, "send": cmd_send, "jobs": cmd_jobs,
+     "jobs-probe": cmd_jobs_probe, "weekly": cmd_weekly}[args.cmd](args, settings)
 
 
 if __name__ == "__main__":

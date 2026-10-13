@@ -131,3 +131,20 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
    It asks before deleting. Telegram lets a bot delete its own posts only within 48 hours; it lists anything it couldn't remove (service messages, posts you wrote yourself, older posts), so you can delete those by hand.
 
 **To switch off again,** set `AINEWS_LLM_ENABLED=false`. It takes effect on the next run.
+
+## 5. Jobs lane and the weekly jobs report
+
+Nothing to sign up for: the employers' job boards (Greenhouse, Lever, Ashby) are public APIs.
+
+1. **Your skills.** `private/skills.yaml` lists the skills you `have` and are `learning`; the report's "Your fit" section compares them with what postings ask for. It was drafted from `private/profile.md`, so check it. Names follow [config/skills.yaml](../config/skills.yaml) (aliases such as `k8s` work).
+2. **Daily, after the brief:**
+   ```bash
+   .venv/bin/ainews jobs
+   ```
+   It polls the 97 boards in [config/companies.yaml](../config/companies.yaml) (about 80 seconds), records new, changed and closed postings, and has Gemini 3.1 Flash-Lite read up to 200 new ones (about $0.001 each, so about $0.22 a run). The first runs work through a backlog of about 1,600 postings, so it takes about a week of daily runs to read them all. To go faster, run it more than once a day: each run stays within the daily cap.
+3. **Weekly, on Mondays:**
+   ```bash
+   .venv/bin/ainews weekly
+   ```
+   It writes `out/jobs-<date>.md` (about 1 cent for the notes). Read it, then post it with `ainews send --report`, or build and post in one go with `ainews weekly --send`. Rising and falling skills appear after two weeks of tracking.
+4. **Add an employer:** `ainews jobs-probe <slug> …` prints a ready-to-paste line for `config/companies.yaml` when the employer uses Greenhouse, Lever or Ashby.

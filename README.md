@@ -10,14 +10,15 @@ A personal daily brief for ML / GenAI / LLM engineers and Forward Deployed Engin
 
 ## Status
 
-**Phase 1 (MVP), running locally; not deployed yet.**
-- 47 sources across six layers, defined in [config/sources.yaml](config/sources.yaml), from business and policy down to kernels.
+**Phase 1 (MVP) and the first part of Phase 3 (jobs), running locally; not deployed yet.**
+- 54 news sources across seven layers, defined in [config/sources.yaml](config/sources.yaml), from business and policy down to kernels.
 - Collectors: RSS/Atom, GitHub releases, a CHANGELOG diff, HF Daily Papers, Hacker News, and an OpenRouter model and price diff.
 - Dedup by canonical URL and MinHash, then a heat score.
-- Gemini 3.1 Flash-Lite judges stories against your profile and Gemini 3.5 Flash-Lite writes the brief, through Vertex AI (Claude is an optional provider). The brief teaches: up to 15 stories, each in its own Telegram message with a detailed "What happened" (from the article text, not just the headline), a "What is it?" explanation and a "Comment from a pro" from a senior engineer guiding your career, and a Trends & future of work section covers where AI is heading and how it changes tech work and jobs. Numbers the sources don't support are dropped before anything is published.
+- Gemini 3.1 Flash-Lite judges stories against your profile and Gemini 3.5 Flash-Lite writes the brief, through Vertex AI (Claude is an optional provider). The brief teaches: up to 15 stories, packed into as few Telegram messages as fit, each with its date, a flag for how much of the article the editor read, a detailed "What happened" (from the article text, not just the headline), a "What is it?" explanation and a "Comment from a pro" from a senior engineer guiding your career, and a Trends & future of work section covers where AI is heading and how it changes tech work and jobs. Numbers the sources don't support are dropped before anything is published.
 - Output goes to a local Markdown file and, optionally, the Telegram channel.
+- **Jobs lane:** polls the public job boards (Greenhouse, Lever, Ashby) of 97 employers, mostly AI companies, listed in [config/companies.yaml](config/companies.yaml). It keeps postings in the target roles (FDE and applied AI, solutions, LLM/GenAI, AI and ML engineering) and markets (US, CA, UK, CH, UAE, remote), tracks new and closed ones, and has Gemini 3.1 Flash-Lite read each posting into skills, seniority, remote policy and pay. A weekly jobs report shows the skills employers ask for, pay, who is hiring, and how your skills (`private/skills.yaml`) cover the demand.
 
-Next is Phase 2: embedding dedup, aggregator link votes, feedback buttons, citations, and deployment to Cloud Run.
+Next: Workday, SerpApi Google Jobs and job-alert emails for the jobs lane (banks, pharma, big tech, and better CH and UAE coverage); then Phase 2: embedding dedup, aggregator link votes, feedback buttons, citations, and deployment to Cloud Run.
 
 ## Quickstart
 
@@ -34,8 +35,10 @@ gcloud auth application-default login     # personal Google account; the app use
 .venv/bin/ainews run --send               # same, and post to the Telegram channel
 .venv/bin/ainews send                     # post the latest brief (after reading it in out/)
 .venv/bin/ainews run --redo               # rebuild the latest brief; judge scores are reused, so it's cheap
+.venv/bin/ainews jobs                     # poll the employers' job boards, read up to 200 new postings (~$0.001 each)
+.venv/bin/ainews weekly                   # the weekly jobs report → out/jobs-<date>.md (--send to post it)
 ```
 
-Without any credentials, `ainews run --no-llm` builds an unranked digest by heat, with no model calls and no cost. Other commands: `ainews collect`, `ainews brief`, `ainews health` (source health report), `ainews sources`, `ainews budget` (switch state, spend and caps), `ainews tg-chats` and `ainews tg-test` (Telegram setup), `ainews tg-clean` (delete the channel's earlier posts, keeping the latest sent brief). Tests: `.venv/bin/pytest`.
+Without any credentials, `ainews run --no-llm` builds an unranked digest by heat, with no model calls and no cost. Other commands: `ainews collect`, `ainews brief`, `ainews health` (source health report), `ainews sources`, `ainews budget` (switch state, spend and caps), `ainews tg-chats` and `ainews tg-test` (Telegram setup), `ainews tg-clean` (delete the channel's earlier posts, keeping the latest sent brief and jobs report), `ainews send --report` (post the latest jobs report), `ainews jobs-probe <slug>…` (find which job board an employer uses). Tests: `.venv/bin/pytest`.
 
 Runtime state lives in `data/ainews.sqlite`, and briefs are written to `out/`. Both folders are gitignored.
