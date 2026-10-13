@@ -300,7 +300,7 @@
     <ol>
       <li><b>② Jobs (05:00)</b> polls the job boards, extracts new postings and updates the skill statistics.</li>
       <li><b>① Brief (06:00)</b> will read those results for a career section in the brief (planned; today the brief doesn't use them). The 18:00 run is a lighter update that only covers what changed since morning.</li>
-      <li><b>③ Weekly (Mon 07:00)</b> reads the past week of ① stories and ② postings to compute trends and your market fit, then writes two reports: State of the field and Market fit.</li>
+      <li><b>③ Weekly (Mon 07:00)</b> reads the ② postings to compute skill shares, trends and your market fit, then writes the jobs report. A State of the field report from the week's ① stories comes later.</li>
     </ol>
     <p class="muted">Because the job runs with parallelism 1, only one run at a time can write the database. A run that finds the snapshot locked waits, or fails and retries.</p>
   </div>
