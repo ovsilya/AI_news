@@ -70,11 +70,22 @@ RULES = [
     ("Don't overload anyone",
      "We visit each site gently: one request at a time, with a pause in between. If a site says \"too many requests\" "
      "or has a problem, we wait and try later, waiting longer after each failed try.",
-     "Per-host concurrency of 1, delays between requests, exponential backoff on HTTP 429 and 5xx."),
+     "Per-host concurrency of 1, delays between requests, exponential backoff on HTTP 429 and 5xx. Strict sites get "
+     "more room: Reddit is visited at most every 30 seconds, and after a 429 we wait a full minute and try once more."),
     ("Follow the site's own rules",
      "Feeds and APIs are made for programs, so using them is always fine. For anything else, the collector first reads "
      "the site's robots.txt and stays out of any part the site asks programs to avoid.",
      "robots.txt is checked for everything that isn't an official feed or API."),
+    ("Read the article, not just the headline",
+     "Many feeds only send a headline or a one-line teaser, which is too little to explain a story. For the stories "
+     "that make it into the brief, the collector opens the article page once, checks robots.txt first, and keeps only "
+     "the main text for the writer to read. It never gets around a paywall: a paywalled page simply gives a teaser.",
+     "For each chosen story with under 800 characters of text: one GET of the article URL (robots.txt honoured), main "
+     "text extracted with trafilatura, cached for 30 days. Google News links can't be opened directly and are skipped."),
+    ("Keep only what's on topic",
+     "Some search feeds are broad: a search for Reuters articles about AI also returns elections and oil prices. These "
+     "feeds get a keyword filter, so only headlines about AI (or, for the jobs search, about work and jobs) are kept.",
+     "Per-source keyword filters on title and summary; acronyms such as AI match whole words only."),
     ("Notice when a source goes quiet",
      "Sources break silently. After a redesign, a feed can simply come back empty. Each source has an expected rhythm "
      "(say, about one post a week). If it errors, returns nothing, or stays silent much longer than usual, it is flagged "
