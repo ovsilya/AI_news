@@ -1,4 +1,4 @@
-"""Command line: `ainews collect | brief | run | health | sources | check`."""
+"""Command line: `ainews collect | brief | run | health | sources | check | budget | tg-chats | tg-test`."""
 from __future__ import annotations
 
 import argparse
@@ -47,9 +47,12 @@ def cmd_brief(args, settings) -> None:
     sources = load_sources(settings.sources_path)
     llm = None
     if not args.no_llm:
-        from .llm import LLM
+        from .llm import LLM, LLMDisabled
 
-        llm = LLM(settings, conn)
+        try:
+            llm = LLM(settings, conn)
+        except LLMDisabled as exc:
+            sys.exit(f"ainews: {exc}")
     result = build_brief(conn, settings, sources, llm=llm, edition=args.edition)
 
     settings.out_dir.mkdir(parents=True, exist_ok=True)
@@ -113,7 +116,7 @@ def cmd_check(args, settings) -> None:
     try:
         from .llm import LLM
 
-        llm = LLM(settings)
+        llm = LLM(settings, db.connect(settings.db_path), ignore_switch=True)
         schema = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"],
                   "additionalProperties": False}
         for model in (settings.model_judge, settings.model_editor):
@@ -135,6 +138,47 @@ def cmd_check(args, settings) -> None:
     sys.exit(0 if ok else 1)
 
 
+def cmd_budget(args, settings) -> None:
+    from .llm import spent_since
+
+    conn = db.connect(settings.db_path)
+    now = datetime.now(timezone.utc)
+    day = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat(timespec="seconds")
+    month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat(timespec="seconds")
+    print(f"model calls: {'ON' if settings.llm_enabled else 'OFF'} (AINEWS_LLM_ENABLED)")
+    print(f"today:      ${spent_since(conn, day):.4f} of ${settings.max_usd_per_day:.2f}")
+    print(f"this month: ${spent_since(conn, month):.4f} of ${settings.max_usd_per_month:.2f}")
+    print(f"per run cap: ${settings.max_usd_per_run:.2f} · judge cap: {settings.max_judge_stories} stories")
+    for r in conn.execute("SELECT purpose, model, COUNT(*) n, SUM(cost_usd) c FROM llm_calls"
+                          " WHERE at >= ? GROUP BY 1, 2 ORDER BY 4 DESC", (month,)):
+        print(f"  {r['purpose']:<8} {r['model']:<22} {r['n']:>4} calls  ${r['c']:.4f}")
+
+
+def cmd_tg_chats(args, settings) -> None:
+    """Lists chats the bot has seen recently, to find the channel's chat ID."""
+    from .deliver.telegram import Telegram
+
+    tg = Telegram(settings.telegram_bot_token, settings.telegram_chat_id or "unset")
+    chats = {}
+    for u in tg.call("getUpdates", {"allowed_updates": ["channel_post", "message", "my_chat_member"]}):
+        for key in ("channel_post", "message", "my_chat_member"):
+            chat = (u.get(key) or {}).get("chat")
+            if chat:
+                chats[chat["id"]] = chat
+    if not chats:
+        print("No chats seen yet. Add the bot to the channel as an admin, post any message there, then rerun.")
+    for c in chats.values():
+        print(f"{c['id']:>16}  {c.get('type', ''):<10} {c.get('title') or c.get('username') or ''}")
+
+
+def cmd_tg_test(args, settings) -> None:
+    from .deliver.telegram import Telegram
+
+    tg = Telegram(settings.telegram_bot_token, settings.telegram_chat_id)
+    ids = tg.send_messages(["<b>AI_news test</b>\nThe bot can post to this channel. ✅"])
+    print(f"sent test message {ids[0]} to {settings.telegram_chat_id}")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="ainews", description=__doc__)
     p.add_argument("-v", "--verbose", action="store_true")
@@ -149,7 +193,10 @@ def main(argv: list[str] | None = None) -> None:
         b.add_argument("--send", action="store_true", help="post to the Telegram channel (default: local file only)")
     sub.add_parser("health", help="source health report")
     sub.add_parser("sources", help="list the source registry")
-    sub.add_parser("check", help="verify Vertex AI and Telegram configuration")
+    sub.add_parser("check", help="verify Vertex AI and Telegram configuration (works even when the switch is off)")
+    sub.add_parser("budget", help="show the model switch, spend so far and the caps")
+    sub.add_parser("tg-chats", help="list chats the bot has seen (to find TELEGRAM_CHAT_ID)")
+    sub.add_parser("tg-test", help="send a test message to TELEGRAM_CHAT_ID")
 
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING,
@@ -157,7 +204,8 @@ def main(argv: list[str] | None = None) -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
     settings = Settings.from_env()
     {"collect": cmd_collect, "brief": cmd_brief, "run": cmd_run, "health": cmd_health,
-     "sources": cmd_sources, "check": cmd_check}[args.cmd](args, settings)
+     "sources": cmd_sources, "check": cmd_check, "budget": cmd_budget, "tg-chats": cmd_tg_chats,
+     "tg-test": cmd_tg_test}[args.cmd](args, settings)
 
 
 if __name__ == "__main__":

@@ -35,6 +35,12 @@ class Settings:
     out_dir: Path
     sources_path: Path
     prompts_dir: Path
+    # Spending guard. Model calls are off unless AINEWS_LLM_ENABLED=true (the "button").
+    llm_enabled: bool = False
+    max_usd_per_run: float = 0.75
+    max_usd_per_day: float = 1.50
+    max_usd_per_month: float = 20.0
+    max_judge_stories: int = 120
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -58,6 +64,11 @@ class Settings:
             out_dir=path("AINEWS_OUT", "out"),
             sources_path=path("AINEWS_SOURCES", "config/sources.yaml"),
             prompts_dir=ROOT / "prompts",
+            llm_enabled=env("AINEWS_LLM_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"},
+            max_usd_per_run=float(env("AINEWS_MAX_USD_PER_RUN", "0.75")),
+            max_usd_per_day=float(env("AINEWS_MAX_USD_PER_DAY", "1.50")),
+            max_usd_per_month=float(env("AINEWS_MAX_USD_PER_MONTH", "20")),
+            max_judge_stories=int(env("AINEWS_MAX_JUDGE_STORIES", "120")),
         )
 
     def profile_text(self) -> str:

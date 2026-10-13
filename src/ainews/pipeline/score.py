@@ -8,6 +8,7 @@ import sqlite3
 from pathlib import Path
 
 from ..db import now
+from ..llm import BudgetExceeded
 from .rank import Story
 
 log = logging.getLogger(__name__)
@@ -80,6 +81,9 @@ def judge(conn: sqlite3.Connection, llm, stories: list[Story], *, model: str, pr
         try:
             result = llm.json(model=model, system=system, user=user, schema=SCHEMA,
                               max_tokens=8000, effort="low", purpose="judge")
+        except BudgetExceeded as exc:
+            log.warning("judge stopped: %s", exc)
+            break
         except Exception as exc:  # one failed batch shouldn't sink the brief
             log.warning("judge batch %d failed: %s", i // BATCH, exc)
             continue

@@ -21,16 +21,19 @@ Next is Phase 2: embedding dedup, aggregator link votes, feedback buttons, citat
 
 ## Quickstart
 
+Full setup, covering the Telegram bot, the GCP project and spending guardrails: **[docs/setup.md](docs/setup.md)**. Model calls are off until you set `AINEWS_LLM_ENABLED=true`.
+
 ```bash
 python3.13 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 cp .env.example .env                      # fill in GCP_PROJECT_ID and the Telegram values
 cp config/profile.example.md private/profile.md   # your profile; private/ is gitignored
 gcloud auth application-default login     # personal Google account; the app uses these credentials for Vertex AI
 .venv/bin/ainews check                    # one tiny call per model (< $0.01) + Telegram getMe
+# set AINEWS_LLM_ENABLED=true in .env once the guardrails are in place (docs/setup.md §3)
 .venv/bin/ainews run                      # collect, judge, write → out/brief-<date>-am.md
 .venv/bin/ainews run --send               # same, and post to the Telegram channel
 ```
 
-Without any credentials, `ainews run --no-llm` builds an unranked digest by heat, with no model calls and no cost. Other commands: `ainews collect`, `ainews brief`, `ainews health` (source health report), `ainews sources`. Tests: `.venv/bin/pytest`.
+Without any credentials, `ainews run --no-llm` builds an unranked digest by heat, with no model calls and no cost. Other commands: `ainews collect`, `ainews brief`, `ainews health` (source health report), `ainews sources`, `ainews budget` (switch state, spend and caps), `ainews tg-chats` and `ainews tg-test` (Telegram setup). Tests: `.venv/bin/pytest`.
 
 Runtime state lives in `data/ainews.sqlite`, and briefs are written to `out/`. Both folders are gitignored.

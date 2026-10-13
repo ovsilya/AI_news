@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 from ..db import finish_run, now, start_run
 from ..deliver.render import to_markdown, to_telegram
+from ..llm import BudgetExceeded
 from .dedup import assign_stories
 from .editor import brief_without_llm, write_brief
 from .rank import load_candidates, select, select_by_heat
@@ -35,7 +36,7 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
     stats: dict = {"edition": edition, "llm": llm is not None}
     try:
         stats["dedup"] = assign_stories(conn, layers, now=now_dt)
-        candidates = load_candidates(conn, weights, _since(conn, now_dt), now=now_dt)
+        candidates = load_candidates(conn, weights, _since(conn, now_dt), limit=settings.max_judge_stories, now=now_dt)
         stats["candidates"] = len(candidates)
         profile = settings.profile_text()
         if llm is not None and candidates:
@@ -50,8 +51,14 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
         if not chosen:
             draft = {"headline": "Nothing new since the last brief.", "sections": [], "prompt_version": "none"}
         elif llm is not None:
-            draft = write_brief(llm, chosen, model=settings.model_editor, prompts_dir=settings.prompts_dir,
-                                profile=profile, source_names=names, date_label=date_label)
+            try:
+                draft = write_brief(llm, chosen, model=settings.model_editor, prompts_dir=settings.prompts_dir,
+                                    profile=profile, source_names=names, date_label=date_label)
+            except BudgetExceeded as exc:
+                log.warning("editor skipped: %s", exc)
+                stats["budget_stop"] = str(exc)
+                draft = brief_without_llm(chosen)
+                draft["headline"] = "Spending cap reached: this is the unedited digest. " + draft["headline"]
         else:
             draft = brief_without_llm(chosen)
         brief, warnings = verify(draft, chosen)
