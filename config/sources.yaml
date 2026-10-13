@@ -74,7 +74,7 @@ sources:
   # --- Big picture: business ---------------------------------------------------------
   - {id: the-information, name: The Information, kind: rss, url: "https://www.theinformation.com/feed", layer: big_picture, weight: 1.2, expect_every: 1, keywords: *ai}
   - {id: bloomberg-tech, name: Bloomberg Technology, kind: rss, url: "https://feeds.bloomberg.com/technology/news.rss", layer: big_picture, weight: 1.2, expect_every: 1, keywords: *ai}
-  - {id: reuters-ai, name: Reuters AI (via Google News), kind: rss, role: proxy, layer: big_picture, weight: 1.2, expect_every: 1,
+  - {id: reuters-ai, name: Reuters AI (via Google News), kind: rss, role: proxy, layer: big_picture, weight: 1.2, expect_every: 1, keywords: *ai,
      url: "https://news.google.com/rss/search?q=site:reuters.com+%22artificial+intelligence%22+when:7d&hl=en-US&gl=US&ceid=US:en"}
   - {id: techcrunch-ai, name: TechCrunch AI, kind: rss, url: "https://techcrunch.com/category/artificial-intelligence/feed/", layer: big_picture, weight: 1.0, expect_every: 1}
   - {id: crunchbase-ai, name: Crunchbase News AI, kind: rss, url: "https://news.crunchbase.com/sections/ai/feed/", layer: big_picture, weight: 1.0, expect_every: 3}
