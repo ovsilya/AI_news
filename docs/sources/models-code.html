@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Models &amp; code sources</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1f;--muted:#5f6368;--border:#d5d7db;--sel:#2f6fdb;--chip:#eef3fb;--chip-border:#9db5dc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;--chip:#18202c;--chip-border:#3f5a85}}
+:root[data-theme="dark"]{--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;--chip:#18202c;--chip-border:#3f5a85}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+a{color:var(--sel)}
+.top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:14px;margin-bottom:18px}
+.top .home{font-weight:600;margin-right:6px}
+.top nav{display:flex;flex-wrap:wrap;gap:6px}
+.top nav a{padding:2px 9px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--panel)}
+.top nav a[aria-current]{border-color:var(--sel);color:var(--sel);font-weight:600}
+h1{font-size:22px;margin:0 0 6px}
+h2{font-size:18px;margin:32px 0 8px}
+.lede{color:var(--muted);margin:0 0 6px;max-width:80ch}
+.lede b{color:var(--ink);font-weight:600}
+.count{font-size:14px;color:var(--muted);margin:10px 0 12px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:720px;table-layout:fixed}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+th{color:var(--muted);font-weight:600;font-size:13px}
+th:nth-child(1){width:26%}th:nth-child(2){width:28%}th:nth-child(3){width:46%}
+tr:last-child td{border-bottom:none}
+td:first-child{font-weight:500}
+td:nth-child(2) a{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.chip{font-size:12px;padding:0 8px;border:1px solid var(--chip-border);background:var(--chip);border-radius:999px;text-decoration:none;color:var(--ink);white-space:nowrap}
+.chip:hover{border-color:var(--sel)}
+.methods{display:grid;gap:10px}
+.m{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;scroll-margin-top:12px}
+.m:target{border-color:var(--sel);box-shadow:0 0 0 1px var(--sel)}
+.m h3{font-size:16px;margin:0 0 6px}
+.m p{margin:4px 0;max-width:90ch}
+.m .k{font-weight:600;color:var(--muted)}
+.m .used{font-size:13px;color:var(--muted);margin-top:6px}
+.callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px}
+.callout ol,.callout ul{margin:6px 0 0;padding-left:20px}
+.callout li{margin:3px 0}
+.foot{margin-top:28px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><a class="home" href="../architecture-diagram.html#card-src-code">← Architecture diagram</a><nav aria-label="Source lists"><a href="vendors.html">Vendors &amp; changelogs</a><a href="newsletters.html">Newsletters</a><a href="research.html">Research</a><a href="models-code.html" aria-current="page">Models &amp; code</a><a href="community.html">Community</a><a href="business-policy.html">Business &amp; policy</a><a href="compute-systems.html">Compute &amp; systems</a><a href="job-boards.html">Job boards</a><a href="methods.html">All methods</a></nav></div>
+<h1 id="top">Models &amp; code</h1>
+<p class="lede"><b>What:</b> GitHub releases.atom for about 25 key repos, HF trending models and spaces, and changes to OpenRouter&#x27;s model list.</p>
+<p class="lede"><b>Why:</b> Usually the first sign of a new model, SDK version or price change, often hours before any blog post.</p>
+<p class="count">10 sources · 5 retrieval methods · links checked 2026-10-12</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Source</th><th>Link</th><th>How it's retrieved</th></tr></thead>
+<tbody><tr><td>GitHub releases (~25 repos, e.g. vLLM)</td><td><a href="https://github.com/vllm-project/vllm/releases.atom" target="_blank" rel="noopener">github.com/vllm-project/vllm/releases.atom</a></td><td>Atom per repo, no auth. Repos: vllm, sglang, llama.cpp, ollama, transformers, langgraph, pydantic-ai, anthropic/openai SDKs, MCP SDK, litellm, dspy…<div class="chips"><a class="chip" href="#m-releases">Release feed per repo or package</a></div></td></tr><tr><td>Claude Code changelog</td><td><a href="https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md" target="_blank" rel="noopener">raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md</a></td><td>Raw file diff<div class="chips"><a class="chip" href="#m-raw-diff">Raw file diff</a></div></td></tr><tr><td>HF trending models</td><td><a href="https://huggingface.co/api/models?sort=trendingScore&amp;limit=50" target="_blank" rel="noopener">huggingface.co/api/models?sort=trendingScore&amp;limit=50</a></td><td>JSON API<div class="chips"><a class="chip" href="#m-json-api">Public JSON API (no key)</a></div></td></tr><tr><td>HF trending spaces</td><td><a href="https://huggingface.co/api/spaces?sort=trendingScore&amp;limit=50" target="_blank" rel="noopener">huggingface.co/api/spaces?sort=trendingScore&amp;limit=50</a></td><td>JSON API<div class="chips"><a class="chip" href="#m-json-api">Public JSON API (no key)</a></div></td></tr><tr><td>OpenRouter models</td><td><a href="https://openrouter.ai/api/v1/models" target="_blank" rel="noopener">openrouter.ai/api/v1/models</a></td><td>JSON API, no key; daily diff → new models, price and context changes<div class="chips"><a class="chip" href="#m-json-api">Public JSON API (no key)</a></div></td></tr><tr><td>OSS Insight trending repos</td><td><a href="https://api.ossinsight.io/v1/trends/repos" target="_blank" rel="noopener">api.ossinsight.io/v1/trends/repos</a></td><td>JSON API (third party, run by PingCAP)<div class="chips"><a class="chip" href="#m-json-api">Public JSON API (no key)</a></div></td></tr><tr><td>PyPI releases (e.g. anthropic)</td><td><a href="https://pypi.org/rss/project/anthropic/releases.xml" target="_blank" rel="noopener">pypi.org/rss/project/anthropic/releases.xml</a></td><td>RSS per package<div class="chips"><a class="chip" href="#m-releases">Release feed per repo or package</a></div></td></tr><tr><td>npm latest (e.g. @anthropic-ai/sdk)</td><td><a href="https://registry.npmjs.org/@anthropic-ai/sdk/latest" target="_blank" rel="noopener">registry.npmjs.org/@anthropic-ai/sdk/latest</a></td><td>JSON<div class="chips"><a class="chip" href="#m-json-api">Public JSON API (no key)</a></div></td></tr><tr><td>Arena leaderboard dataset</td><td><a href="https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset" target="_blank" rel="noopener">huggingface.co/datasets/lmarena-ai/leaderboard-dataset</a></td><td>HF dataset, weekly diff (CC-BY)<div class="chips"><a class="chip" href="#m-dataset">Dataset snapshot diff</a></div></td></tr><tr><td>Artificial Analysis</td><td><a href="https://artificialanalysis.ai/api-reference/beta" target="_blank" rel="noopener">artificialanalysis.ai/api-reference/beta</a></td><td>REST API, free key (100 req/day); attribution<div class="chips"><a class="chip" href="#m-key-api">Official API with a free key</a></div></td></tr></tbody></table></div>
+<h2>Retrieval methods on this page</h2>
+<p class="lede">Why each source is fetched the way it is. The <a href="methods.html">methods overview</a> explains the order of preference and the rules every collector follows.</p>
+<div class="methods"><section class="m" id="m-releases"><h3>Release feed per repo or package</h3><p><span class="k">How it works:</span> GitHub publishes github.com/{owner}/{repo}/releases.atom for every repository with no authentication; PyPI publishes an RSS feed per package. We poll one feed per tracked repo or package.</p><p><span class="k">Why this method:</span> A release is the earliest reliable sign that a model or feature has landed in the tools you actually use (vLLM often supports a new model before any blog post). The Atom feeds avoid the GitHub REST API limit of 60 unauthenticated requests per hour.</p><p><span class="k">Watch-outs:</span> Release candidates and nightlies are noisy, so tags containing rc, dev or nightly are skipped unless they are major versions.</p><p class="used">Used here by: GitHub releases (~25 repos, e.g. vLLM), PyPI releases (e.g. anthropic)</p></section><section class="m" id="m-raw-diff"><h3>Raw file diff</h3><p><span class="k">How it works:</span> Fetch the raw file (for example CHANGELOG.md on raw.githubusercontent.com), diff it against the last version, and parse the new version headings.</p><p><span class="k">Why this method:</span> Some tools document releases only in a changelog file (Claude Code). A raw file is plain text, supports ETag caching and needs no HTML parsing.</p><p><span class="k">Watch-outs:</span> Headings must follow a version pattern; if the format changes, the parser falls back to sending the raw diff to the LLM.</p><p class="used">Used here by: Claude Code changelog</p></section><section class="m" id="m-json-api"><h3>Public JSON API (no key)</h3><p><span class="k">How it works:</span> Call a public endpoint that returns JSON: HN Algolia search, HF Daily Papers and trending, OpenRouter /models, the Greenhouse, Lever, Ashby and SmartRecruiters job-board APIs, the Bluesky AppView, npm.</p><p><span class="k">Why this method:</span> Fields we rank on (points, upvotes, prices, context length, salary, location) come back typed, with no scraping. Job-board APIs exist precisely so that postings get syndicated, so polling them is the intended use.</p><p><span class="k">Watch-outs:</span> Respect each provider&#x27;s rate limit and cache responses. A schema change shows up as zero items, which the source health check reports.</p><p class="used">Used here by: HF trending models, HF trending spaces, OpenRouter models, OSS Insight trending repos, npm latest (e.g. @anthropic-ai/sdk)</p></section><section class="m" id="m-dataset"><h3>Dataset snapshot diff</h3><p><span class="k">How it works:</span> Download a published dataset (the Arena leaderboard on Hugging Face, the Indeed Hiring Lab CSV), store it, and diff it against the previous copy.</p><p><span class="k">Why this method:</span> Leaderboards and labour-market indices are published as data, not articles. A diff yields facts with a source, such as &#x27;model X entered the top 5&#x27; or &#x27;AI share of postings up 0.4 points&#x27;, and the CC-BY licences allow reuse with attribution.</p><p><span class="k">Watch-outs:</span> Weekly or monthly cadence only. Column changes are caught by schema validation.</p><p class="used">Used here by: Arena leaderboard dataset</p></section><section class="m" id="m-key-api"><h3>Official API with a free key</h3><p><span class="k">How it works:</span> Same as a public JSON API, but with a free registration key kept in Secret Manager: Reed, USAJobs, Adzuna, Semantic Scholar, Artificial Analysis (and Congress.gov later).</p><p><span class="k">Why this method:</span> It is the provider&#x27;s sanctioned route: the terms allow it, the data is complete (Reed returns full descriptions and salaries) and quotas are documented, so calls can be planned.</p><p><span class="k">Watch-outs:</span> Quotas are tight on some (Artificial Analysis 100 requests a day, Adzuna 2,500 a month). Some require attribution, which goes in the brief&#x27;s footer.</p><p class="used">Used here by: Artificial Analysis</p></section></div>
+<p class="foot"><a href="#top">↑ Top</a><a href="../architecture-diagram.html#card-src-code">← Back to the architecture diagram</a></p>
+</main>
+</body>
+</html>

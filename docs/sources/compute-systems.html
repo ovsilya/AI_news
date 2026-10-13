@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compute &amp; systems sources</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1f;--muted:#5f6368;--border:#d5d7db;--sel:#2f6fdb;--chip:#eef3fb;--chip-border:#9db5dc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;--chip:#18202c;--chip-border:#3f5a85}}
+:root[data-theme="dark"]{--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;--chip:#18202c;--chip-border:#3f5a85}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+a{color:var(--sel)}
+.top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:14px;margin-bottom:18px}
+.top .home{font-weight:600;margin-right:6px}
+.top nav{display:flex;flex-wrap:wrap;gap:6px}
+.top nav a{padding:2px 9px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--panel)}
+.top nav a[aria-current]{border-color:var(--sel);color:var(--sel);font-weight:600}
+h1{font-size:22px;margin:0 0 6px}
+h2{font-size:18px;margin:32px 0 8px}
+.lede{color:var(--muted);margin:0 0 6px;max-width:80ch}
+.lede b{color:var(--ink);font-weight:600}
+.count{font-size:14px;color:var(--muted);margin:10px 0 12px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:720px;table-layout:fixed}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+th{color:var(--muted);font-weight:600;font-size:13px}
+th:nth-child(1){width:26%}th:nth-child(2){width:28%}th:nth-child(3){width:46%}
+tr:last-child td{border-bottom:none}
+td:first-child{font-weight:500}
+td:nth-child(2) a{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.chip{font-size:12px;padding:0 8px;border:1px solid var(--chip-border);background:var(--chip);border-radius:999px;text-decoration:none;color:var(--ink);white-space:nowrap}
+.chip:hover{border-color:var(--sel)}
+.methods{display:grid;gap:10px}
+.m{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;scroll-margin-top:12px}
+.m:target{border-color:var(--sel);box-shadow:0 0 0 1px var(--sel)}
+.m h3{font-size:16px;margin:0 0 6px}
+.m p{margin:4px 0;max-width:90ch}
+.m .k{font-weight:600;color:var(--muted)}
+.m .used{font-size:13px;color:var(--muted);margin-top:6px}
+.callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px}
+.callout ol,.callout ul{margin:6px 0 0;padding-left:20px}
+.callout li{margin:3px 0}
+.foot{margin-top:28px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><a class="home" href="../architecture-diagram.html#card-src-systems">← Architecture diagram</a><nav aria-label="Source lists"><a href="vendors.html">Vendors &amp; changelogs</a><a href="newsletters.html">Newsletters</a><a href="research.html">Research</a><a href="models-code.html">Models &amp; code</a><a href="community.html">Community</a><a href="business-policy.html">Business &amp; policy</a><a href="compute-systems.html" aria-current="page">Compute &amp; systems</a><a href="job-boards.html">Job boards</a><a href="methods.html">All methods</a></nav></div>
+<h1 id="top">Compute &amp; systems</h1>
+<p class="lede"><b>What:</b> 15 verified feeds. Compute: SemiAnalysis, Chips and Cheese, NVIDIA Technical Blog, AMD ROCm, ServeTheHome, The Next Platform, Latitude Media (energy). Systems: PyTorch blog and dev-discuss, vLLM, LMSYS/SGLang, release feeds for Triton, FlashAttention, CUTLASS and TensorRT-LLM, GPU MODE, Lei Mao, Thinking Machines.</p>
+<p class="lede"><b>Why:</b> The low-level layer: chips, datacenters and energy, inference and kernels, quantization, and compilers.</p>
+<p class="count">19 sources · 3 retrieval methods · links checked 2026-10-12</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Source</th><th>Link</th><th>How it's retrieved</th></tr></thead>
+<tbody><tr><td>SemiAnalysis</td><td><a href="https://newsletter.semianalysis.com/feed" target="_blank" rel="noopener">newsletter.semianalysis.com/feed</a></td><td>RSS (mostly paywalled; free intros)<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>Chips and Cheese</td><td><a href="https://chipsandcheese.com/feed/" target="_blank" rel="noopener">chipsandcheese.com/feed/</a></td><td>RSS<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>NVIDIA Technical Blog</td><td><a href="https://developer.nvidia.com/blog/feed/" target="_blank" rel="noopener">developer.nvidia.com/blog/feed/</a></td><td>RSS<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>AMD ROCm Blogs</td><td><a href="https://rocm.blogs.amd.com/blog/atom.xml" target="_blank" rel="noopener">rocm.blogs.amd.com/blog/atom.xml</a></td><td>Atom<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>ServeTheHome</td><td><a href="https://www.servethehome.com/feed/" target="_blank" rel="noopener">servethehome.com/feed/</a></td><td>RSS<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>The Next Platform</td><td><a href="https://www.nextplatform.com/feed/" target="_blank" rel="noopener">nextplatform.com/feed/</a></td><td>RSS<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>Latitude Media (AI &amp; power grid)</td><td><a href="https://www.latitudemedia.com/feed" target="_blank" rel="noopener">latitudemedia.com/feed</a></td><td>RSS<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>PyTorch Blog</td><td><a href="https://pytorch.org/blog/feed/" target="_blank" rel="noopener">pytorch.org/blog/feed/</a></td><td>RSS<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>PyTorch dev-discuss</td><td><a href="https://dev-discuss.pytorch.org/latest.rss" target="_blank" rel="noopener">dev-discuss.pytorch.org/latest.rss</a></td><td>RSS (compiler / Inductor RFCs)<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>vLLM Blog</td><td><a href="https://vllm.ai/blog/rss.xml" target="_blank" rel="noopener">vllm.ai/blog/rss.xml</a></td><td>RSS<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>LMSYS / SGLang blog</td><td><a href="https://github.com/lm-sys/lm-sys.github.io/commits/main.atom" target="_blank" rel="noopener">github.com/lm-sys/lm-sys.github.io/commits/main.atom</a></td><td>Repo-commits Atom as a proxy (no RSS)<div class="chips"><a class="chip" href="#m-commits">Repo-commits feed as a proxy</a></div></td></tr><tr><td>Kernel releases (e.g. Triton)</td><td><a href="https://github.com/triton-lang/triton/releases.atom" target="_blank" rel="noopener">github.com/triton-lang/triton/releases.atom</a></td><td>Atom per repo: triton, flash-attention, cutlass, TensorRT-LLM, unsloth<div class="chips"><a class="chip" href="#m-releases">Release feed per repo or package</a></div></td></tr><tr><td>GPU MODE (YouTube)</td><td><a href="https://www.youtube.com/feeds/videos.xml?channel_id=UCJgIbYl6C5no72a0NUAPcTA" target="_blank" rel="noopener">youtube.com/feeds/videos.xml?channel_id=UCJgIbYl6C5no72a0NUAPcTA</a></td><td>RSS (intermittent 404 → retry)<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>Lei Mao</td><td><a href="https://leimao.github.io/feed.xml" target="_blank" rel="noopener">leimao.github.io/feed.xml</a></td><td>RSS (CUDA / TensorRT)<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>Thinking Machines</td><td><a href="https://thinkingmachines.ai/blog/index.xml" target="_blank" rel="noopener">thinkingmachines.ai/blog/index.xml</a></td><td>RSS (infrequent, deep)<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>FlashInfer</td><td><a href="https://flashinfer.ai/feed.xml" target="_blank" rel="noopener">flashinfer.ai/feed.xml</a></td><td>RSS<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>Sebastian Raschka</td><td><a href="https://magazine.sebastianraschka.com/feed" target="_blank" rel="noopener">magazine.sebastianraschka.com/feed</a></td><td>RSS<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>Tim Dettmers</td><td><a href="https://timdettmers.com/feed/" target="_blank" rel="noopener">timdettmers.com/feed/</a></td><td>RSS (rare)<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr><tr><td>Tri Dao</td><td><a href="https://tridao.me/feed.xml" target="_blank" rel="noopener">tridao.me/feed.xml</a></td><td>RSS (rare)<div class="chips"><a class="chip" href="#m-rss">RSS / Atom feed</a></div></td></tr></tbody></table></div>
+<h2>Retrieval methods on this page</h2>
+<p class="lede">Why each source is fetched the way it is. The <a href="methods.html">methods overview</a> explains the order of preference and the rules every collector follows.</p>
+<div class="methods"><section class="m" id="m-rss"><h3>RSS / Atom feed</h3><p><span class="k">How it works:</span> Fetch the publisher&#x27;s feed with a feed-reader User-Agent and conditional headers (If-None-Match / If-Modified-Since). A 304 reply means nothing changed and costs nothing to parse. New items are recognised by GUID or link and passed to dedup.</p><p><span class="k">Why this method:</span> The feed is the publisher&#x27;s own machine-readable channel: allowed by design, stable for years, and it gives a clean title, date and link without parsing HTML. One cheap request per source per run.</p><p><span class="k">Watch-outs:</span> Paywalled sites send only a headline and teaser, so the brief links out. A few feeds need a browser-like User-Agent (VentureBeat). Intermittent 404s are retried with backoff.</p><p class="used">Used here by: SemiAnalysis, Chips and Cheese, NVIDIA Technical Blog, AMD ROCm Blogs, ServeTheHome, The Next Platform, Latitude Media (AI &amp; power grid), PyTorch Blog, PyTorch dev-discuss, vLLM Blog, GPU MODE (YouTube), Lei Mao, Thinking Machines, FlashInfer, Sebastian Raschka, Tim Dettmers, Tri Dao</p></section><section class="m" id="m-commits"><h3>Repo-commits feed as a proxy</h3><p><span class="k">How it works:</span> Some blogs are static sites built from a GitHub repo (LMSYS / SGLang). The repo&#x27;s commits/main.atom lists every commit, and we keep commits that add a post.</p><p><span class="k">Why this method:</span> There is no RSS, but a new post always means a commit. Free, no authentication.</p><p><span class="k">Watch-outs:</span> Noisy (typo fixes, styling), so commits are filtered by message and by files added under the posts directory.</p><p class="used">Used here by: LMSYS / SGLang blog</p></section><section class="m" id="m-releases"><h3>Release feed per repo or package</h3><p><span class="k">How it works:</span> GitHub publishes github.com/{owner}/{repo}/releases.atom for every repository with no authentication; PyPI publishes an RSS feed per package. We poll one feed per tracked repo or package.</p><p><span class="k">Why this method:</span> A release is the earliest reliable sign that a model or feature has landed in the tools you actually use (vLLM often supports a new model before any blog post). The Atom feeds avoid the GitHub REST API limit of 60 unauthenticated requests per hour.</p><p><span class="k">Watch-outs:</span> Release candidates and nightlies are noisy, so tags containing rc, dev or nightly are skipped unless they are major versions.</p><p class="used">Used here by: Kernel releases (e.g. Triton)</p></section></div>
+<p class="foot"><a href="#top">↑ Top</a><a href="../architecture-diagram.html#card-src-systems">← Back to the architecture diagram</a></p>
+</main>
+</body>
+</html>

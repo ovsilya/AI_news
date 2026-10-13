@@ -6,6 +6,7 @@ A personal daily brief for ML / GenAI / LLM engineers and Forward Deployed Engin
 
 - [Research](docs/research.md) — landscape of existing products, data sources, job-market data, pipeline building blocks, deployment options ([sources](docs/research-sources.md))
 - [Architecture proposal](docs/architecture.md) — system design, deployment, cost estimate, roadmap ([diagram](docs/architecture-diagram.html))
+- [Source lists and retrieval methods](docs/sources/methods.html): one page per source block; data in `docs/sources/sources.json`, rebuilt with `python3 scripts/build_source_pages.py`
 
 ## Status
 
