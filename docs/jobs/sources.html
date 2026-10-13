@@ -112,6 +112,19 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <h1>1 · Where postings come from</h1>
 <p class="lede">Every posting comes from the employer's own career system: <b>129 employers</b>, 97 of them on Greenhouse, Lever or Ashby (35, 5 and 57) and 32 on Workday. These are the same public endpoints the employers' career pages use, so there are no keys and no logins, and none of the job sites whose terms forbid programs.</p>
 
+<h2 id="by-company">By company, not by role</h2>
+<p>There are two ways to find job postings. <b>By company:</b> take a list of employers and read each one's own career system. <b>By role:</b> search for “AI engineer in Toronto” across every employer, the way a job board does. Today the jobs lane works <b>only by company</b>. It reads the 129 employers in <code>config/companies.yaml</code> and nothing else, so an employer that isn't on the list is never seen, however many AI roles it has.</p>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:18%"></th><th>By company (live)</th><th>By role (planned)</th></tr></thead>
+<tbody>
+<tr><td>Starts from</td><td>Our list of 129 employers</td><td>A role and a market, whatever the employer</td></tr>
+<tr><td>Sources</td><td>Greenhouse, Lever and Ashby (97 employers); Workday (32)</td><td>SerpApi Google Jobs; your job-alert emails (LinkedIn, Indeed, jobs.ch, Bayt, GulfTalent…); Reed, swissdevjobs.ch and USAJobs</td></tr>
+<tr><td>Sees</td><td>Every open posting at those employers; on Workday, the ones matching 7 AI keywords</td><td>Postings at any employer, small startups and UAE employers included, but only those the search returns</td></tr>
+<tr><td>Good for</td><td>Exact counts, new and closed postings, full text and often pay</td><td>Finding employers that are hiring but aren't on the list</td></tr>
+<tr><td>Limit</td><td>Misses every employer not on the list</td><td>Free quotas (SerpApi: 250 searches a month), and alert emails hold only what you subscribed to</td></tr>
+</tbody></table></div>
+<p>The plan is for the two to work together: an employer that a role search finds hiring, but that isn't on the list, gets probed and is added when its job board answers. See <a href="#gaps">what isn't covered yet</a>.</p>
+
 <h2>Two kinds of career systems</h2>
 <p>The difference that shapes everything downstream: Greenhouse, Lever and Ashby hand over an employer's <b>full list</b> of open jobs in one request. Workday only offers <b>search</b>, 20 results at a time and ranked by relevance, so there is no full list to compare against.</p>
 <div class="frame">
@@ -184,6 +197,9 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <div class="step"><b>Tech companies building AI features</b><span>Stripe, Datadog, Cloudflare, Snowflake… Only AI-titled roles count here.</span></div>
 <div class="step"><b>Enterprises on Workday</b><span>NVIDIA, Salesforce, Capital One, TD, Barclays, Roche… Big employers of GenAI engineers outside the startup world.</span></div>
 </div>
+
+<h3 id="why">Why 129?</h3>
+<p>129 isn't a target; it's how many candidates passed the checks. Every name in the groups above was <a href="#probe">probed</a>, and an employer was kept when its job board answered on a system we read: 97 on Greenhouse, Lever or Ashby, and 32 of the 70 Workday tenants tried. An employer on any other system (SuccessFactors, Oracle, Phenom or its own custom site) isn't on the list yet, whatever its size. That's why UBS, HSBC, Swiss Re and most UAE employers are missing. The list grows by adding candidates and probing them, and later by searching by role.</p>
 
 <h3>“AI company” or not: why it matters</h3>
 <p>Each employer is marked <code>ai_native</code> (an AI company) or not. At an AI company, a “Solutions Architect”, “Research Engineer”, “Data Scientist” or “Member of Technical Staff” is almost always an AI role, so these titles count. At a bank or a database company the same titles usually aren't, so they count only when the title itself names AI or ML (“Solutions Architect, GenAI”). 77 of the 129 employers are marked as AI companies, NVIDIA among them.</p>
