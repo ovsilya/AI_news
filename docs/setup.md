@@ -142,9 +142,14 @@ Nothing to sign up for: the employers' job boards (Greenhouse, Lever, Ashby) are
    .venv/bin/ainews jobs
    ```
    It polls the 97 job boards (about 80 seconds) and the 32 Workday career sites (about 4 minutes; the first runs take longer while they read each new posting once) in [config/companies.yaml](../config/companies.yaml), records new, changed and closed postings, and has Gemini 3.1 Flash-Lite read up to 200 new ones (about $0.001 each, so about $0.22 a run). The first runs work through a backlog of about 2,400 postings, about 2,100 still unread on 2026-10-13, so it takes about ten daily runs to read them all. To go faster, run it more than once a day: each run stays within the daily cap.
-3. **Weekly, on Mondays:**
+3. **Daily, your openings:**
+   ```bash
+   .venv/bin/ainews openings
+   ```
+   It ranks the week's new postings by fit to your skills and level (free, no model call), prints them with their fit, and writes `out/openings-<date>.md`. Post them with `ainews send --openings`, or build and post in one go with `ainews openings --send`; each posting is sent once. Your preferences (role families, markets, levels, years, how many, the fit bar) go in `private/openings.yaml`: copy [config/openings.example.yaml](../config/openings.example.yaml). [Openings for you](jobs/openings.html) explains the score.
+4. **Weekly, on Mondays:**
    ```bash
    .venv/bin/ainews weekly
    ```
    It writes `out/jobs-<date>.md` (about 1 cent for the notes). Read it, then post it with `ainews send --report`, or build and post in one go with `ainews weekly --send`. Rising and falling skills appear after two weeks of tracking.
-4. **Add an employer:** `ainews jobs-probe <slug> …` prints a ready-to-paste line for `config/companies.yaml` when the employer uses Greenhouse, Lever or Ashby. For a Workday employer, `ainews jobs-probe --workday <tenant> …` (the first part of its `*.myworkdayjobs.com` address, e.g. `nvidia`) lists the career sites its robots.txt allows, with their open postings; keep the main one and drop the sites that repeat it.
+5. **Add an employer:** `ainews jobs-probe <slug> …` prints a ready-to-paste line for `config/companies.yaml` when the employer uses Greenhouse, Lever or Ashby. For a Workday employer, `ainews jobs-probe --workday <tenant> …` (the first part of its `*.myworkdayjobs.com` address, e.g. `nvidia`) lists the career sites its robots.txt allows, with their open postings; keep the main one and drop the sites that repeat it.

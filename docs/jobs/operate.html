@@ -35,6 +35,7 @@ code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code
 pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);border:1px solid var(--border);
 border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0}
 pre code{background:none;padding:0}
+.tg{white-space:pre-wrap;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45;max-width:560px;overflow-wrap:anywhere}
 .callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
 .callout.key{border-left:4px solid var(--sel)}
 .callout ol,.callout ul{margin:6px 0 0;padding-left:22px}
@@ -108,7 +109,7 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 </head>
 <body>
 <main>
-<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="report.html">4 · Report &amp; fit</a><a href="operate.html" aria-current="page">Run &amp; change it</a></nav></div>
+<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="openings.html">4 · Openings</a><a href="report.html">5 · Report &amp; fit</a><a href="operate.html" aria-current="page">Run &amp; change it</a></nav></div>
 <h1>Run and change the job search</h1>
 <p class="lede">The commands, the files you edit, how to add an employer or change what counts, where everything is stored, and what to do when something looks wrong. Commands run from the repo folder, as <code>.venv/bin/ainews …</code>.</p>
 
@@ -122,6 +123,10 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <tr><td><code>ainews jobs --max-extract 50</code></td><td>Lets the model read at most 50 postings this run</td></tr>
 <tr><td><code>ainews jobs-probe &lt;slug&gt; …</code></td><td>Finds which of Greenhouse, Lever or Ashby an employer uses and prints a <code>companies.yaml</code> line</td></tr>
 <tr><td><code>ainews jobs-probe --workday &lt;tenant&gt; …</code></td><td>Lists a Workday tenant's career sites that robots.txt allows, with their open postings</td></tr>
+<tr><td><code>ainews openings</code></td><td>Ranks the week's new, unsent postings by fit to you, prints them with their fit, and saves the message to <code>out/openings-&lt;date&gt;.md</code>; nothing is sent</td></tr>
+<tr><td><code>ainews openings --send</code></td><td>Builds the openings and posts them; each posting is sent once</td></tr>
+<tr><td><code>ainews openings --top 12</code></td><td>A longer list this time (the default is <code>top</code> in <code>private/openings.yaml</code>, else 8)</td></tr>
+<tr><td><code>ainews send --openings</code></td><td>Posts the latest saved openings</td></tr>
 <tr><td><code>ainews weekly</code></td><td>Builds the weekly report (about 1 cent) and saves <code>out/jobs-&lt;date&gt;.md</code></td></tr>
 <tr><td><code>ainews weekly --no-llm</code></td><td>The report's tables only, without the notes, for free</td></tr>
 <tr><td><code>ainews weekly --send</code></td><td>Builds the report and posts it to Telegram</td></tr>
@@ -139,6 +144,7 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <tr><td><code>AINEWS_MAX_USD_PER_RUN</code> · <code>_DAY</code> · <code>_MONTH</code></td><td>0.30 · 0.75 · 10</td><td>Spending caps in US dollars, shared with the daily brief</td></tr>
 <tr><td><code>AINEWS_COMPANIES</code></td><td><code>config/companies.yaml</code></td><td>Another employer list, for example for a test</td></tr>
 <tr><td><code>AINEWS_FIT</code></td><td><code>private/skills.yaml</code></td><td>Your have and learning lists</td></tr>
+<tr><td><code>AINEWS_OPENINGS</code></td><td><code>private/openings.yaml</code></td><td>Which openings reach you: role families, markets, levels, years, how many, the fit bar</td></tr>
 <tr><td><code>AINEWS_DB</code></td><td><code>data/ainews.sqlite</code></td><td>The database, for example a copy to experiment on</td></tr>
 <tr><td><code>MODEL_JUDGE</code> · <code>MODEL_EDITOR</code></td><td>3.1 Flash-Lite · 3.5 Flash-Lite</td><td>The reading model and the notes model</td></tr>
 </tbody></table></div>
@@ -149,7 +155,8 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <tbody>
 <tr><td><code>config/companies.yaml</code></td><td>Which employers are polled, on which system, and whether each counts as an AI company</td><td>Next run</td></tr>
 <tr><td><code>config/skills.yaml</code></td><td>Canonical skill names and aliases</td><td>The next report re-applies it to every stored form</td></tr>
-<tr><td><code>private/skills.yaml</code> (private)</td><td>Your <code>have</code> and <code>learning</code> lists for “Your fit”</td><td>Next report</td></tr>
+<tr><td><code>private/skills.yaml</code> (private)</td><td>Your <code>have</code> and <code>learning</code> lists for “Your fit” and the openings' fit</td><td>Next report or openings</td></tr>
+<tr><td><code>private/openings.yaml</code> (private)</td><td>Your preferences for the daily openings; start from <code>config/openings.example.yaml</code></td><td>Next openings</td></tr>
 <tr><td><code>prompts/job_extract.md</code></td><td>What the model is asked to read from a posting</td><td>Raise the version on line 1 to re-read every open posting</td></tr>
 <tr><td><code>prompts/weekly.md</code></td><td>How the notes are written</td><td>Next report</td></tr>
 <tr><td><code>src/ainews/jobs/filters.py</code></td><td>Role families (title rules) and markets (place names)</td><td>Next run; run the tests</td></tr>
@@ -183,7 +190,8 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <tr><td><code>job_boards</code></td><td>One row per employer: last poll time, status (<code>ok</code> or the error), postings listed and kept</td></tr>
 <tr><td><code>job_postings</code></td><td>Every kept posting, open or closed: title, link, places, markets, text, the board's salary, posted date, first and last seen, closed at</td></tr>
 <tr><td><code>job_extractions</code></td><td>The model's form for each posting, with the prompt version and the text fingerprint it was read from</td></tr>
-<tr><td><code>reports</code></td><td>Every weekly report: the statistics, the Markdown and Telegram text, message IDs once sent, and the cost</td></tr>
+<tr><td><code>reports</code></td><td>Every weekly report (<code>jobs_weekly</code>) and daily openings (<code>jobs_openings</code>): the statistics or the postings picked, the Markdown and Telegram text, message IDs once sent, and the cost</td></tr>
+<tr><td><code>job_alerts</code></td><td>Every posting sent as an opening, with its fit and the report it went out in, so it's never sent twice</td></tr>
 <tr><td><code>snapshots</code></td><td><code>workday:&lt;employer&gt;:skipped</code>: Workday postings read before and outside your roles or markets</td></tr>
 <tr><td><code>llm_calls</code></td><td>Every model call: purpose (<code>jobs</code>, <code>weekly</code>…), tokens and cost</td></tr>
 <tr><td><code>runs</code></td><td>Every run: lane, start and end, status, and its counts</td></tr>
@@ -203,6 +211,10 @@ WHERE p.closed_at IS NULL AND e.posting_id IS NULL;
 SELECT company, title, url FROM job_postings
 WHERE closed_at IS NULL AND title_family = 'fde_applied_ai' AND markets LIKE '%"UK"%';
 
+-- openings sent in the last week, best fit first
+SELECT a.fit, p.company, p.title, p.url FROM job_alerts a JOIN job_postings p ON p.id = a.posting_id
+WHERE a.sent_at >= datetime('now', '-7 days') ORDER BY a.fit DESC;
+
 -- model spending on job reading this month
 SELECT ROUND(SUM(cost_usd), 3) FROM llm_calls WHERE purpose = 'jobs' AND at >= strftime('%Y-%m-01', 'now');</code></pre>
 
@@ -219,6 +231,8 @@ SELECT ROUND(SUM(cost_usd), 3) FROM llm_calls WHERE purpose = 'jobs' AND at >= s
 <tr><td>The report covers few postings</td><td>The backlog hasn't been read yet. Each run reads 200; run <code>ainews jobs</code> again later the same day to go faster.</td></tr>
 <tr><td>No rising or falling skills</td><td>Expected for the first 14 days, and in any week with fewer than 30 new target postings.</td></tr>
 <tr><td>A job you expected is missing</td><td>Check the title with the <a href="poll.html#tester">title tester</a> and the location against the <a href="poll.html#markets">market examples</a>. On Workday, the job must also turn up for one of the 7 keywords; German or French titles (“KI-Ingenieur”) don't.</td></tr>
+<tr><td>“no new openings above the fit bar”</td><td>Nothing new passed your filters with a fit of 50 or more. If it says postings wait for the model, run <code>ainews jobs</code> first; otherwise lower <code>min_fit</code> or widen <code>families</code>, <code>markets</code> or <code>levels</code> in <code>private/openings.yaml</code>.</td></tr>
+<tr><td>An opening you don't want keeps its kind coming</td><td>Its fit comes from your lists: check what it shows under ✅ Yours. Narrow <code>families</code>, add the level to <code>skip_levels</code>, or raise <code>min_fit</code>.</td></tr>
 <tr><td>A sentence missing from the notes, with a warning</td><td>The number check removed it because it used a number that isn't in the statistics. That's the check working.</td></tr>
 </tbody></table></div>
 
@@ -232,6 +246,7 @@ SELECT ROUND(SUM(cost_usd), 3) FROM llm_calls WHERE purpose = 'jobs' AND at >= s
 <tr><td><code>src/ainews/jobs/poll.py</code></td><td>The diff (new, changed, closed), the Workday run, and searching sites in parallel</td></tr>
 <tr><td><code>src/ainews/jobs/extract.py</code></td><td>The model's form, the skills dictionary, and the salary rule</td></tr>
 <tr><td><code>src/ainews/jobs/stats.py</code></td><td>The statistics, Wilson intervals, and fit</td></tr>
+<tr><td><code>src/ainews/jobs/openings.py</code></td><td>The daily openings: filters, fit, grouping, the message, and what was sent</td></tr>
 <tr><td><code>src/ainews/jobs/report.py</code></td><td>The weekly report: sections, notes, number check, Markdown and Telegram</td></tr>
 <tr><td><code>src/ainews/http.py</code></td><td>Polite fetching: User-Agent, one request a second per host, retries</td></tr>
 <tr><td><code>src/ainews/cli.py</code></td><td>The commands above</td></tr>
@@ -239,7 +254,7 @@ SELECT ROUND(SUM(cost_usd), 3) FROM llm_calls WHERE purpose = 'jobs' AND at >= s
 <tr><td><code>scripts/build_job_pages.py</code></td><td>Builds these pages from <code>docs/jobs/src/</code>, the config and the code</td></tr>
 </tbody></table></div>
 
-<div class="next"><a href="report.html">← 4 · Report &amp; fit</a><span></span></div>
+<div class="next"><a href="report.html">← 5 · Report &amp; fit</a><span></span></div>
 <p class="foot"><a href="#top">↑ Top</a><a href="../architecture-diagram.html">Architecture diagram</a><a href="../sources/job-boards.html">Job-board source list</a></p>
 </main>
 </body>

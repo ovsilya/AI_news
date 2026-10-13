@@ -1,0 +1,95 @@
+<h1>4 · Openings for you</h1>
+<p class="lede">Every day, <code>ainews openings</code> picks the week's new postings that fit you best and sends them to the Telegram channel, <b>each posting once</b>. It makes no model call: the ranking uses the form the model already filled in for each posting (step 3), your skills list, and your preferences. This is step J3 on the architecture diagram.</p>
+
+<div class="frame">
+<svg viewBox="0 0 1000 140" role="img" aria-label="New postings the model has read pass your filters, get a fit score from skills and level, are grouped and capped, and the best go to Telegram, where they are marked as sent">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="store" x="2" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="88" y="48" text-anchor="middle">New, read postings</text>
+  <text class="s" x="88" y="70" text-anchor="middle">open, last {{openings_fresh_days}} days,</text>
+  <text class="s" x="88" y="88" text-anchor="middle">never sent before</text>
+  <a href="#filters"><rect class="comp" x="208" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="294" y="48" text-anchor="middle">Your filters</text>
+  <text class="s" x="294" y="70" text-anchor="middle">roles · markets</text>
+  <text class="s" x="294" y="88" text-anchor="middle">levels · years</text></a>
+  <a href="#fit"><rect class="comp" x="414" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="500" y="48" text-anchor="middle">Fit, 0–100</text>
+  <text class="s" x="500" y="70" text-anchor="middle">skills {{skill_points}} points</text>
+  <text class="s" x="500" y="88" text-anchor="middle">level {{level_points}} points</text></a>
+  <a href="#pick"><rect class="comp" x="620" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="706" y="48" text-anchor="middle">Best {{openings_top}}</text>
+  <text class="s" x="706" y="70" text-anchor="middle">fit {{openings_min_fit}}+ · one per role</text>
+  <text class="s" x="706" y="88" text-anchor="middle">≤ {{per_employer}} per employer</text></a>
+  <a href="#message"><rect class="ext" x="826" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="912" y="48" text-anchor="middle">Telegram</text>
+  <text class="s" x="912" y="70" text-anchor="middle">when you send it,</text>
+  <text class="s" x="912" y="88" text-anchor="middle">then marked sent</text></a>
+  <path class="a" d="M174 70 H204" marker-end="url(#arr)"/>
+  <path class="a" d="M380 70 H410" marker-end="url(#arr)"/>
+  <path class="a" d="M586 70 H616" marker-end="url(#arr)"/>
+  <path class="a" d="M792 70 H822" marker-end="url(#arr)"/>
+</svg>
+</div>
+
+<h2 id="filters">Which postings are considered</h2>
+<p>A posting is a candidate when all of these hold:</p>
+<ul>
+<li><b>Open, and read by the model.</b> Without the model's form there are no skills to compare. New postings are read first, so a day's new postings are usually read the same day.</li>
+<li><b>New:</b> published in the last {{openings_fresh_days}} days, by the employer's own date (else the day we first saw it).</li>
+<li><b>Never sent before.</b> Sent postings are recorded, so a posting reaches you once, however long it stays open.</li>
+<li><b>Yours:</b> its role family (as the model judged it from the duties) and at least one of its markets are in your lists, its level isn't one you skip, and it doesn't ask for more than your years plus {{extra_years}}.</li>
+</ul>
+<p>Your preferences live in <code>private/openings.yaml</code>, which is gitignored. Copy <code>config/openings.example.yaml</code> to start; without the file these defaults apply:</p>
+{{openings_defaults}}
+
+<h2 id="fit">The fit score</h2>
+<p>Each candidate gets a fit from 0 to 100, computed in code:</p>
+<ul>
+<li><b>Skills, {{skill_points}} points.</b> Every skill the posting asks for has a weight: 1 if it's required, ½ if it's only preferred. A skill in your <code>have</code> list earns all of its weight, one in your <code>learning</code> list half, any other none. The points are {{skill_points}} × earned ÷ total weight. A posting that lists no skills gets half the points: neither a match nor a miss.</li>
+<li><b>Level, {{level_points}} points.</b> A level in your <code>levels</code> list earns them all; otherwise a share: {{level_shares}}.</li>
+</ul>
+<p>An example with a <b>made-up</b> skills list (yours stays private). The posting is the Legora FDE role from <a href="extract.html#example">step 3</a>, a mid-level job; say your list has {{example_have}}, and you're learning {{example_learning}}:</p>
+{{openings_example}}
+
+<h2 id="pick">From candidates to the day's list</h2>
+<ol>
+<li><b>Best fit first</b>, newer first among equal fits.</li>
+<li><b>One entry per role.</b> The same title at the same employer in several cities is one entry, listing all its places; every posting in it counts as sent.</li>
+<li><b>At most {{per_employer}} per employer</b>, so one big employer can't fill the list.</li>
+<li><b>The best {{openings_top}} with a fit of at least {{openings_min_fit}}.</b> Change both with <code>top</code> and <code>min_fit</code>. On a quiet day the list is shorter, and on a day with nothing above the bar nothing is sent.</li>
+</ol>
+
+<h2 id="message">What arrives in Telegram</h2>
+<p>A heading with how many postings were considered, then one block per opening, packed into as few messages as fit, with one notification. The example above, rendered by the same code:</p>
+<div class="tg">{{openings_preview}}</div>
+<ul>
+<li><b>📍</b> where (the first two places, and how many more), the work policy, the level, and “visa sponsorship” when the posting says it offers it.</li>
+<li><b>💰</b> the posted pay, when there is one: the board's own figure if it publishes one, else the range in the text.</li>
+<li><b>✅ Yours</b> the skills you have, with how many of the required ones; <b>📚 Learning</b> the ones on your learning list; <b>➕ New to you</b> the required skills on neither list.</li>
+<li><b>🔗</b> the employer's own posting, the role family, when it was published, and the fit.</li>
+</ul>
+<p class="muted">These lines reveal which skills you have to anyone who can read the channel, as the weekly report's “Your fit” section does.</p>
+
+<h2 id="once">Sent once: how it's tracked</h2>
+<ul>
+<li><b>Building isn't sending.</b> <code>ainews openings</code> saves the message (and <code>out/openings-&lt;date&gt;.md</code>) without sending. Postings count as sent only once the message goes out with <code>--send</code> or <code>ainews send --openings</code>, so a preview never uses them up.</li>
+<li><b>The record:</b> the <code>job_alerts</code> table holds every posting sent, with its fit and the report it went out in.</li>
+<li><b>Unread postings:</b> when new postings in your roles still wait for the model, the heading says how many. They become candidates after the next <code>ainews jobs</code> run reads them, as long as they're still within {{openings_fresh_days}} days.</li>
+<li><b>Cleaning the channel:</b> <code>ainews tg-clean</code> keeps the latest openings, brief and jobs report.</li>
+</ul>
+
+<h2 id="daily">The daily routine</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:34%">Command</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>ainews jobs</code></td><td>Polls the employers and lets the model read new postings (steps 1–3)</td></tr>
+<tr><td><code>ainews openings</code></td><td>Ranks the candidates, prints the list with each fit, and saves the message; nothing is sent</td></tr>
+<tr><td><code>ainews send --openings</code></td><td>Sends the message you just checked</td></tr>
+<tr><td><code>ainews openings --send</code></td><td>Builds and sends in one go</td></tr>
+<tr><td><code>ainews openings --top 12</code></td><td>A longer list this time</td></tr>
+</tbody></table></div>
+<p class="muted">Free and instant: no model call, no network call except to Telegram. After deployment, the daily 05:00 jobs run will send the openings at the end.</p>
+
+<div class="callout">
+<p><b>Why not let the model rank?</b> The model already did the hard part, reading each posting into a form. Ranking those forms in code costs nothing, gives the same answer every run, and shows its working: every opening lists the skills behind its fit, so you can see why it's there and fix your lists if it shouldn't be.</p>
+</div>

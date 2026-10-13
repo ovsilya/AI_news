@@ -123,10 +123,17 @@ CREATE TABLE IF NOT EXISTS job_extractions (
     data TEXT NOT NULL,
     extracted_at TEXT NOT NULL
 );
--- Weekly reports (lane ③): the statistics they were written from, and what was sent.
+-- Reports: the weekly jobs report (lane ③) and the daily openings (lane ②), with what was sent.
 CREATE TABLE IF NOT EXISTS reports (
     id INTEGER PRIMARY KEY, created_at TEXT NOT NULL, kind TEXT NOT NULL, stats TEXT NOT NULL,
     markdown TEXT NOT NULL, telegram_html TEXT NOT NULL, telegram_message_ids TEXT, cost_usd REAL DEFAULT 0
+);
+-- Openings sent to the channel, so each posting goes out once.
+CREATE TABLE IF NOT EXISTS job_alerts (
+    posting_id INTEGER PRIMARY KEY REFERENCES job_postings(id),
+    report_id INTEGER REFERENCES reports(id),
+    fit INTEGER,
+    sent_at TEXT NOT NULL
 );
 """
 

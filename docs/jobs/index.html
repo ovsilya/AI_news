@@ -35,6 +35,7 @@ code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code
 pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);border:1px solid var(--border);
 border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0}
 pre code{background:none;padding:0}
+.tg{white-space:pre-wrap;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45;max-width:560px;overflow-wrap:anywhere}
 .callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
 .callout.key{border-left:4px solid var(--sel)}
 .callout ol,.callout ul{margin:6px 0 0;padding-left:22px}
@@ -108,78 +109,87 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 </head>
 <body>
 <main>
-<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html" aria-current="page">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="report.html">4 · Report &amp; fit</a><a href="operate.html">Run &amp; change it</a></nav></div>
+<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html" aria-current="page">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="openings.html">4 · Openings</a><a href="report.html">5 · Report &amp; fit</a><a href="operate.html">Run &amp; change it</a></nav></div>
 <h1>How the job search works</h1>
 <p class="lede">Every day the jobs lane (lane ② on the <a href="../architecture-diagram.html">architecture diagram</a>) collects open AI engineering jobs <b>straight from the employers' own career sites</b>. It keeps the ones in your target roles and markets, and has a model read each one into a fixed set of facts: skills, seniority, pay and remote policy. Once a week, code turns those facts into a report on what employers ask for, what they pay, who is hiring, and how your skills match.</p>
 <p class="snap">Numbers on these pages are a snapshot from 13 Oct 2026, the second day of tracking. Lists and limits are generated from the code and config, so they are always current.</p>
 
-<h2>The idea in four sentences</h2>
+<h2>The idea in five sentences</h2>
 <div class="callout key">
 <ol>
 <li><b>Go to the source, employer by employer.</b> Postings come from the own job systems of a fixed list of employers (97 on Greenhouse, Lever or Ashby, 32 on Workday), never from LinkedIn or Indeed, whose terms forbid programs. An employer that isn't on the list isn't seen; <a href="sources.html#by-company">searching by role</a> is planned.</li>
 <li><b>Keep only what's yours.</b> A title filter keeps your role families and a location filter keeps the US, Canada, UK, Switzerland, UAE and remote jobs.</li>
 <li><b>Read each posting once.</b> Gemini 3.1 Flash-Lite fills in the same form for every posting, and the form is read again only if the posting's text changes.</li>
+<li><b>Send what fits, once.</b> Every day the new postings that best fit your skills and level go to Telegram, ranked in code, and each posting is sent only once.</li>
 <li><b>Count in code, explain with the model.</b> Every number in the report is computed from the data. The model writes the commentary, and any sentence with a number that isn't in the data is removed.</li>
 </ol>
 </div>
 
-<h2>The six steps</h2>
-<p>Steps 1–3 run every day (<code>ainews jobs</code>); steps 4–6 run once a week (<code>ainews weekly</code>). Click a step to read how it works.</p>
+<h2>The seven steps</h2>
+<p>Steps 1–4 run every day (<code>ainews jobs</code>, then <code>ainews openings</code>); steps 5–7 run once a week (<code>ainews weekly</code>). Click a step to read how it works.</p>
 <div class="frame">
-<svg viewBox="0 0 1000 268" role="img" aria-label="The job search in six steps: sources, filter and track, read, count, explain, publish, with a SQLite database underneath">
+<svg viewBox="0 0 1000 268" role="img" aria-label="The job search in seven steps: sources, filter, read and openings every day; count, explain and publish every week; with a SQLite database underneath">
   <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
-  <text class="h" x="248" y="20" text-anchor="middle">Daily · ainews jobs</text>
-  <path class="a" d="M6 32 V27 H490 V32"/>
-  <text class="h" x="752" y="20" text-anchor="middle">Weekly · ainews weekly</text>
-  <path class="a" d="M510 32 V27 H994 V32"/>
+  <text class="h" x="284" y="20" text-anchor="middle">Daily · ainews jobs, ainews openings</text>
+  <path class="a" d="M2 32 V27 H566 V32"/>
+  <text class="h" x="788" y="20" text-anchor="middle">Weekly · ainews weekly</text>
+  <path class="a" d="M578 32 V27 H998 V32"/>
 
-  <a href="sources.html"><rect class="ext" x="6" y="46" width="148" height="104" rx="9"/>
-    <text class="t" x="80" y="72" text-anchor="middle">1 · Sources</text>
-    <text class="s" x="80" y="94" text-anchor="middle">97 job-board APIs</text>
-    <text class="s" x="80" y="112" text-anchor="middle">32 Workday sites</text>
-    <text class="s" x="80" y="130" text-anchor="middle">employers' own</text></a>
-  <a href="poll.html"><rect class="comp" x="174" y="46" width="148" height="104" rx="9"/>
-    <text class="t" x="248" y="72" text-anchor="middle">2 · Filter &amp; track</text>
-    <text class="s" x="248" y="94" text-anchor="middle">role + market</text>
-    <text class="s" x="248" y="112" text-anchor="middle">new · changed</text>
-    <text class="s" x="248" y="130" text-anchor="middle">closed</text></a>
-  <a href="extract.html"><rect class="llm" x="342" y="46" width="148" height="104" rx="9"/>
-    <text class="t" x="416" y="72" text-anchor="middle">3 · Read</text>
-    <text class="s" x="416" y="94" text-anchor="middle">Flash-Lite fills</text>
-    <text class="s" x="416" y="112" text-anchor="middle">a fixed form</text>
-    <text class="s" x="416" y="130" text-anchor="middle">skills · pay · remote</text></a>
-  <a href="report.html#count"><rect class="comp" x="510" y="46" width="148" height="104" rx="9"/>
-    <text class="t" x="584" y="72" text-anchor="middle">4 · Count</text>
-    <text class="s" x="584" y="94" text-anchor="middle">skill shares</text>
-    <text class="s" x="584" y="112" text-anchor="middle">pay · who's hiring</text>
-    <text class="s" x="584" y="130" text-anchor="middle">your fit</text></a>
-  <a href="report.html#notes"><rect class="llm" x="678" y="46" width="148" height="104" rx="9"/>
-    <text class="t" x="752" y="72" text-anchor="middle">5 · Explain</text>
-    <text class="s" x="752" y="94" text-anchor="middle">3 short notes</text>
-    <text class="s" x="752" y="112" text-anchor="middle">every number</text>
-    <text class="s" x="752" y="130" text-anchor="middle">checked</text></a>
-  <a href="report.html#publish"><rect class="comp" x="846" y="46" width="148" height="104" rx="9"/>
-    <text class="t" x="920" y="72" text-anchor="middle">6 · Publish</text>
-    <text class="s" x="920" y="94" text-anchor="middle">out/jobs-….md</text>
-    <text class="s" x="920" y="112" text-anchor="middle">Telegram</text>
-    <text class="s" x="920" y="130" text-anchor="middle">when you send it</text></a>
-  <path class="a" d="M154 98 H170" marker-end="url(#arr)"/>
-  <path class="a" d="M322 98 H338" marker-end="url(#arr)"/>
-  <path class="a" d="M490 98 H506" marker-end="url(#arr)"/>
-  <path class="a" d="M658 98 H674" marker-end="url(#arr)"/>
-  <path class="a" d="M826 98 H842" marker-end="url(#arr)"/>
+  <a href="sources.html"><rect class="ext" x="2" y="46" width="132" height="104" rx="9"/>
+    <text class="t" x="68" y="72" text-anchor="middle">1 · Sources</text>
+    <text class="s" x="68" y="94" text-anchor="middle">97 job-board APIs</text>
+    <text class="s" x="68" y="112" text-anchor="middle">32 Workday sites</text>
+    <text class="s" x="68" y="130" text-anchor="middle">employers' own</text></a>
+  <a href="poll.html"><rect class="comp" x="146" y="46" width="132" height="104" rx="9"/>
+    <text class="t" x="212" y="72" text-anchor="middle">2 · Filter</text>
+    <text class="s" x="212" y="94" text-anchor="middle">role + market</text>
+    <text class="s" x="212" y="112" text-anchor="middle">new · changed</text>
+    <text class="s" x="212" y="130" text-anchor="middle">closed</text></a>
+  <a href="extract.html"><rect class="llm" x="290" y="46" width="132" height="104" rx="9"/>
+    <text class="t" x="356" y="72" text-anchor="middle">3 · Read</text>
+    <text class="s" x="356" y="94" text-anchor="middle">Flash-Lite fills</text>
+    <text class="s" x="356" y="112" text-anchor="middle">a fixed form</text>
+    <text class="s" x="356" y="130" text-anchor="middle">skills · pay</text></a>
+  <a href="openings.html"><rect class="comp" x="434" y="46" width="132" height="104" rx="9"/>
+    <text class="t" x="500" y="72" text-anchor="middle">4 · Openings</text>
+    <text class="s" x="500" y="94" text-anchor="middle">your best fits</text>
+    <text class="s" x="500" y="112" text-anchor="middle">→ Telegram</text>
+    <text class="s" x="500" y="130" text-anchor="middle">each sent once</text></a>
+  <a href="report.html#count"><rect class="comp" x="578" y="46" width="132" height="104" rx="9"/>
+    <text class="t" x="644" y="72" text-anchor="middle">5 · Count</text>
+    <text class="s" x="644" y="94" text-anchor="middle">skill shares</text>
+    <text class="s" x="644" y="112" text-anchor="middle">pay · who's hiring</text>
+    <text class="s" x="644" y="130" text-anchor="middle">your fit</text></a>
+  <a href="report.html#notes"><rect class="llm" x="722" y="46" width="132" height="104" rx="9"/>
+    <text class="t" x="788" y="72" text-anchor="middle">6 · Explain</text>
+    <text class="s" x="788" y="94" text-anchor="middle">3 short notes</text>
+    <text class="s" x="788" y="112" text-anchor="middle">every number</text>
+    <text class="s" x="788" y="130" text-anchor="middle">checked</text></a>
+  <a href="report.html#publish"><rect class="comp" x="866" y="46" width="132" height="104" rx="9"/>
+    <text class="t" x="932" y="72" text-anchor="middle">7 · Publish</text>
+    <text class="s" x="932" y="94" text-anchor="middle">out/jobs-….md</text>
+    <text class="s" x="932" y="112" text-anchor="middle">Telegram</text>
+    <text class="s" x="932" y="130" text-anchor="middle">when you send it</text></a>
+  <path class="a" d="M134 98 H142" marker-end="url(#arr)"/>
+  <path class="a" d="M278 98 H286" marker-end="url(#arr)"/>
+  <path class="a" d="M422 98 H430" marker-end="url(#arr)"/>
+  <path class="a" d="M566 98 H574" marker-end="url(#arr)"/>
+  <path class="a" d="M710 98 H718" marker-end="url(#arr)"/>
+  <path class="a" d="M854 98 H862" marker-end="url(#arr)"/>
 
-  <a href="operate.html#data"><rect class="store" x="174" y="196" width="820" height="56" rx="9"/>
-    <text class="t" x="584" y="219" text-anchor="middle">SQLite database (data/ainews.sqlite)</text>
-    <text class="s" x="584" y="239" text-anchor="middle">job_boards · job_postings · job_extractions · reports</text></a>
-  <path class="a" d="M248 150 V192" marker-end="url(#arr)"/>
-  <text class="s" x="256" y="178">saves postings</text>
-  <path class="a" d="M416 150 V192" marker-start="url(#arr)" marker-end="url(#arr)"/>
-  <text class="s" x="424" y="178">reads postings, saves forms</text>
-  <path class="a" d="M584 192 V154" marker-end="url(#arr)"/>
-  <text class="s" x="592" y="178">reads the forms</text>
-  <path class="a" d="M920 150 V192" marker-end="url(#arr)"/>
-  <text class="s" x="928" y="178">saves the report</text>
+  <a href="operate.html#data"><rect class="store" x="146" y="196" width="852" height="56" rx="9"/>
+    <text class="t" x="572" y="219" text-anchor="middle">SQLite database (data/ainews.sqlite)</text>
+    <text class="s" x="572" y="239" text-anchor="middle">job_boards · job_postings · job_extractions · job_alerts · reports</text></a>
+  <path class="a" d="M212 150 V192" marker-end="url(#arr)"/>
+  <text class="s" x="220" y="178">saves postings</text>
+  <path class="a" d="M356 150 V192" marker-start="url(#arr)" marker-end="url(#arr)"/>
+  <text class="s" x="364" y="178">saves forms</text>
+  <path class="a" d="M500 150 V192" marker-start="url(#arr)" marker-end="url(#arr)"/>
+  <text class="s" x="508" y="178">marks sent</text>
+  <path class="a" d="M644 192 V154" marker-end="url(#arr)"/>
+  <text class="s" x="652" y="178">reads the forms</text>
+  <path class="a" d="M932 150 V192" marker-end="url(#arr)"/>
+  <text class="s" x="924" y="178" text-anchor="end">saves the report</text>
 </svg>
 </div>
 <p class="muted">Colours as on the architecture diagram: orange is outside the project, white is plain code, purple is a model call, green is storage.</p>
@@ -200,10 +210,11 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <thead><tr><th>When</th><th>Command</th><th>What happens</th><th class="num">Time</th><th class="num">Cost</th></tr></thead>
 <tbody>
 <tr><td>Every day</td><td><code>ainews jobs</code></td><td>Lists the 97 job boards; searches the 32 Workday sites (4 at a time); saves new, changed and closed postings; the model reads up to 200 unread postings, newest first</td><td class="num">about 10 min<br><span class="muted">1½ lists · 4 Workday · 4 reading</span></td><td class="num">about $0.22</td></tr>
+<tr><td>Every day, after it</td><td><code>ainews openings</code></td><td>Ranks the week's new, unsent postings by fit to you and saves the message; <code>--send</code> (or <code>ainews send --openings</code>) posts it</td><td class="num">seconds</td><td class="num">free</td></tr>
 <tr><td>Monday</td><td><code>ainews weekly</code></td><td>Computes the statistics, the model writes three notes, and the report is saved to <code>out/jobs-&lt;date&gt;.md</code></td><td class="num">seconds</td><td class="num">about 1 cent</td></tr>
 <tr><td>When you're happy with it</td><td><code>ainews send --report</code></td><td>Posts the latest report to the Telegram channel, in as few messages as fit</td><td class="num">seconds</td><td class="num">free</td></tr>
 </tbody></table></div>
-<p class="muted">Today you run these by hand. After deployment, Cloud Scheduler runs <code>jobs</code> at 05:00 every day and <code>weekly</code> on Mondays at 07:00.</p>
+<p class="muted">Today you run these by hand. After deployment, Cloud Scheduler runs <code>jobs</code> at 05:00 every day, sending the openings at the end, and <code>weekly</code> on Mondays at 07:00.</p>
 
 <h2 id="words">Words used on these pages</h2>
 <div class="callout"><dl class="words">
@@ -219,6 +230,7 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <dt>Share</dt><dd>The percentage of postings that ask for something: “Python 73%” means 73 of every 100 target postings name Python.</dd>
 <dt>Median</dt><dd>The middle value when numbers are sorted: half are above, half below. Used for pay so a few extreme salaries don't skew it.</dd>
 <dt>Confidence interval</dt><dd>The range a true share probably lies in, given how many postings we saw. Used to tell a real rise in demand from noise.</dd>
+<dt>Fit</dt><dd>For one opening: a score from 0 to 100, from how many of its skills you have and whether its level is yours.</dd>
 <dt>Coverage</dt><dd>How much of the demand for the top skills your skills cover, weighted by how often each skill is asked for.</dd>
 </dl></div>
 
@@ -237,7 +249,8 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <a class="step" href="sources.html"><b>1 · Where postings come from</b><span>Job-board APIs versus Workday search, how employers were chosen, the full list of 129.</span></a>
 <a class="step" href="poll.html"><b>2 · Filter and track</b><span>How a title becomes a role family, how a location becomes a market, and when a posting counts as closed.</span></a>
 <a class="step" href="extract.html"><b>3 · Read each posting</b><span>The form the model fills in, a worked example, the skills dictionary, pay and cost.</span></a>
-<a class="step" href="report.html"><b>4 · Weekly report and fit</b><span>Skill shares, pay medians, rising skills with confidence intervals, your coverage, checked notes.</span></a>
+<a class="step" href="openings.html"><b>4 · Openings for you</b><span>Which new postings reach you, the fit score with a worked example, and what the message looks like.</span></a>
+<a class="step" href="report.html"><b>5 · Weekly report and fit</b><span>Skill shares, pay medians, rising skills with confidence intervals, your coverage, checked notes.</span></a>
 <a class="step" href="operate.html"><b>Run and change it</b><span>Commands, settings, adding an employer, the tables, troubleshooting.</span></a>
 </div>
 

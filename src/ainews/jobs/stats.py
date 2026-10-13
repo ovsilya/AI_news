@@ -1,4 +1,4 @@
-"""J3 / W1: statistics for the weekly jobs report, computed from stored postings and extractions.
+"""W1: statistics for the weekly jobs report, computed from stored postings and extractions.
 
 - Demand now: skill shares across all open postings in the target role families.
 - Movement: skills whose share in target postings published this week differs from the four weeks

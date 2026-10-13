@@ -39,6 +39,7 @@ class Settings:
     companies_path: Path = ROOT / "config" / "companies.yaml"
     skills_path: Path = ROOT / "config" / "skills.yaml"
     fit_path: Path = ROOT / "private" / "skills.yaml"   # your skills, for the weekly fit report
+    openings_path: Path = ROOT / "private" / "openings.yaml"   # which daily openings reach you
     # Spending guard. Model calls are off unless AINEWS_LLM_ENABLED=true (the "button").
     llm_enabled: bool = False
     max_usd_per_run: float = 0.30
@@ -72,6 +73,7 @@ class Settings:
             prompts_dir=ROOT / "prompts",
             companies_path=path("AINEWS_COMPANIES", "config/companies.yaml"),
             fit_path=path("AINEWS_FIT", "private/skills.yaml"),
+            openings_path=path("AINEWS_OPENINGS", "private/openings.yaml"),
             llm_enabled=env("AINEWS_LLM_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"},
             max_usd_per_run=float(env("AINEWS_MAX_USD_PER_RUN", "0.30")),
             max_usd_per_day=float(env("AINEWS_MAX_USD_PER_DAY", "0.75")),

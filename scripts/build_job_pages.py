@@ -9,6 +9,7 @@ import json
 import re
 import sys
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -16,7 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import yaml  # noqa: E402
 
-from ainews.jobs import extract, filters, poll, stats, workday  # noqa: E402
+from ainews.jobs import extract, filters, openings, poll, stats, workday  # noqa: E402
 from ainews.jobs.boards import DESCRIPTION_CHARS, load_companies  # noqa: E402
 
 OUT = ROOT / "docs" / "jobs"
@@ -28,7 +29,8 @@ PAGES = [   # (slug, nav label, <title>)
     ("sources", "1 · Sources", "Job search: where postings come from"),
     ("poll", "2 · Filter & track", "Job search: filter and track"),
     ("extract", "3 · Read", "Job search: reading postings"),
-    ("report", "4 · Report & fit", "Job search: weekly report and fit"),
+    ("openings", "4 · Openings", "Job search: openings for you"),
+    ("report", "5 · Report & fit", "Job search: weekly report and fit"),
     ("operate", "Run & change it", "Job search: run and change it"),
 ]
 
@@ -63,6 +65,7 @@ code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code
 pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);border:1px solid var(--border);
 border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0}
 pre code{background:none;padding:0}
+.tg{white-space:pre-wrap;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45;max-width:560px;overflow-wrap:anywhere}
 .callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
 .callout.key{border-left:4px solid var(--sel)}
 .callout ol,.callout ul{margin:6px 0 0;padding-left:22px}
@@ -284,17 +287,17 @@ def market_examples() -> str:
 
 FIELD_NOTES = {   # extraction field -> (what it holds, how the report uses it)
     "role_family": ("What the job really is, judged from the duties: one of the role families", "Which postings count; roles table"),
-    "seniority": ("intern … principal, lead, manager, or unknown; from the title first, then the years asked for", "Seniority shares"),
-    "years_min": ("Minimum years of experience asked for (0 if not stated)", "Kept for later questions"),
-    "skills_required": ("Up to 15 skills the posting requires, most important first", "Skill shares, fit"),
-    "skills_preferred": ("Up to 10 nice-to-have skills", "Skill shares (a skill counts once per posting)"),
+    "seniority": ("intern … principal, lead, manager, or unknown; from the title first, then the years asked for", "Seniority shares; the level part of an opening's fit"),
+    "years_min": ("Minimum years of experience asked for (0 if not stated)", "Openings skip roles asking far more than your years"),
+    "skills_required": ("Up to 15 skills the posting requires, most important first", "Skill shares, fit, openings"),
+    "skills_preferred": ("Up to 10 nice-to-have skills", "Skill shares (a skill counts once per posting); openings at half weight"),
     "customer_facing": ("Does the job involve working directly with customers?", "Customer-facing share"),
     "travel": ("none, some, frequent or unknown", "Kept for later questions"),
-    "remote_policy": ("onsite, hybrid, remote or unknown", "Remote share"),
-    "visa_sponsorship": ("yes, no or unknown, only from what the posting says", "Visa count"),
+    "remote_policy": ("onsite, hybrid, remote or unknown", "Remote share; shown with each opening"),
+    "visa_sponsorship": ("yes, no or unknown, only from what the posting says", "Visa count; flagged on an opening"),
     "salary_min": ("Base salary range, only when the text states one", "Pay medians, if the board gave none"),
     "salary_max": ("", ""), "salary_currency": ("", ""), "salary_period": ("year, month, hour or unknown", ""),
-    "summary": ("One plain sentence on what the person does", "Kept for the daily brief's job picks (planned)"),
+    "summary": ("One plain sentence on what the person does", "Shown with each opening"),
 }
 
 
@@ -317,6 +320,76 @@ def fields_table() -> str:
                     f"<td>{e(use)}</td></tr>")
     return ('<div class="tablewrap"><table><thead><tr><th style="width:24%">Field</th><th>What it holds</th>'
             '<th style="width:26%">Used for</th></tr></thead><tbody>' + "".join(rows) + "</tbody></table></div>")
+
+
+# The openings example: the Legora posting from the extraction page, with a made-up skills list.
+EXAMPLE_POSTING = {
+    "role_family": "fde_applied_ai", "seniority": "mid", "years_min": 2, "remote_policy": "onsite",
+    "visa_sponsorship": "unknown",
+    "skills_required": ["Software engineering", "REST APIs", "Authentication", "Integration", "Data pipelines",
+                        "Customer-facing work", "Communication", "Debugging"],
+    "skills_preferred": ["TypeScript", "B2B", "AI agents", "Product sense"],
+    "summary": "Builds and deploys integrations and software solutions by working directly with enterprise customers "
+               "to solve their specific legal workflow needs.",
+    "salary": {"min": 175100, "max": 245000, "currency": "USD", "period": "year", "source": "board"},
+}
+EXAMPLE_PROFILE = {"have": ["Software engineering", "REST APIs", "Data pipelines", "Customer-facing work", "Communication",
+                            "Debugging", "AI agents"], "learning": ["TypeScript"]}
+
+
+def _num(x: float) -> str:
+    return f"{x:g}".replace(".5", "½") if x != 0.5 else "½"
+
+
+def openings_example() -> str:
+    d, prof = EXAMPLE_POSTING, EXAMPLE_PROFILE
+    rows, total, earned = [], 0.0, 0.0
+    for kind, names, weight in (("required", d["skills_required"], 1.0), ("preferred", d["skills_preferred"], 0.5)):
+        for s in names:
+            share = 1.0 if s in prof["have"] else 0.5 if s in prof["learning"] else 0.0
+            yours = "have" if share == 1 else "learning" if share else "—"
+            total, earned = total + weight, earned + weight * share
+            rows.append(f"<tr><td>{e(s)}</td><td>{kind}</td><td>{yours}</td><td class=\"num\">{_num(weight)}</td>"
+                        f"<td class=\"num\">{_num(weight * share) if share else '0'}</td></tr>")
+    prefs = {**openings.DEFAULTS}
+    skill_pts = openings.SKILL_POINTS * earned / total
+    level_share = 1.0 if d["seniority"] in prefs["levels"] else openings.LEVEL_SHARE.get(d["seniority"], openings.OTHER_LEVEL_SHARE)
+    fit = openings.fit_score(d, prof, prefs)
+    if fit != round(skill_pts + openings.LEVEL_POINTS * level_share):
+        raise SystemExit("openings example doesn't match fit_score")
+    rows.append(f"<tr><td colspan=\"3\"><b>Total</b></td><td class=\"num\"><b>{_num(total)}</b></td>"
+                f"<td class=\"num\"><b>{earned:g}</b></td></tr>")
+    return ('<div class="tablewrap"><table><thead><tr><th>Skill</th><th>In the posting</th><th>In your list</th>'
+            '<th class="num">Weight</th><th class="num">Earned</th></tr></thead><tbody>' + "".join(rows) +
+            "</tbody></table></div>"
+            f"<p>Skills: {openings.SKILL_POINTS} × {earned:g} ÷ {total:g} = {skill_pts:.2f} points. Level: “{d['seniority']}” "
+            f"isn't in the default levels, so it earns {round(100 * level_share)}% of {openings.LEVEL_POINTS} = "
+            f"{openings.LEVEL_POINTS * level_share:g} points. <b>Fit {fit}</b>, above the bar of "
+            f"{prefs['min_fit']}, so it would be sent.</p>")
+
+
+def openings_preview() -> str:
+    d, prof = EXAMPLE_POSTING, EXAMPLE_PROFILE
+    g = {"ids": [1], "fit": openings.fit_score(d, prof, openings.DEFAULTS), "posted": "2026-10-12T09:00:00+00:00",
+         "company": "Legora", "title": "Junior/Mid-level Forward Deployed Engineer",
+         "url": "https://jobs.ashbyhq.com/legora", "places": ["New York City, NY"], "family": d["role_family"],
+         **openings._skills_for(d, prof),
+         **{k: d.get(k) for k in ("seniority", "remote_policy", "visa_sponsorship", "salary", "summary")}}
+    _, messages = openings.render([g], 60, 0, openings.title_for(datetime(2026, 10, 13)), openings.FOOTER)
+    return messages[0]
+
+
+def openings_defaults() -> str:
+    notes = {"families": "role families to consider", "markets": "a posting needs at least one",
+             "levels": "your level: full level points", "skip_levels": "never shown",
+             "years": f"your years; postings asking more than this + {openings.EXTRA_YEARS} are skipped (empty: keep all)",
+             "top": "openings per day", "min_fit": "the lowest fit worth sending"}
+    if set(notes) != set(openings.DEFAULTS):
+        raise SystemExit(f"describe these openings settings: {sorted(set(openings.DEFAULTS) ^ set(notes))}")
+    rows = "".join(f"<tr><td><code>{k}</code></td><td>{e(', '.join(v) if isinstance(v, list) else str(v) if v is not None else 'empty')}</td>"
+                   f"<td>{e(notes[k])}</td></tr>" for k, v in openings.DEFAULTS.items())
+    return ('<div class="tablewrap"><table><thead><tr><th style="width:18%">Key</th><th style="width:40%">Default</th>'
+            '<th>Meaning</th></tr></thead><tbody>' + rows + "</tbody></table></div>")
 
 
 def wilson_pct(k, n) -> str:
@@ -362,6 +435,15 @@ def blocks() -> dict[str, str]:
         "min_tracking_days": str(stats.MIN_TRACKING.days), "min_skill": str(stats.MIN_SKILL),
         "min_salary": str(stats.MIN_SALARY),
         "targets": ", ".join(targets), "n_targets": str(len(targets)),
+        "openings_fresh_days": str(openings.FRESH.days), "openings_top": str(openings.DEFAULTS["top"]),
+        "openings_min_fit": str(openings.DEFAULTS["min_fit"]), "skill_points": str(openings.SKILL_POINTS),
+        "level_points": str(openings.LEVEL_POINTS), "per_employer": str(openings.PER_EMPLOYER),
+        "extra_years": str(openings.EXTRA_YEARS),
+        "level_shares": ", ".join(f"{k} {round(100 * v)}%" for k, v in openings.LEVEL_SHARE.items()) + f", any other {round(100 * openings.OTHER_LEVEL_SHARE)}%",
+        "openings_defaults": openings_defaults(), "openings_example": openings_example(),
+        "openings_preview": openings_preview(),
+        "example_have": ", ".join(EXAMPLE_PROFILE["have"][:-1]) + " and " + EXAMPLE_PROFILE["have"][-1],
+        "example_learning": " and ".join(EXAMPLE_PROFILE["learning"]),
         "wilson_a": wilson_pct(24, 60), "wilson_b": wilson_pct(30, 200), "wilson_c": wilson_pct(9, 40),
     }
 

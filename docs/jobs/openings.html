@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job search: openings for you</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1f;--muted:#5f6368;--border:#d5d7db;--sel:#2f6fdb;--line:#8a8f98;
+--chip:#eef3fb;--chip-border:#9db5dc;--llm:#f3ecfd;--llm-border:#9a7ad1;--store:#eaf6ef;--store-border:#6fae8a;
+--ext:#fdf3e6;--ext-border:#d39b4a;--good:#1e7d4f;--bad:#b3261e;--code:#f1f2f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;
+--border:#3a3e45;--sel:#6ea2ff;--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;
+--store:#16271e;--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}}
+:root[data-theme="dark"]{--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;
+--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;--store:#16271e;
+--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+a{color:var(--sel)}
+.top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:14px;margin-bottom:18px}
+.top .home{font-weight:600;margin-right:6px}
+.top nav{display:flex;flex-wrap:wrap;gap:6px}
+.top nav a{padding:2px 9px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--panel)}
+.top nav a[aria-current]{border-color:var(--sel);color:var(--sel);font-weight:600}
+h1{font-size:24px;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;scroll-margin-top:12px}
+h3{font-size:16px;margin:22px 0 6px}
+p,li{max-width:84ch}
+.lede{color:var(--muted);margin:0 0 8px;font-size:16px}
+.lede b{color:var(--ink)}
+.snap{font-size:13.5px;color:var(--muted)}
+.muted{color:var(--muted);font-size:14px}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:5px}
+pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);border:1px solid var(--border);
+border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0}
+pre code{background:none;padding:0}
+.tg{white-space:pre-wrap;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45;max-width:560px;overflow-wrap:anywhere}
+.callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
+.callout.key{border-left:4px solid var(--sel)}
+.callout ol,.callout ul{margin:6px 0 0;padding-left:22px}
+.callout li{margin:5px 0}
+.frame{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0}
+.frame svg{display:block;width:100%;height:auto;min-width:760px}
+.frame.small svg{min-width:560px}
+svg text{fill:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+svg .t{font-size:14px;font-weight:600}
+svg .s{font-size:12px;fill:var(--muted)}
+svg .h{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;fill:var(--muted)}
+svg .ext{fill:var(--ext);stroke:var(--ext-border)}
+svg .comp{fill:var(--panel);stroke:var(--border)}
+svg .llm{fill:var(--llm);stroke:var(--llm-border)}
+svg .store{fill:var(--store);stroke:var(--store-border)}
+svg .dash{fill:none;stroke:var(--border);stroke-dasharray:5 4}
+svg rect{stroke-width:1.3}
+svg .a{fill:none;stroke:var(--line);stroke-width:1.6}
+svg .a.dim{stroke-dasharray:5 4}
+svg .tip{fill:var(--line)}
+svg .good{fill:var(--good)} svg .bad{fill:var(--bad)}
+svg a:hover rect,svg a:focus-visible rect{stroke:var(--sel);stroke-width:2.2}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:10px 0}
+.step{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink);display:block}
+a.step:hover{border-color:var(--sel)}
+.step b{display:block;margin-bottom:4px}
+.step span{font-size:14px;color:var(--muted)}
+.flow{list-style:none;padding:0;margin:10px 0;counter-reset:f}
+.flow>li{counter-increment:f;position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;
+padding:10px 14px 10px 50px;margin:0 0 18px;max-width:none}
+.flow>li::before{content:counter(f);position:absolute;left:12px;top:10px;width:26px;height:26px;border-radius:50%;
+background:var(--chip);border:1px solid var(--chip-border);text-align:center;font:600 13px/26px system-ui,sans-serif}
+.flow>li:not(:last-child)::after{content:"↓";position:absolute;left:20px;bottom:-19px;color:var(--line);font-size:14px}
+.flow ul{margin:4px 0 0;padding-left:20px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.group td{background:var(--chip);font-weight:600;font-size:13px}
+.chip{display:inline-block;font-size:12px;padding:0 8px;margin:1px 2px 1px 0;border:1px solid var(--chip-border);background:var(--chip);border-radius:999px;white-space:nowrap}
+.yes{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+.bars{display:grid;gap:8px;margin:12px 0}
+.bar{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+.bar .fill{height:22px;border-radius:5px;background:var(--chip);border:1px solid var(--chip-border);min-width:6px}
+.bar .fill.llm{background:var(--llm);border-color:var(--llm-border)}
+.bar .fill.store{background:var(--store);border-color:var(--store-border)}
+.bar .fill.ext{background:var(--ext);border-color:var(--ext-border)}
+.bar .lbl{font-size:14px}.bar .lbl b{font-variant-numeric:tabular-nums}
+details{margin:8px 0}
+summary{cursor:pointer;color:var(--sel);font-weight:600;font-size:14px}
+.words{display:grid;grid-template-columns:minmax(120px,210px) 1fr;gap:6px 16px;margin:0}
+.words dt{font-weight:600}.words dd{margin:0}
+@media (max-width:560px){.words{grid-template-columns:1fr}.words dd{margin-bottom:8px}}
+.tool{background:var(--panel);border:1px solid var(--sel);border-radius:10px;padding:12px 16px;margin:10px 0}
+.tool label{font-weight:600;font-size:14px;display:block;margin-bottom:4px}
+.tool input[type=text]{width:100%;max-width:520px;font:15px system-ui,sans-serif;padding:7px 10px;border:1px solid var(--border);
+border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool input[type=number]{width:72px;font:15px system-ui,sans-serif;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool .out{margin-top:8px;font-size:15px}
+.tool .row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:6px 0}
+.tool .nw{white-space:nowrap}
+.tool button{font:14px system-ui,sans-serif;padding:3px 10px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--ink);cursor:pointer}
+.tool button:hover{border-color:var(--sel)}
+.foot{margin-top:32px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+.next{margin-top:28px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.next a{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel);text-decoration:none}
+.next a:hover{border-color:var(--sel)}
+</style>
+</head>
+<body>
+<main>
+<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="openings.html" aria-current="page">4 · Openings</a><a href="report.html">5 · Report &amp; fit</a><a href="operate.html">Run &amp; change it</a></nav></div>
+<h1>4 · Openings for you</h1>
+<p class="lede">Every day, <code>ainews openings</code> picks the week's new postings that fit you best and sends them to the Telegram channel, <b>each posting once</b>. It makes no model call: the ranking uses the form the model already filled in for each posting (step 3), your skills list, and your preferences. This is step J3 on the architecture diagram.</p>
+
+<div class="frame">
+<svg viewBox="0 0 1000 140" role="img" aria-label="New postings the model has read pass your filters, get a fit score from skills and level, are grouped and capped, and the best go to Telegram, where they are marked as sent">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="store" x="2" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="88" y="48" text-anchor="middle">New, read postings</text>
+  <text class="s" x="88" y="70" text-anchor="middle">open, last 7 days,</text>
+  <text class="s" x="88" y="88" text-anchor="middle">never sent before</text>
+  <a href="#filters"><rect class="comp" x="208" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="294" y="48" text-anchor="middle">Your filters</text>
+  <text class="s" x="294" y="70" text-anchor="middle">roles · markets</text>
+  <text class="s" x="294" y="88" text-anchor="middle">levels · years</text></a>
+  <a href="#fit"><rect class="comp" x="414" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="500" y="48" text-anchor="middle">Fit, 0–100</text>
+  <text class="s" x="500" y="70" text-anchor="middle">skills 70 points</text>
+  <text class="s" x="500" y="88" text-anchor="middle">level 30 points</text></a>
+  <a href="#pick"><rect class="comp" x="620" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="706" y="48" text-anchor="middle">Best 8</text>
+  <text class="s" x="706" y="70" text-anchor="middle">fit 50+ · one per role</text>
+  <text class="s" x="706" y="88" text-anchor="middle">≤ 2 per employer</text></a>
+  <a href="#message"><rect class="ext" x="826" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="912" y="48" text-anchor="middle">Telegram</text>
+  <text class="s" x="912" y="70" text-anchor="middle">when you send it,</text>
+  <text class="s" x="912" y="88" text-anchor="middle">then marked sent</text></a>
+  <path class="a" d="M174 70 H204" marker-end="url(#arr)"/>
+  <path class="a" d="M380 70 H410" marker-end="url(#arr)"/>
+  <path class="a" d="M586 70 H616" marker-end="url(#arr)"/>
+  <path class="a" d="M792 70 H822" marker-end="url(#arr)"/>
+</svg>
+</div>
+
+<h2 id="filters">Which postings are considered</h2>
+<p>A posting is a candidate when all of these hold:</p>
+<ul>
+<li><b>Open, and read by the model.</b> Without the model's form there are no skills to compare. New postings are read first, so a day's new postings are usually read the same day.</li>
+<li><b>New:</b> published in the last 7 days, by the employer's own date (else the day we first saw it).</li>
+<li><b>Never sent before.</b> Sent postings are recorded, so a posting reaches you once, however long it stays open.</li>
+<li><b>Yours:</b> its role family (as the model judged it from the duties) and at least one of its markets are in your lists, its level isn't one you skip, and it doesn't ask for more than your years plus 3.</li>
+</ul>
+<p>Your preferences live in <code>private/openings.yaml</code>, which is gitignored. Copy <code>config/openings.example.yaml</code> to start; without the file these defaults apply:</p>
+<div class="tablewrap"><table><thead><tr><th style="width:18%">Key</th><th style="width:40%">Default</th><th>Meaning</th></tr></thead><tbody><tr><td><code>families</code></td><td>fde_applied_ai, solutions_eng, llm_genai_eng, ai_eng, ml_eng</td><td>role families to consider</td></tr><tr><td><code>markets</code></td><td>US, CA, UK, CH, AE, remote</td><td>a posting needs at least one</td></tr><tr><td><code>levels</code></td><td>senior, staff, principal, lead</td><td>your level: full level points</td></tr><tr><td><code>skip_levels</code></td><td>intern, junior</td><td>never shown</td></tr><tr><td><code>years</code></td><td>empty</td><td>your years; postings asking more than this + 3 are skipped (empty: keep all)</td></tr><tr><td><code>top</code></td><td>8</td><td>openings per day</td></tr><tr><td><code>min_fit</code></td><td>50</td><td>the lowest fit worth sending</td></tr></tbody></table></div>
+
+<h2 id="fit">The fit score</h2>
+<p>Each candidate gets a fit from 0 to 100, computed in code:</p>
+<ul>
+<li><b>Skills, 70 points.</b> Every skill the posting asks for has a weight: 1 if it's required, ½ if it's only preferred. A skill in your <code>have</code> list earns all of its weight, one in your <code>learning</code> list half, any other none. The points are 70 × earned ÷ total weight. A posting that lists no skills gets half the points: neither a match nor a miss.</li>
+<li><b>Level, 30 points.</b> A level in your <code>levels</code> list earns them all; otherwise a share: unknown 60%, mid 40%, manager 30%, any other 30%.</li>
+</ul>
+<p>An example with a <b>made-up</b> skills list (yours stays private). The posting is the Legora FDE role from <a href="extract.html#example">step 3</a>, a mid-level job; say your list has Software engineering, REST APIs, Data pipelines, Customer-facing work, Communication, Debugging and AI agents, and you're learning TypeScript:</p>
+<div class="tablewrap"><table><thead><tr><th>Skill</th><th>In the posting</th><th>In your list</th><th class="num">Weight</th><th class="num">Earned</th></tr></thead><tbody><tr><td>Software engineering</td><td>required</td><td>have</td><td class="num">1</td><td class="num">1</td></tr><tr><td>REST APIs</td><td>required</td><td>have</td><td class="num">1</td><td class="num">1</td></tr><tr><td>Authentication</td><td>required</td><td>—</td><td class="num">1</td><td class="num">0</td></tr><tr><td>Integration</td><td>required</td><td>—</td><td class="num">1</td><td class="num">0</td></tr><tr><td>Data pipelines</td><td>required</td><td>have</td><td class="num">1</td><td class="num">1</td></tr><tr><td>Customer-facing work</td><td>required</td><td>have</td><td class="num">1</td><td class="num">1</td></tr><tr><td>Communication</td><td>required</td><td>have</td><td class="num">1</td><td class="num">1</td></tr><tr><td>Debugging</td><td>required</td><td>have</td><td class="num">1</td><td class="num">1</td></tr><tr><td>TypeScript</td><td>preferred</td><td>learning</td><td class="num">½</td><td class="num">0.25</td></tr><tr><td>B2B</td><td>preferred</td><td>—</td><td class="num">½</td><td class="num">0</td></tr><tr><td>AI agents</td><td>preferred</td><td>have</td><td class="num">½</td><td class="num">½</td></tr><tr><td>Product sense</td><td>preferred</td><td>—</td><td class="num">½</td><td class="num">0</td></tr><tr><td colspan="3"><b>Total</b></td><td class="num"><b>10</b></td><td class="num"><b>6.75</b></td></tr></tbody></table></div><p>Skills: 70 × 6.75 ÷ 10 = 47.25 points. Level: “mid” isn't in the default levels, so it earns 40% of 30 = 12 points. <b>Fit 59</b>, above the bar of 50, so it would be sent.</p>
+
+<h2 id="pick">From candidates to the day's list</h2>
+<ol>
+<li><b>Best fit first</b>, newer first among equal fits.</li>
+<li><b>One entry per role.</b> The same title at the same employer in several cities is one entry, listing all its places; every posting in it counts as sent.</li>
+<li><b>At most 2 per employer</b>, so one big employer can't fill the list.</li>
+<li><b>The best 8 with a fit of at least 50.</b> Change both with <code>top</code> and <code>min_fit</code>. On a quiet day the list is shorter, and on a day with nothing above the bar nothing is sent.</li>
+</ol>
+
+<h2 id="message">What arrives in Telegram</h2>
+<p>A heading with how many postings were considered, then one block per opening, packed into as few messages as fit, with one notification. The example above, rendered by the same code:</p>
+<div class="tg">💼 <b>Jobs for you · Tue 13 Oct</b>
+1 best match from 60 new postings in your roles and markets this week, best fit first.
+
+━━━━━━━━━━━━
+<b>1. Junior/Mid-level Forward Deployed Engineer</b> · Legora
+📍 New York City, NY · onsite · mid
+💰 $175k–$245k a year
+<i>Builds and deploys integrations and software solutions by working directly with enterprise customers to solve their specific legal workflow needs.</i>
+✅ Yours: Software engineering, REST APIs, Data pipelines, Customer-facing work, Communication, Debugging, AI agents (6 of 8 required)
+📚 Learning: TypeScript
+➕ New to you: Authentication, Integration
+🔗 <a href="https://jobs.ashbyhq.com/legora">Open the posting</a> · FDE / applied AI · posted Mon 12 Oct · fit 59
+
+━━━━━━━━━━━━
+<i>Fit = your skills against the posting&#x27;s (required in full, preferred at half), plus seniority. Each posting is sent once.</i></div>
+<ul>
+<li><b>📍</b> where (the first two places, and how many more), the work policy, the level, and “visa sponsorship” when the posting says it offers it.</li>
+<li><b>💰</b> the posted pay, when there is one: the board's own figure if it publishes one, else the range in the text.</li>
+<li><b>✅ Yours</b> the skills you have, with how many of the required ones; <b>📚 Learning</b> the ones on your learning list; <b>➕ New to you</b> the required skills on neither list.</li>
+<li><b>🔗</b> the employer's own posting, the role family, when it was published, and the fit.</li>
+</ul>
+<p class="muted">These lines reveal which skills you have to anyone who can read the channel, as the weekly report's “Your fit” section does.</p>
+
+<h2 id="once">Sent once: how it's tracked</h2>
+<ul>
+<li><b>Building isn't sending.</b> <code>ainews openings</code> saves the message (and <code>out/openings-&lt;date&gt;.md</code>) without sending. Postings count as sent only once the message goes out with <code>--send</code> or <code>ainews send --openings</code>, so a preview never uses them up.</li>
+<li><b>The record:</b> the <code>job_alerts</code> table holds every posting sent, with its fit and the report it went out in.</li>
+<li><b>Unread postings:</b> when new postings in your roles still wait for the model, the heading says how many. They become candidates after the next <code>ainews jobs</code> run reads them, as long as they're still within 7 days.</li>
+<li><b>Cleaning the channel:</b> <code>ainews tg-clean</code> keeps the latest openings, brief and jobs report.</li>
+</ul>
+
+<h2 id="daily">The daily routine</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:34%">Command</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>ainews jobs</code></td><td>Polls the employers and lets the model read new postings (steps 1–3)</td></tr>
+<tr><td><code>ainews openings</code></td><td>Ranks the candidates, prints the list with each fit, and saves the message; nothing is sent</td></tr>
+<tr><td><code>ainews send --openings</code></td><td>Sends the message you just checked</td></tr>
+<tr><td><code>ainews openings --send</code></td><td>Builds and sends in one go</td></tr>
+<tr><td><code>ainews openings --top 12</code></td><td>A longer list this time</td></tr>
+</tbody></table></div>
+<p class="muted">Free and instant: no model call, no network call except to Telegram. After deployment, the daily 05:00 jobs run will send the openings at the end.</p>
+
+<div class="callout">
+<p><b>Why not let the model rank?</b> The model already did the hard part, reading each posting into a form. Ranking those forms in code costs nothing, gives the same answer every run, and shows its working: every opening lists the skills behind its fit, so you can see why it's there and fix your lists if it shouldn't be.</p>
+</div>
+
+<div class="next"><a href="extract.html">← 3 · Read</a><a href="report.html">5 · Report &amp; fit →</a></div>
+<p class="foot"><a href="#top">↑ Top</a><a href="../architecture-diagram.html">Architecture diagram</a><a href="../sources/job-boards.html">Job-board source list</a></p>
+</main>
+</body>
+</html>

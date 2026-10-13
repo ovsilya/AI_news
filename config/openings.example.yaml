@@ -1,0 +1,16 @@
+# Which daily openings reach the channel (`ainews openings`). Copy to private/openings.yaml (gitignored)
+# and edit; without it these defaults apply. Fit also uses your skills in private/skills.yaml.
+
+# Role families to consider: fde_applied_ai, solutions_eng, llm_genai_eng, ai_eng, ml_eng, ml_research, data_science
+families: [fde_applied_ai, solutions_eng, llm_genai_eng, ai_eng, ml_eng]
+# Markets: US, CA, UK, CH, AE, remote. A posting needs at least one of them.
+markets: [US, CA, UK, CH, AE, remote]
+# Your level gets the full 30 level points; mid gets 40% of them, manager 30%, unknown 60%.
+levels: [senior, staff, principal, lead]
+# Never shown.
+skip_levels: [intern, junior]
+# Your years of experience: postings asking for more than this + 3 are skipped. Leave empty to keep all.
+years:
+# How many openings per day, and the lowest fit (0-100) worth sending.
+top: 8
+min_fit: 50
