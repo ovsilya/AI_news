@@ -8,6 +8,7 @@ from ..pipeline.rank import Story
 LABELS = {
     "top": "🔝 Top stories",
     "big_picture": "🌍 Big picture",
+    "trends": "🔭 Trends & future of work",
     "models": "🧠 Models & pricing",
     "tools": "🛠 Tools & SDKs",
     "research": "📄 Research",

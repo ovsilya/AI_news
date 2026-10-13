@@ -8,6 +8,7 @@
 |---|---|
 | **Delivery** | A **Telegram channel**, with a bot as channel admin. The bot posts with `sendRichMessage` (Bot API 10.1+: up to 32k characters, headings and tables). Each story has inline 👍/👎/🔇 buttons; `callback_query` gives the identity of whoever clicked. Channel reactions only come back as anonymous aggregate counts (`message_reaction_count`). Long-form copies go to Telegraph. Email is dropped. |
 | **Hosting** | **GCP, on a personal project with no organization** (not a work account), in us-central1. This replaces the Hetzner VPS in §5. See the deployment below. |
+| **LLMs (v0.7, 2026-10-12)** | Gemini 3.1 Flash-Lite still judges; **Gemini 3.5 Flash-Lite ($0.30 / $2.50) now writes the brief**, because the teaching-style notes need better writing. Expected model cost stays about $2–3/month. |
 | **LLMs (v0.6, 2026-10-12)** | **Gemini on Vertex AI**, because Claude on Vertex needs an Anthropic access request (business details). Gemini 3.1 Flash-Lite ($0.25 / $1.50 per 1M tokens), the cheapest current model, judges stories, extracts jobs, parses bot edits and also writes the brief: the editor only combines and summarises excerpts it is given. Upgrades if the writing falls short: Gemini 3.5 Flash-Lite ($0.30 / $2.50) or 3.8 Flash ($0.75 / $3.75 until 2026-12-31, then $1.50 / $7.50). Embeddings: gemini-embedding-2. Expected model cost is about $2–3/month. Claude stays as an optional provider (`LLM_PROVIDER=anthropic`). The rest of this document still names the Claude models of v0.2; read them as these Gemini roles. |
 | **LLMs (v0.2, superseded)** | All models through **Vertex AI**, on the global endpoint where possible (same prices as Anthropic). Claude Haiku 5.5 for triage and job extraction. Claude Opus 5.5 writes the brief; Claude Sonnet 5.5 is a cheaper option. `gemini-embedding-001` at 768 dimensions for embeddings. Vertex has no Anthropic Message Batches API; Vertex batch prediction can be used instead, at +10% because batch doesn't run on the global endpoint. |
 | **Scope** | **From the big picture down to low-level detail**, not only the user's role. The brief has fixed layers, each with its own ranking quota, so stories relevant to one role don't crowd out the rest (see below). |
@@ -142,7 +143,7 @@ The current list is strong on models, research and tools (layers 2–3). It is w
 | 6 | **Paywalled outlets** (The Information, Stratechery) | — | Headlines only |
 
 **Update 2026-10-12:** gaps 1–2 are now filled with verified feeds, listed in [sources-layers.md](sources-layers.md):
-- **Business, funding and policy:** 15 sources, including policy feeds for the US, CA, UK, CH, UAE and the EU.
+- **Business, funding, policy and trends:** 22 sources, including policy feeds for the US, CA, UK, CH, UAE and the EU, and trend sources on where AI is heading and how it changes tech work and jobs.
 - **Compute and low-level systems:** 15 sources.
 
 **Jobs: not yet.**
@@ -304,7 +305,7 @@ Items are then clustered into stories by assigning each to the nearest existing 
 
 Claude Opus 5.5 gets the top ~30–40 stories, each with its source excerpts as `document` blocks with **Citations enabled**. It writes the brief in a fixed template (§4). Every claim must carry a citation.
 
-*Implemented (v0.7, 2026-10-12):* the brief teaches as well as informs, because the reader is still learning these topics. Each item has a plain-words **summary**, a **"What is it?"** explanation of the idea behind it, and a **"Comment from a pro"** on why it matters to a GenAI engineer or FDE. Brand-new products and features are described only from the excerpt, never guessed. In Telegram the two notes sit in a blockquote that stays collapsed until tapped, so the brief is quick to scan.
+*Implemented (v0.7, 2026-10-12):* the brief teaches as well as informs, because the reader is still learning these topics. Each item has a plain-words **summary**, a **"What is it?"** paragraph (what it is, how it works, an analogy, how it connects to what the reader uses), and a **"Comment from a pro"** paragraph (why it's worth knowing, where it shows up at work, one thing to try, a likely client or interview question). A separate **Trends & future of work** section (3–4 items) covers where AI is heading and how it changes tech work, jobs, hiring and skills, from trend newsletters and an AI-and-jobs news search; trend stories are scored without actionability. Each source leads at most one story per brief (the multi-outlet jobs search: three), and every source gets its best story into the judge's batch. Brand-new products and features are described only from the excerpt, never guessed. In Telegram the two notes sit in a blockquote that stays collapsed until tapped, so the brief is quick to scan.
 
 **Verify** runs after the editor:
 - Drop any sentence without a citation.

@@ -167,3 +167,50 @@ def test_reddit_429_waits_a_minute_and_retries_once(conn):
     with pytest.raises(httpx.HTTPStatusError):
         f.get("https://www.reddit.com/r/MachineLearning/top/.rss?t=day")
     assert len(calls) == 2 and 60.0 in waits
+
+
+def test_one_story_per_source():
+    from ainews.pipeline.rank import Story, select
+
+    def story(i, source, section):
+        s = Story(i, f"S{i}", section, 1.0, "", items=[{"source_id": source}])
+        s.score = {"relevance": 3, "novelty": 3, "actionability": 3, "credibility": 3, "section": section}
+        return s
+
+    stories = [story(i, "google-dev", "tools") for i in range(5)] + [story(10, "vllm", "systems"),
+                                                                      story(11, "hn", "community")]
+    chosen = select(stories)
+    assert [s.lead_source for s in chosen].count("google-dev") == 1
+    assert {10, 11} <= {s.id for s in chosen}
+
+
+def test_every_source_gets_a_candidate_slot():
+    from ainews.pipeline.rank import Story, _diverse
+
+    heavy = [Story(i, f"B{i}", "big_picture", 10.0 - i * 0.01, "", items=[{"source_id": "bloomberg"}])
+             for i in range(50)]
+    light = Story(99, "AI and entry-level hiring", "big_picture", 0.1, "", items=[{"source_id": "ai-jobs"}])
+    picked = _diverse(heavy + [light], limit=12)
+    assert 99 in {s.id for s in picked} and len(picked) == 12
+
+
+def test_trend_stories_are_not_sunk_by_actionability():
+    from ainews.pipeline.rank import Story, final_score
+
+    trend = Story(1, "t", "trends", 1.0, "")
+    trend.score = {"relevance": 3, "novelty": 2, "actionability": 0, "credibility": 3, "section": "trends"}
+    tool = Story(2, "t", "tools", 1.0, "")
+    tool.score = {**trend.score, "section": "tools"}
+    assert final_score(trend, 1.0) > final_score(tool, 1.0)
+
+
+def test_multi_outlet_proxy_may_lead_more_stories():
+    from ainews.pipeline.rank import Story, select
+
+    def story(i, source):
+        s = Story(i, f"S{i}", "trends", 1.0, "", items=[{"source_id": source}])
+        s.score = {"relevance": 3, "novelty": 3, "actionability": 0, "credibility": 3, "section": "trends"}
+        return s
+
+    chosen = select([story(i, "ai-jobs-news") for i in range(6)], per_source={"ai-jobs-news": 3})
+    assert len(chosen) == 3

@@ -13,7 +13,7 @@ from .rank import Story
 
 log = logging.getLogger(__name__)
 BATCH = 25
-SECTIONS = ["big_picture", "models", "tools", "research", "systems", "community", "skip"]
+SECTIONS = ["big_picture", "trends", "models", "tools", "research", "systems", "community", "skip"]
 SCALE = {"type": "integer", "enum": [0, 1, 2, 3]}
 SCHEMA = {
     "type": "object",

@@ -39,12 +39,13 @@ class Telegram:
 
     def send_messages(self, messages: list[str]) -> list[int]:
         ids = []
-        for text in messages:
+        for n, text in enumerate(messages):
             result = self.call("sendMessage", {
                 "chat_id": self.chat_id,
                 "text": text,
                 "parse_mode": "HTML",
                 "link_preview_options": {"is_disabled": True},
+                "disable_notification": n > 0,  # one notification per brief, not one per message
             })
             ids.append(result["message_id"])
             self.sleep(1.0)  # stay well under the per-chat limit

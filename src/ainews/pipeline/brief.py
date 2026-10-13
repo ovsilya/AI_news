@@ -33,18 +33,20 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
     layers = {s.id: s.layer for s in sources}
     weights = {s.id: s.weight for s in sources}
     names = {s.id: s.name for s in sources}
+    per_source = {s.id: s.max_per_brief for s in sources}
     stats: dict = {"edition": edition, "llm": llm is not None}
     try:
         stats["dedup"] = assign_stories(conn, layers, now=now_dt)
-        candidates = load_candidates(conn, weights, _since(conn, now_dt), limit=settings.max_judge_stories, now=now_dt)
+        candidates = load_candidates(conn, weights, _since(conn, now_dt), limit=settings.max_judge_stories, now=now_dt,
+                                     per_source=per_source)
         stats["candidates"] = len(candidates)
         profile = settings.profile_text()
         if llm is not None and candidates:
             stats["judged"] = judge(conn, llm, candidates, model=settings.model_judge,
                                     prompts_dir=settings.prompts_dir, profile=profile, source_names=names)
-            chosen = select(candidates)
+            chosen = select(candidates, per_source)
         else:
-            chosen = select_by_heat(candidates)
+            chosen = select_by_heat(candidates, per_source)
         stats["selected"] = len(chosen)
 
         date_label = now_dt.astimezone().strftime("%a %d %b %Y")  # reader's local date (set TZ on Cloud Run)

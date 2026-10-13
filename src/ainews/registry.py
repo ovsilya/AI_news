@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 KINDS = {"rss", "github_releases", "changelog", "hf_papers", "hn", "openrouter"}
-LAYERS = {"big_picture", "models", "tools", "research", "systems", "community"}
+LAYERS = {"big_picture", "trends", "models", "tools", "research", "systems", "community"}
 
 
 @dataclass(frozen=True)
@@ -27,6 +27,7 @@ class Source:
     min_points: int = 100
     min_upvotes: int = 10
     repo_url: str = ""
+    max_per_brief: int = 1   # stories this source may lead in one brief (more for multi-outlet proxies)
     _patterns: tuple[re.Pattern, ...] = field(default=(), repr=False, compare=False)
 
     def matches(self, text: str) -> bool:

@@ -4,15 +4,20 @@
 # Fields
 #   id            stable key (used in the database; don't rename)
 #   kind          rss | github_releases | changelog | hf_papers | hn | openrouter
-#   layer         big_picture | models | tools | research | systems | community
+#   layer         big_picture | trends | models | tools | research | systems | community
 #   weight        authority prior, 0.3–1.5 (used in the heat score)
 #   role          primary (original reporting) | proxy (search feed standing in for a missing one)
 #   expect_every  days; the health check flags a source with nothing new for 3x this long
 #   keywords      optional: keep only items whose title or summary contains one of these (case-insensitive)
 #   enabled       default true
+#   max_per_brief stories this source may lead in one brief (default 1; more for multi-outlet search proxies)
 
 ai_keywords: &ai [" AI", "AI ", "A.I.", "artificial intelligence", "LLM", "GPT", "Claude", "Gemini", "OpenAI",
   "Anthropic", "machine learning", "neural", "model", "agent", "inference", "GPU", "Nvidia", "data center", "chip"]
+
+jobs_keywords: &jobs [job, hiring, hire, layoff, workforce, worker, employ, career, skill, grad, talent, labor, labour,
+  roles, "future of work", salar, wage, white-collar, entry-level, CVs, resume, workplace, staff, occupation]
+# The jobs search proxy already requires AI in the article; this keeps only headlines about work and jobs.
 
 sources:
   # --- Vendors -------------------------------------------------------------------
@@ -80,6 +85,17 @@ sources:
   - {id: crunchbase-ai, name: Crunchbase News AI, kind: rss, url: "https://news.crunchbase.com/sections/ai/feed/", layer: big_picture, weight: 1.0, expect_every: 3}
   - {id: techmeme, name: Techmeme, kind: rss, url: "https://www.techmeme.com/feed.xml", layer: big_picture, weight: 1.1, expect_every: 1, keywords: *ai}
   - {id: semafor, name: Semafor, kind: rss, url: "https://www.semafor.com/rss.xml", layer: big_picture, weight: 0.9, expect_every: 2, keywords: *ai}
+
+  # --- Trends: where AI is heading, the future of work and jobs ----------------------
+  - {id: one-useful-thing, name: One Useful Thing (Ethan Mollick), kind: rss, url: "https://www.oneusefulthing.org/feed", layer: trends, weight: 1.2, expect_every: 14}
+  - {id: pragmatic-engineer, name: The Pragmatic Engineer, kind: rss, url: "https://newsletter.pragmaticengineer.com/feed", layer: trends, weight: 1.1, expect_every: 3, keywords: *ai}
+  - {id: ben-evans, name: Benedict Evans, kind: rss, url: "https://www.ben-evans.com/benedictevans?format=rss", layer: trends, weight: 1.1, expect_every: 30}
+  - {id: exponential-view, name: Exponential View, kind: rss, url: "https://www.exponentialview.co/feed", layer: trends, weight: 1.0, expect_every: 3}
+  - {id: stratechery, name: Stratechery, kind: rss, url: "https://stratechery.com/feed/", layer: trends, weight: 1.1, expect_every: 2, keywords: *ai}
+  - {id: mit-tr-ai, name: MIT Technology Review AI, kind: rss, url: "https://www.technologyreview.com/topic/artificial-intelligence/feed", layer: trends, weight: 1.1, expect_every: 3}
+  - {id: ai-jobs-news, name: AI & jobs news (via Google News), kind: rss, role: proxy, layer: trends, weight: 1.0, expect_every: 1, keywords: *jobs,
+     max_per_brief: 3,
+     url: "https://news.google.com/rss/search?q=(AI+OR+%22artificial+intelligence%22)+(jobs+OR+hiring+OR+layoffs+OR+workforce+OR+%22future+of+work%22+OR+skills)+(site:reuters.com+OR+site:bloomberg.com+OR+site:cnbc.com+OR+site:ft.com+OR+site:wsj.com+OR+site:axios.com+OR+site:economist.com+OR+site:hbr.org)+when:3d&hl=en-US&gl=US&ceid=US:en"}
 
   # --- Big picture: policy (US, CA, UK, CH, UAE, EU) ------------------------------------
   - {id: fed-register, name: US Federal Register (AI), kind: rss, layer: big_picture, weight: 1.0, expect_every: 3,

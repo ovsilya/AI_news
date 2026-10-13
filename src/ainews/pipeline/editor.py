@@ -8,7 +8,7 @@ from pathlib import Path
 from .rank import Story
 from .score import load_prompt
 
-SECTION_ORDER = ["top", "big_picture", "models", "tools", "research", "systems", "community"]
+SECTION_ORDER = ["top", "big_picture", "trends", "models", "tools", "research", "systems", "community"]
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -72,7 +72,7 @@ def write_brief(llm, stories: list[Story], *, model: str, prompts_dir: Path, pro
     system, version = load_prompt(prompts_dir, "editor", profile)
     user = (f"Today is {date_label}. Selected stories:\n"
             + json.dumps(editor_payload(stories, source_names), ensure_ascii=False))
-    brief = llm.json(model=model, system=system, user=user, schema=SCHEMA, max_tokens=16000,
+    brief = llm.json(model=model, system=system, user=user, schema=SCHEMA, max_tokens=24000,
                      effort="medium", purpose="editor", stream=True)
     brief["prompt_version"] = version
     return brief

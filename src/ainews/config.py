@@ -57,7 +57,7 @@ class Settings:
             vertex_region=env("VERTEX_REGION", "global"),
             llm_provider=env("LLM_PROVIDER", "gemini").strip().lower(),
             model_judge=env("MODEL_JUDGE", "gemini-3.1-flash-lite"),
-            model_editor=env("MODEL_EDITOR", "gemini-3.1-flash-lite"),
+            model_editor=env("MODEL_EDITOR", "gemini-3.5-flash-lite"),
             telegram_bot_token=env("TELEGRAM_BOT_TOKEN", ""),
             telegram_chat_id=env("TELEGRAM_CHAT_ID", ""),
             hf_token=env("HF_TOKEN", ""),
