@@ -68,13 +68,13 @@ If the token ever leaks, send `/revoke` to BotFather, pick the bot, and put the 
 
 ## 3. Spending guardrails
 
-Layers 1 and 2 are already in the code. Layers 3–5 are set up in GCP by you.
+Layers 1 and 2 are already in the code. Layer 3 needs nothing from you while you use Gemini. Layers 4 and 5 are set up in GCP by you.
 
 | # | Guardrail | What it stops | Acts | Where |
 |---|---|---|---|---|
 | 1 | **The button**: `AINEWS_LLM_ENABLED=false` (the default) | Every model call, except the deliberate `ainews check` | Immediately | code ✓ |
 | 2 | **App caps**: $0.30 per run, $0.75 per day, $10 per month; at most 120 stories judged; editor output capped at 16k tokens | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI | Before each call | code ✓ |
-| 3 | **Vertex AI quotas** lowered per model | Fast burn from a bug, a loop, or someone using your credentials outside the app | Immediately | console |
+| 3 | **Vertex AI quotas**: none to lower for Gemini (see below) | — | — | — |
 | 4 | **Budget alerts**: $10/month, emails at 25/50/90/100% and at 100% forecast | Nothing by itself; it tells you | Hours of delay | script |
 | 5 | **Kill switch** (optional): unlinks billing when actual spend passes the budget | Everything paid in the project | Hours of delay | script |
 
@@ -83,7 +83,7 @@ Layers 1 and 2 are already in the code. Layers 3–5 are set up in GCP by you.
 .venv/bin/ainews budget
 ```
 
-**Layer 3, quotas.** Cloud console → IAM & Admin → **Quotas & system limits**. Filter by service *Vertex AI API* and type the model name (`gemini-3.1-flash-lite`). For the requests-per-minute and tokens-per-minute rows of the `global` region, choose **Edit quota** and lower them. A sensible start: 10 requests and 100k input tokens per minute. A brief needs far less than that. Quota decreases are normally applied straight away.
+**Layer 3, quotas.** Gemini on Vertex AI has no per-project limit you can lower. It runs on Google's shared capacity (*Standard PayGo*): your organisation gets a guaranteed share of throughput based on its last 30 days of spend, and anything above that is served when spare capacity exists. A 429 error means Google is busy, not that you hit a limit. So the only real-time cap is layer 2, inside the app. Calls made outside the app, for example with leaked credentials, are stopped only by keeping the credentials safe and by the alerts in layers 4 and 5. Claude models on Vertex do have per-model quotas (IAM & Admin → **Quotas & system limits**), so lower those if you switch to `LLM_PROVIDER=anthropic`.
 
 **Layers 4 and 5, budget and kill switch.** Read [scripts/gcp_guardrails.sh](../scripts/gcp_guardrails.sh) first. It changes billing settings.
 
@@ -97,7 +97,7 @@ Budget plus kill switch, which deploys the small [billing-guard](../infra/billin
 scripts/gcp_guardrails.sh ai-news-XXXX BILLING_ACCOUNT_ID 10 --with-kill-switch
 ```
 
-The kill switch unlinks billing from the project once *actual* spend passes the budget. That stops Vertex AI and everything else in the project until you relink billing in the console, which is another reason to use a dedicated project. Google's billing data lags by several hours, so layers 1–3 are the real-time protection, and 4–5 are the backstop.
+The kill switch unlinks billing from the project once *actual* spend passes the budget. That stops Vertex AI and everything else in the project until you relink billing in the console, which is another reason to use a dedicated project. Google's billing data lags by several hours, so layers 1 and 2 are the real-time protection, and 4–5 are the backstop.
 
 **Credentials.**
 - There is no Anthropic API key anywhere. The app signs in to Vertex AI with your Google login on this laptop.
@@ -110,7 +110,7 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
 
 1. `ainews check` passes for both models and Telegram.
 2. `ainews tg-test` reaches the channel.
-3. Budget alerts are created (plus the kill switch if you want it), and the Vertex quotas are lowered.
+3. Budget alerts are created (plus the kill switch if you want it).
 4. In `.env`, set `AINEWS_LLM_ENABLED=true`.
 5. Do a first run without posting, then read the brief in `out/` and check the cost:
    ```bash
