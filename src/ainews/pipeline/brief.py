@@ -10,7 +10,8 @@ from ..db import finish_run, now, start_run
 from ..deliver.render import to_markdown, to_telegram
 from ..llm import BudgetExceeded
 from .dedup import assign_stories
-from .editor import brief_without_llm, write_brief
+from .editor import brief_without_llm, source_text, write_brief
+from .fulltext import enrich
 from .rank import load_candidates, select, select_by_heat
 from .score import judge
 from .verify import verify
@@ -26,7 +27,7 @@ def _since(conn: sqlite3.Connection, now_dt: datetime) -> str:
 
 
 def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, edition: str = "am",
-                now_dt: datetime | None = None) -> dict:
+                now_dt: datetime | None = None, fetcher=None) -> dict:
     """Builds and stores a brief. Returns {"brief_id", "markdown", "telegram", "warnings", "stats"}."""
     now_dt = now_dt or datetime.now(timezone.utc)
     run_id = start_run(conn, "brief")
@@ -53,6 +54,8 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
         if not chosen:
             draft = {"headline": "Nothing new since the last brief.", "sections": [], "prompt_version": "none"}
         elif llm is not None:
+            if fetcher is not None:  # give thin stories their article text, so "what happened" has substance
+                stats["fulltext"] = enrich(conn, fetcher, chosen, lambda s: len(source_text(s, limit=10_000)))
             try:
                 draft = write_brief(llm, chosen, model=settings.model_editor, prompts_dir=settings.prompts_dir,
                                     profile=profile, source_names=names, date_label=date_label)

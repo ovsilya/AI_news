@@ -51,15 +51,17 @@ class FakeLLM:
         funding = next(s["id"] for s in stories if "Startup" in s["title"])
         return {"headline": "Model X lands.", "sections": [
             {"key": "top", "items": [{"story_ids": [model_x], "title": "Model X ships with 1M context",
-                                      "summary": "It costs $3 per million input tokens. It is 7x faster.",
-                                      "explainer": "Context is how much text a model can read at once.",
-                                      "pro_take": "Long context can replace a RAG pipeline for small corpora. "
-                                                  "It was released in 2024."}]},
+                                      "summary": "It costs $3 per million input tokens.\n\nIt is 7x faster.",
+                                      "explainer": {"intro": "Context is how much text a model can read at once.",
+                                                    "points": ["How it works: the model reads it all at once.",
+                                                               "Example: a 2023 contract."]},
+                                      "pro_take": {"intro": "Long context can replace a RAG pipeline for small corpora.",
+                                                   "points": ["Try: load a whole manual. It was released in 2024."]}}]},
             {"key": "big_picture", "items": [
                 {"story_ids": [funding], "title": "Startup Y raises $500M", "summary": "Startup Y raised money.",
-                 "explainer": "", "pro_take": ""},
-                {"story_ids": [999], "title": "Invented story", "summary": "Not real.", "explainer": "",
-                 "pro_take": ""}]},
+                 "explainer": {"intro": "", "points": []}, "pro_take": {"intro": "", "points": []}},
+                {"story_ids": [999], "title": "Invented story", "summary": "Not real.",
+                 "explainer": {"intro": "", "points": []}, "pro_take": {"intro": "", "points": []}}]},
         ]}
 
 
@@ -81,15 +83,21 @@ def test_brief_with_fake_llm_verifies_and_renders(conn, settings):
     assert "7x faster" not in md
     assert "$500M" not in md and "Startup Y raises a big round" in md
     assert "Invented story" not in md
-    # The teaching notes are rendered and number-checked like the summary.
+    # The teaching notes are rendered as intro + labelled bullets, and number-checked like the summary:
+    # a point with an unsupported number is dropped, a point's bad sentence is dropped.
     assert "What is it?" in md and "Long context can replace a RAG pipeline" in md
-    assert "2024" not in md
+    assert "> - **How it works:** the model reads it all at once." in md
+    assert "2023" not in md and "2024" not in md and "**Try:** load a whole manual." in md
     # Links come from the stored items, including the HN discussion.
     assert "https://vendor.ai/blog/model-x" in md and "news.ycombinator.com/item?id=9" in md
-    assert len(result["warnings"]) == 4
-    tg = "\n".join(result["telegram"])
-    assert "<blockquote expandable>💡 <b>What is it?</b>" in tg and "🎓 <b>Comment from a pro</b>" in tg
-    assert "<b>1. Model X ships with 1M context</b>" in tg and "<b>2. Startup Y raises a big round</b>" in tg
+    assert len(result["warnings"]) == 5
+    # Telegram: a contents message, then one message per item.
+    tg = result["telegram"]
+    assert len(tg) == 3 and "1. Model X ships with 1M context" in tg[0] and "2. Startup Y raises a big round" in tg[0]
+    assert "<b>1. Model X ships with 1M context</b>" in tg[1] and "1 of 2" in tg[1]
+    assert "<blockquote>💡 <b>What is it?</b>" in tg[1] and "🎓 <b>Comment from a pro</b>" in tg[1]
+    assert "• <b>How it works:</b>" in tg[1] and "📰 <b>What happened</b>" in tg[1]
+    assert "<b>2. Startup Y raises a big round</b>" in tg[2] and "<blockquote>" not in tg[2]
     # Shown stories are not repeated in the next brief.
     again = build_brief(conn, settings, SOURCES, llm=FakeLLM(), now_dt=NOW)
     assert again["stats"]["candidates"] == 0
@@ -107,13 +115,14 @@ def test_telegram_messages_respect_the_limit():
     stories = {i: Story(i, f"Story {i}", "tools", 1.0, "", items=[
         {"source_id": "blog", "url": f"https://e.com/{i}", "discussion_url": None}]) for i in range(60)}
     brief = {"headline": "h", "sections": [{"key": "tools", "items": [
-        {"story_ids": [i], "title": f"Title {i}", "summary": "word " * 60, "explainer": "idea " * 30,
-         "pro_take": "because"}
-        for i in range(60)]}]}
+        {"story_ids": [i], "title": f"Title {i}", "summary": "word " * 60,
+         "explainer": {"intro": "idea " * 30, "points": ["How it works: " + "step " * 40] * 3},
+         "pro_take": {"intro": "because", "points": ["Learn: " + "this " * 900]}}  # far over the limit
+        for i in range(12)]}]}
     messages = to_telegram(brief, stories, {"blog": "Blog"}, "AI Brief", "footer")
-    assert len(messages) > 1
     assert all(len(m) <= TELEGRAM_LIMIT for m in messages)
-    assert sum(m.count(". Title") for m in messages) == 60
+    assert sum(f"<b>{i + 1}. Title {i}</b>" in m for m in messages for i in range(12)) == 12
+    assert "footer" in messages[-1] or any("footer" in m for m in messages)
     # Tags are never split across messages.
     assert all(m.count("<blockquote") == m.count("</blockquote>") for m in messages)
 
@@ -214,3 +223,42 @@ def test_multi_outlet_proxy_may_lead_more_stories():
 
     chosen = select([story(i, "ai-jobs-news") for i in range(6)], per_source={"ai-jobs-news": 3})
     assert len(chosen) == 3
+
+
+def test_article_text_for_thin_stories(conn):
+    from ainews.pipeline.fulltext import enrich
+    from ainews.pipeline.rank import Story
+
+    article = "<html><body><article>" + "".join(
+        f"<p>Paragraph {i} explains how the new serving system reuses cached work across turns.</p>"
+        for i in range(12)) + "</article></body></html>"
+
+    def handler(request):
+        if request.url.path == "/robots.txt":
+            body = "User-agent: *\nDisallow: /private/\n" if request.url.host == "blog.example" else ""
+            return httpx.Response(200 if body else 404, text=body)
+        return httpx.Response(200, text=article)
+
+    f = Fetcher(conn, client=httpx.Client(transport=httpx.MockTransport(handler)), sleep=lambda s: None)
+    thin = Story(1, "Thin", "systems", 1.0, "", items=[{"source_id": "b", "url": "https://blog.example/post", "summary": "x"}])
+    blocked = Story(2, "Blocked", "systems", 1.0, "", items=[{"source_id": "b", "url": "https://blog.example/private/p"}])
+    proxy = Story(3, "Proxy", "trends", 1.0, "", items=[{"source_id": "g", "url": "https://news.google.com/rss/articles/x"}])
+    stats = enrich(conn, f, [thin, blocked, proxy], lambda s: len(s.items[0].get("summary") or ""))
+    assert stats == {"thin": 3, "enriched": 1}
+    assert "reuses cached work" in thin.items[0]["full_text"]
+    assert "full_text" not in blocked.items[0] and "full_text" not in proxy.items[0]
+    statuses = dict(conn.execute("SELECT url, status FROM article_text").fetchall())
+    assert statuses == {"https://blog.example/post": "ok", "https://blog.example/private/p": "robots"}
+
+
+def test_brief_is_capped_at_15_items():
+    from ainews.pipeline.rank import Story
+    from ainews.pipeline.verify import verify
+
+    stories = [Story(i, f"S{i}", "tools", 1.0, "", items=[{"source_id": "b", "url": "u", "title": f"S{i}"}])
+               for i in range(20)]
+    draft = {"headline": "h", "sections": [{"key": "tools", "items": [
+        {"story_ids": [i], "title": f"T{i}", "summary": "s", "explainer": {"intro": "", "points": []},
+         "pro_take": {"intro": "", "points": []}} for i in range(20)]}]}
+    brief, warnings = verify(draft, stories)
+    assert sum(len(s["items"]) for s in brief["sections"]) == 15 and len(warnings) == 5

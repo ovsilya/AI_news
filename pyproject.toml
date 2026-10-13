@@ -12,6 +12,7 @@ dependencies = [
     "httpx>=0.28,<1",
     "feedparser>=6.0,<7",
     "pyyaml>=6.0,<7",
+    "trafilatura>=2.0,<3",   # main text of article pages for the editor
 ]
 
 [project.optional-dependencies]

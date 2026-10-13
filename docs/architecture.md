@@ -305,7 +305,16 @@ Items are then clustered into stories by assigning each to the nearest existing 
 
 Claude Opus 5.5 gets the top ~30–40 stories, each with its source excerpts as `document` blocks with **Citations enabled**. It writes the brief in a fixed template (§4). Every claim must carry a citation.
 
-*Implemented (v0.7, 2026-10-12):* the brief teaches as well as informs, because the reader is still learning these topics. Each item has a plain-words **summary**, a **"What is it?"** paragraph (what it is, how it works, an analogy, how it connects to what the reader uses), and a **"Comment from a pro"** paragraph (why it's worth knowing, where it shows up at work, one thing to try, a likely client or interview question). A separate **Trends & future of work** section (3–4 items) covers where AI is heading and how it changes tech work, jobs, hiring and skills, from trend newsletters and an AI-and-jobs news search; trend stories are scored without actionability. Each source leads at most one story per brief (the multi-outlet jobs search: three), and every source gets its best story into the judge's batch. Brand-new products and features are described only from the excerpt, never guessed. In Telegram the two notes sit in a blockquote that stays collapsed until tapped, so the brief is quick to scan.
+*Implemented (v0.8, 2026-10-12):* the brief teaches as well as informs, because the reader is still learning these topics. At most 15 items. Each item has:
+- **What happened**: 4–7 sentences that tell the story without opening the link (1–2 when the source is only a headline).
+- **What is it?**: a short intro plus 3–4 labelled points (How it works, Analogy, Example, Why now, Connects to).
+- **Comment from a pro**: the reader's supervisor, a senior GenAI/ML engineer guiding a junior, with 3–4 labelled points (Learn, Try, At work, Career, Interview).
+
+A separate **Trends & future of work** section (3–4 items) covers where AI is heading and how it changes tech work, jobs, hiring and skills, from trend newsletters and an AI-and-jobs news search; trend and big-picture stories are scored without actionability. Each source leads at most one story per brief (the multi-outlet jobs search: three), and every source gets its best story into the judge's batch.
+
+**Article text.** Feeds often carry only a headline or teaser, so the editor would have nothing to explain. RSS items keep the longer of summary and full content (up to 4,000 characters). Before the editor runs, each chosen story with under 800 characters of text gets one article page fetched (polite fetcher, robots.txt honoured, main text extracted by trafilatura, cached in `article_text`). Paywalled pages give a teaser; Google News links can't be opened, so those stories keep their headline.
+
+**Telegram.** A contents message, then one message per item (section and position, title, what happened, the two notes as quoted blocks with bullet points, links). Only the first message notifies.
 
 **Verify** runs after the editor:
 - Drop any sentence without a citation.

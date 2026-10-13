@@ -88,6 +88,8 @@ CREATE TABLE IF NOT EXISTS llm_calls (
 
 -- Small key/value snapshots for diff-based collectors (e.g. the OpenRouter model list).
 CREATE TABLE IF NOT EXISTS snapshots (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);
+-- Main text of article pages fetched for stories in a brief (status: ok | robots | empty | error).
+CREATE TABLE IF NOT EXISTS article_text (url TEXT PRIMARY KEY, text TEXT, status TEXT NOT NULL, fetched_at TEXT NOT NULL);
 """
 
 

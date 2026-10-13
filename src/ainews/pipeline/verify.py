@@ -13,8 +13,10 @@ from .editor import SECTION_ORDER, source_text
 from .rank import Story
 
 TEXT_FIELDS = ("summary", "explainer", "pro_take")   # every sentence in these is number-checked
+MAX_ITEMS = 15
 NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
 SENTENCE = re.compile(r"(?<=[.!?])\s+")
+PARAGRAPH = re.compile(r"\n\s*\n")
 
 
 def _norm(n: str) -> str:
@@ -31,11 +33,36 @@ def _unsupported(text: str, source: str) -> set[str]:
     return _numbers(text) - _numbers(source)
 
 
+def _check_text(text: str, src: str, field: str, warnings: list[str]) -> str:
+    """Drop sentences with numbers the sources don't contain; keep paragraph breaks."""
+    paragraphs = []
+    for para in PARAGRAPH.split((text or "").strip()):
+        kept = []
+        for sentence in SENTENCE.split(para.strip()):
+            bad = _unsupported(sentence, src)
+            if bad:
+                warnings.append(f"{field}: dropped sentence with unsupported {sorted(bad)}: {sentence[:80]!r}")
+            elif sentence:
+                kept.append(sentence)
+        if kept:
+            paragraphs.append(" ".join(kept))
+    return "\n\n".join(paragraphs)
+
+
+def _check_field(value, src: str, field: str, warnings: list[str]):
+    """A field is plain text, or a note {"intro": text, "points": [text, ...]}."""
+    if isinstance(value, dict):
+        points = [_check_text(p, src, f"{field} point", warnings) for p in value.get("points") or []]
+        return {"intro": _check_text(value.get("intro", ""), src, field, warnings), "points": [p for p in points if p]}
+    return _check_text(value or "", src, field, warnings)
+
+
 def verify(brief: dict, stories: list[Story]) -> tuple[dict, list[str]]:
     by_id = {s.id: s for s in stories}
     warnings: list[str] = []
     seen: set[int] = set()
     sections = []
+    total = 0
     for sec in brief.get("sections", []):
         if sec.get("key") not in SECTION_ORDER:
             warnings.append(f"unknown section {sec.get('key')!r} dropped")
@@ -49,22 +76,17 @@ def verify(brief: dict, stories: list[Story]) -> tuple[dict, list[str]]:
             if set(ids) & seen:
                 warnings.append(f"item {it.get('title')!r} repeats a story already shown; dropped")
                 continue
+            if total >= MAX_ITEMS:
+                warnings.append(f"item {it.get('title')!r} is over the {MAX_ITEMS}-item limit; dropped")
+                continue
             seen.update(ids)
-            src = "\n".join(source_text(by_id[i], limit=4000) for i in ids)
+            total += 1
+            src = "\n".join(source_text(by_id[i], limit=8000) for i in ids)
             title = it.get("title", "")
             if _unsupported(title, src):
                 warnings.append(f"title {title!r} has unsupported numbers; using source headline")
                 title = by_id[ids[0]].title
-            checked = {}
-            for field in TEXT_FIELDS:
-                kept = []
-                for sentence in SENTENCE.split((it.get(field) or "").strip()):
-                    bad = _unsupported(sentence, src)
-                    if bad:
-                        warnings.append(f"{field}: dropped sentence with unsupported {sorted(bad)}: {sentence[:80]!r}")
-                    else:
-                        kept.append(sentence)
-                checked[field] = " ".join(kept)
+            checked = {f: _check_field(it.get(f), src, f, warnings) for f in TEXT_FIELDS}
             items.append({**it, **checked, "story_ids": ids, "title": title})
         if items:
             sections.append({"key": sec["key"], "items": items})

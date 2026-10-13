@@ -9,6 +9,13 @@ from .rank import Story
 from .score import load_prompt
 
 SECTION_ORDER = ["top", "big_picture", "trends", "models", "tools", "research", "systems", "community"]
+# A teaching note: a short intro, then labelled bullet points ("How it works: …").
+NOTE = {
+    "type": "object",
+    "properties": {"intro": {"type": "string"}, "points": {"type": "array", "items": {"type": "string"}}},
+    "required": ["intro", "points"],
+    "additionalProperties": False,
+}
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -26,9 +33,9 @@ SCHEMA = {
                             "properties": {
                                 "story_ids": {"type": "array", "items": {"type": "integer"}},
                                 "title": {"type": "string"},
-                                "summary": {"type": "string"},      # what happened
-                                "explainer": {"type": "string"},    # "What is it?": the idea, in plain words
-                                "pro_take": {"type": "string"},     # "Comment from a pro": why it matters to the reader
+                                "summary": {"type": "string"},     # what happened, 1–2 paragraphs
+                                "explainer": NOTE,                 # "What is it?": the idea, in plain words
+                                "pro_take": NOTE,                  # "Comment from a pro": a supervisor's guidance
                             },
                             "required": ["story_ids", "title", "summary", "explainer", "pro_take"],
                             "additionalProperties": False,
@@ -45,13 +52,15 @@ SCHEMA = {
 }
 
 
-def source_text(s: Story, limit: int = 900) -> str:
+def source_text(s: Story, limit: int = 4000) -> str:
     """All the text the editor may draw facts from for one story (also used by verify)."""
     parts = [s.title]
     for it in s.items:
         parts.append(it["title"])
         if it.get("summary"):
             parts.append(it["summary"])
+        if it.get("full_text"):   # article page text, added by fulltext.enrich for thin stories
+            parts.append(it["full_text"])
     text = "\n".join(dict.fromkeys(parts))
     return text[:limit]
 
@@ -72,7 +81,7 @@ def write_brief(llm, stories: list[Story], *, model: str, prompts_dir: Path, pro
     system, version = load_prompt(prompts_dir, "editor", profile)
     user = (f"Today is {date_label}. Selected stories:\n"
             + json.dumps(editor_payload(stories, source_names), ensure_ascii=False))
-    brief = llm.json(model=model, system=system, user=user, schema=SCHEMA, max_tokens=24000,
+    brief = llm.json(model=model, system=system, user=user, schema=SCHEMA, max_tokens=32000,
                      effort="medium", purpose="editor", stream=True)
     brief["prompt_version"] = version
     return brief
@@ -86,7 +95,7 @@ def brief_without_llm(stories: list[Story]) -> dict:
         sections.setdefault(s.section or "community", []).append({
             "story_ids": [s.id], "title": s.title,
             "summary": (summary[:280] + "…") if len(summary) > 280 else summary,
-            "explainer": "", "pro_take": "",
+            "explainer": {"intro": "", "points": []}, "pro_take": {"intro": "", "points": []},
         })
     return {
         "headline": "Unranked digest (no LLM): the hottest stories by source count and engagement.",

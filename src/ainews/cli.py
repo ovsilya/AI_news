@@ -56,7 +56,16 @@ def cmd_brief(args, settings) -> None:
             llm = make_llm(settings, conn)
         except LLMDisabled as exc:
             sys.exit(f"ainews: {exc}")
-    result = build_brief(conn, settings, sources, llm=llm, edition=args.edition)
+    fetcher = None
+    if llm is not None:
+        from .http import Fetcher
+
+        fetcher = Fetcher(conn)  # article text for thin stories
+    try:
+        result = build_brief(conn, settings, sources, llm=llm, edition=args.edition, fetcher=fetcher)
+    finally:
+        if fetcher is not None:
+            fetcher.close()
 
     settings.out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y-%m-%d")
