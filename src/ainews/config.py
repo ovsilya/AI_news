@@ -25,6 +25,7 @@ def load_dotenv(path: Path = ROOT / ".env") -> None:
 class Settings:
     gcp_project_id: str
     vertex_region: str
+    llm_provider: str
     model_judge: str
     model_editor: str
     telegram_bot_token: str
@@ -37,9 +38,9 @@ class Settings:
     prompts_dir: Path
     # Spending guard. Model calls are off unless AINEWS_LLM_ENABLED=true (the "button").
     llm_enabled: bool = False
-    max_usd_per_run: float = 0.75
-    max_usd_per_day: float = 1.50
-    max_usd_per_month: float = 20.0
+    max_usd_per_run: float = 0.30
+    max_usd_per_day: float = 0.75
+    max_usd_per_month: float = 10.0
     max_judge_stories: int = 120
 
     @classmethod
@@ -54,8 +55,9 @@ class Settings:
         return cls(
             gcp_project_id=env("GCP_PROJECT_ID", ""),
             vertex_region=env("VERTEX_REGION", "global"),
-            model_judge=env("MODEL_JUDGE", "claude-haiku-5-5"),
-            model_editor=env("MODEL_EDITOR", "claude-opus-5-5"),
+            llm_provider=env("LLM_PROVIDER", "gemini").strip().lower(),
+            model_judge=env("MODEL_JUDGE", "gemini-3.1-flash-lite"),
+            model_editor=env("MODEL_EDITOR", "gemini-3.8-flash"),
             telegram_bot_token=env("TELEGRAM_BOT_TOKEN", ""),
             telegram_chat_id=env("TELEGRAM_CHAT_ID", ""),
             hf_token=env("HF_TOKEN", ""),
@@ -65,9 +67,9 @@ class Settings:
             sources_path=path("AINEWS_SOURCES", "config/sources.yaml"),
             prompts_dir=ROOT / "prompts",
             llm_enabled=env("AINEWS_LLM_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"},
-            max_usd_per_run=float(env("AINEWS_MAX_USD_PER_RUN", "0.75")),
-            max_usd_per_day=float(env("AINEWS_MAX_USD_PER_DAY", "1.50")),
-            max_usd_per_month=float(env("AINEWS_MAX_USD_PER_MONTH", "20")),
+            max_usd_per_run=float(env("AINEWS_MAX_USD_PER_RUN", "0.30")),
+            max_usd_per_day=float(env("AINEWS_MAX_USD_PER_DAY", "0.75")),
+            max_usd_per_month=float(env("AINEWS_MAX_USD_PER_MONTH", "10")),
             max_judge_stories=int(env("AINEWS_MAX_JUDGE_STORIES", "120")),
         )
 

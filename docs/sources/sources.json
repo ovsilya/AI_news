@@ -1036,10 +1036,10 @@
   {
    "id": "llm-parse",
    "name": "LLM extraction from free text",
-   "how": "Text retrieved by another method (for example HN 'Who is hiring' comments via the Algolia API) is turned into a strict JSON record by Claude Haiku: company, title, location, remote, salary, skills.",
-   "why": "Some valuable data has no structure at all. At $0.10 per million input tokens, parsing a few hundred comments a month costs cents, and the strict schema rejects invented fields.",
+   "how": "Text retrieved by another method (for example HN 'Who is hiring' comments via the Algolia API) is turned into a strict JSON record by Gemini 3.1 Flash-Lite: company, title, location, remote, salary, skills.",
+   "why": "Some valuable data has no structure at all. At $0.25 per million input tokens, parsing a few hundred comments a month costs cents, and the strict schema rejects invented fields.",
    "watch": "Every record is validated against the schema and keeps a link to the source comment.",
-   "plain": "Some job posts are just a paragraph a person typed, such as the comments in Hacker News' monthly \"Who is hiring?\" thread. A cheap AI model (Claude Haiku) reads each one and fills in a fixed form: company, title, city, remote or not, salary, skills. Why: it turns messy text into data we can count and compare, for a few cents a month."
+   "plain": "Some job posts are just a paragraph a person typed, such as the comments in Hacker News' monthly \"Who is hiring?\" thread. A cheap AI model (Gemini Flash-Lite) reads each one and fills in a fixed form: company, title, city, remote or not, salary, skills. Why: it turns messy text into data we can count and compare, for a few cents a month."
   },
   {
    "id": "link-votes",

@@ -1,6 +1,6 @@
 # AI_news
 
-A personal daily brief for ML / GenAI / LLM engineers and Forward Deployed Engineers: AI news, model and tool releases, research, community pulse, trends, and what new job postings require. Collected from many sources, deduplicated, ranked against a personal profile, and summarized with Claude.
+A personal daily brief for ML / GenAI / LLM engineers and Forward Deployed Engineers: AI news, model and tool releases, research, community pulse, trends, and what new job postings require. Collected from many sources, deduplicated, ranked against a personal profile, and summarized with Gemini (Claude optional).
 
 ## Docs
 
@@ -14,7 +14,7 @@ A personal daily brief for ML / GenAI / LLM engineers and Forward Deployed Engin
 - 47 sources across six layers, defined in [config/sources.yaml](config/sources.yaml), from business and policy down to kernels.
 - Collectors: RSS/Atom, GitHub releases, a CHANGELOG diff, HF Daily Papers, Hacker News, and an OpenRouter model and price diff.
 - Dedup by canonical URL and MinHash, then a heat score.
-- Claude Haiku 5.5 judges stories against your profile, and Claude Opus 5.5 writes the brief, both through Vertex AI. Numbers the sources don't support are dropped before anything is published.
+- Gemini 3.1 Flash-Lite judges stories against your profile, and Gemini 3.8 Flash writes the brief, both through Vertex AI (Claude is an optional provider). Numbers the sources don't support are dropped before anything is published.
 - Output goes to a local Markdown file and, optionally, the Telegram channel.
 
 Next is Phase 2: embedding dedup, aggregator link votes, feedback buttons, citations, and deployment to Cloud Run.

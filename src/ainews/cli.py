@@ -47,10 +47,10 @@ def cmd_brief(args, settings) -> None:
     sources = load_sources(settings.sources_path)
     llm = None
     if not args.no_llm:
-        from .llm import LLM, LLMDisabled
+        from .llm import LLMDisabled, make_llm
 
         try:
-            llm = LLM(settings, conn)
+            llm = make_llm(settings, conn)
         except LLMDisabled as exc:
             sys.exit(f"ainews: {exc}")
     result = build_brief(conn, settings, sources, llm=llm, edition=args.edition)
@@ -114,14 +114,16 @@ def cmd_check(args, settings) -> None:
     ok = True
     print(f"profile: {settings.profile_path if settings.profile_path.exists() else 'config/profile.example.md (no private profile)'}")
     try:
-        from .llm import LLM
+        from .llm import make_llm
 
-        llm = LLM(settings, db.connect(settings.db_path), ignore_switch=True)
+        llm = make_llm(settings, db.connect(settings.db_path), ignore_switch=True)
+        print(f"provider: {settings.llm_provider} · project: {settings.gcp_project_id} · region: {settings.vertex_region}")
         schema = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"],
                   "additionalProperties": False}
-        for model in (settings.model_judge, settings.model_editor):
+        # Same thinking levels as production (judge: low, editor: medium), so a run won't fail on them later.
+        for model, effort in ((settings.model_judge, "low"), (settings.model_editor, "medium")):
             out = llm.json(model=model, system="Reply with ok=true.", user="ping", schema=schema,
-                           max_tokens=2000, effort="low", purpose="check")
+                           max_tokens=2000, effort=effort, purpose="check")
             print(f"vertex {model}: ok={out.get('ok')}")
         print(f"vertex check cost: ${llm.total_cost:.4f}")
     except Exception as exc:

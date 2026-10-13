@@ -52,7 +52,7 @@ If the token ever leaks, send `/revoke` to BotFather, pick the bot, and put the 
    ```bash
    gcloud services enable aiplatform.googleapis.com --project=ai-news-XXXX
    ```
-2. **Enable the Claude models.** In the Cloud console go to Vertex AI → **Model Garden**. Search for **Claude Haiku 5.5** → Enable, and accept Anthropic's terms. Do the same for **Claude Opus 5.5**. Enable nothing else; add Claude Sonnet 5.5 only if you want a cheaper editor.
+2. **Models.** The defaults are Google's own models, which need no access request: **Gemini 3.1 Flash-Lite** judges stories and **Gemini 3.8 Flash** writes the brief. Both are already available once the Vertex AI API is enabled; you can see them under Vertex AI → Model Garden. Claude can be switched on later with `LLM_PROVIDER=anthropic`, but Anthropic models need an access request in Model Garden first.
 3. **Local credentials.** Sign in with your **personal** Google account:
    ```bash
    gcloud auth application-default login
@@ -60,7 +60,7 @@ If the token ever leaks, send `/revoke` to BotFather, pick the bot, and put the 
    ```bash
    gcloud auth application-default set-quota-project ai-news-XXXX
    ```
-4. **Configure.** In `.env`, set `GCP_PROJECT_ID=ai-news-XXXX`.
+4. **Configure.** In `.env`, set `GCP_PROJECT_ID=ai-news-XXXX`. It still holds the placeholder `your-personal-project-id` until you change it.
 5. **Check.** This makes one tiny call per model (under $0.01 in total) and works while the switch is off. It also confirms the model IDs match Model Garden.
    ```bash
    .venv/bin/ainews check
@@ -73,8 +73,8 @@ Layers 1 and 2 are already in the code. Layers 3–5 are set up in GCP by you.
 | # | Guardrail | What it stops | Acts | Where |
 |---|---|---|---|---|
 | 1 | **The button**: `AINEWS_LLM_ENABLED=false` (the default) | Every model call, except the deliberate `ainews check` | Immediately | code ✓ |
-| 2 | **App caps**: $0.75 per run, $1.50 per day, $20 per month; at most 120 stories judged; editor output capped at 16k tokens | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI | Before each call | code ✓ |
-| 3 | **Vertex AI quotas** lowered per Claude model | Fast burn from a bug, a loop, or someone using your credentials outside the app | Immediately | console |
+| 2 | **App caps**: $0.30 per run, $0.75 per day, $10 per month; at most 120 stories judged; editor output capped at 16k tokens | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI | Before each call | code ✓ |
+| 3 | **Vertex AI quotas** lowered per model | Fast burn from a bug, a loop, or someone using your credentials outside the app | Immediately | console |
 | 4 | **Budget alerts**: $10/month, emails at 25/50/90/100% and at 100% forecast | Nothing by itself; it tells you | Hours of delay | script |
 | 5 | **Kill switch** (optional): unlinks billing when actual spend passes the budget | Everything paid in the project | Hours of delay | script |
 
@@ -83,7 +83,7 @@ Layers 1 and 2 are already in the code. Layers 3–5 are set up in GCP by you.
 .venv/bin/ainews budget
 ```
 
-**Layer 3, quotas.** Cloud console → IAM & Admin → **Quotas & system limits**. Filter by service *Vertex AI API* and type the model name (for example `claude-opus`). For the requests-per-minute and tokens-per-minute rows of the `global` region, choose **Edit quota** and lower them. A sensible start: Opus 5 requests and 20k input tokens per minute; Haiku 20 requests and 100k input tokens per minute. A brief needs far less than that. Quota decreases are normally applied straight away.
+**Layer 3, quotas.** Cloud console → IAM & Admin → **Quotas & system limits**. Filter by service *Vertex AI API* and type the model name (for example `gemini-3.8-flash`). For the requests-per-minute and tokens-per-minute rows of the `global` region, choose **Edit quota** and lower them. A sensible start for both models: 10 requests and 100k input tokens per minute. A brief needs far less than that. Quota decreases are normally applied straight away.
 
 **Layers 4 and 5, budget and kill switch.** Read [scripts/gcp_guardrails.sh](../scripts/gcp_guardrails.sh) first. It changes billing settings.
 
@@ -104,7 +104,7 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
 - After deployment it will use a dedicated service account with only the *Vertex AI User* role.
 - `.env` is gitignored. On Cloud Run the Telegram token will live in Secret Manager.
 
-**Expected cost once on:** roughly $0.30 per brief, most of it the Opus editor. With two briefs a day that's about $15–25 a month (see the cost estimate in [architecture.md](architecture.md)). For the first week you can set `MODEL_EDITOR=claude-sonnet-5-5` or lower `AINEWS_MAX_USD_PER_DAY`.
+**Expected cost once on:** roughly $0.05–0.10 per brief. The judge (Flash-Lite, $0.25 / $1.50 per 1M tokens) costs a few cents; the editor (3.8 Flash, $0.75 / $3.75 until 31 Dec 2026, then $1.50 / $7.50) costs a few more. With two briefs a day that's about $3–6 a month, and roughly double that from January 2027. Prices are from the Vertex AI pricing page, checked 2026-10-12.
 
 ## 4. Turning the button on
 

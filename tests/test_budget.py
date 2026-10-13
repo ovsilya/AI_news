@@ -1,70 +1,116 @@
 from dataclasses import replace
+from datetime import date
 from types import SimpleNamespace
 
 import pytest
 
 from ainews.db import now
-from ainews.llm import LLM, BudgetExceeded, LLMDisabled, worst_case_usd
+from ainews.llm import (UNKNOWN_PRICE, BudgetExceeded, ClaudeLLM, GeminiLLM, LLMDisabled, LLMError, make_llm,
+                        price_for, worst_case_usd)
 
 SCHEMA = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"], "additionalProperties": False}
 
 
-class FakeClient:
-    """Stands in for AnthropicVertex; counts calls and reports fixed usage."""
+class FakeGemini:
+    """Stands in for google.genai.Client; counts calls and reports fixed usage."""
 
+    def __init__(self, finish="STOP"):
+        self.calls, self.finish, self.config = 0, finish, None
+        self.models = self
+
+    def generate_content(self, *, model, contents, config):
+        self.calls += 1
+        self.config = config
+        usage = SimpleNamespace(prompt_token_count=1200, cached_content_token_count=200,
+                                candidates_token_count=300, thoughts_token_count=200)
+        return SimpleNamespace(usage_metadata=usage, text='{"ok": true}',
+                               candidates=[SimpleNamespace(finish_reason=SimpleNamespace(value=self.finish))])
+
+
+class FakeClaude:
     def __init__(self):
-        self.calls = 0
         self.messages = self
 
     def create(self, **params):
-        self.calls += 1
         usage = SimpleNamespace(input_tokens=1000, output_tokens=500, cache_read_input_tokens=0,
                                 cache_creation_input_tokens=0)
         return SimpleNamespace(usage=usage, stop_reason="end_turn", content=[SimpleNamespace(type="text", text='{"ok": true}')])
 
 
-def call(llm, max_tokens=1000, model="claude-haiku-5-5"):
-    return llm.json(model=model, system="s", user="u", schema=SCHEMA, max_tokens=max_tokens, purpose="t")
+def call(llm, max_tokens=1000, model="gemini-3.1-flash-lite", effort="low"):
+    return llm.json(model=model, system="s", user="u", schema=SCHEMA, max_tokens=max_tokens, effort=effort, purpose="t")
 
 
 def test_switch_off_blocks_all_calls(conn, settings):
     with pytest.raises(LLMDisabled):
-        LLM(replace(settings, llm_enabled=False), conn, client=FakeClient())
+        make_llm(replace(settings, llm_enabled=False), conn, client=FakeGemini())
+
+
+def test_placeholder_project_is_rejected(conn, settings):
+    with pytest.raises(LLMError, match="placeholder"):
+        make_llm(replace(settings, llm_enabled=True, gcp_project_id="your-personal-project-id"), conn)
 
 
 def test_check_can_bypass_switch(conn, settings):
-    llm = LLM(replace(settings, llm_enabled=False), conn, client=FakeClient(), ignore_switch=True)
+    llm = make_llm(replace(settings, llm_enabled=False), conn, client=FakeGemini(), ignore_switch=True)
+    assert isinstance(llm, GeminiLLM)
     assert call(llm) == {"ok": True}
 
 
-def test_calls_are_logged_with_cost(conn, settings):
-    llm = LLM(replace(settings, llm_enabled=True), conn, client=FakeClient())
-    call(llm)
-    row = conn.execute("SELECT model, input_tokens, output_tokens, cost_usd FROM llm_calls").fetchone()
-    assert (row["model"], row["input_tokens"], row["output_tokens"]) == ("claude-haiku-5-5", 1000, 500)
-    assert row["cost_usd"] == pytest.approx((1000 * 0.10 + 500 * 0.50) / 1e6)
+def test_gemini_request_and_cost(conn, settings):
+    client = FakeGemini()
+    llm = make_llm(replace(settings, llm_enabled=True), conn, client=client)
+    call(llm, effort="medium")
+    cfg = client.config
+    assert cfg.response_mime_type == "application/json" and cfg.response_json_schema == SCHEMA
+    assert cfg.max_output_tokens == 1000 and cfg.thinking_config.thinking_level.value == "MEDIUM"
+    row = conn.execute("SELECT * FROM llm_calls").fetchone()
+    # Cached prompt tokens are billed at 10%; thinking tokens count as output.
+    assert (row["input_tokens"], row["cache_read_tokens"], row["output_tokens"]) == (1000, 200, 500)
+    assert row["cost_usd"] == pytest.approx((1000 * 0.25 + 200 * 0.025 + 500 * 1.50) / 1e6)
+
+
+def test_truncated_output_is_logged_and_raises(conn, settings):
+    llm = make_llm(replace(settings, llm_enabled=True), conn, client=FakeGemini(finish="MAX_TOKENS"))
+    with pytest.raises(LLMError, match="max_tokens"):
+        call(llm)
+    assert conn.execute("SELECT purpose FROM llm_calls").fetchone()["purpose"] == "t:max_tokens"
+
+
+def test_claude_provider_still_works(conn, settings):
+    llm = make_llm(replace(settings, llm_enabled=True, llm_provider="anthropic"), conn, client=FakeClaude())
+    assert isinstance(llm, ClaudeLLM)
+    assert call(llm, model="claude-haiku-5-5") == {"ok": True}
+
+
+def test_prices():
+    assert price_for("gemini-3.5-flash-lite") == (0.30, 2.50)          # not matched as gemini-3.5-flash
+    assert price_for("gemini-3.1-pro-preview") == (2.00, 12.00)
+    assert price_for("gemini-3.8-flash", on=date(2026, 12, 31)) == (0.75, 3.75)
+    assert price_for("gemini-3.8-flash", on=date(2027, 1, 1)) == (1.50, 7.50)   # intro price ends
+    assert price_for("some-new-model") == UNKNOWN_PRICE
 
 
 def test_run_cap_refuses_before_calling(conn, settings):
-    client = FakeClient()
-    llm = LLM(replace(settings, llm_enabled=True, max_usd_per_run=0.10), conn, client=client)
-    # Opus with 16k output tokens has a worst case of > $0.32: refused without contacting Vertex.
+    client = FakeGemini()
+    llm = make_llm(replace(settings, llm_enabled=True, max_usd_per_run=0.01), conn, client=client)
+    # The editor's worst case (16k output tokens on 3.8 Flash) is > $0.06: refused without contacting Vertex.
     with pytest.raises(BudgetExceeded, match="run"):
-        call(llm, max_tokens=16000, model="claude-opus-5-5")
+        call(llm, max_tokens=16000, model="gemini-3.8-flash")
     assert client.calls == 0
 
 
 def test_daily_cap_counts_earlier_runs(conn, settings):
     conn.execute("INSERT INTO llm_calls (at, purpose, model, input_tokens, output_tokens, cost_usd)"
-                 " VALUES (?, 'editor', 'claude-opus-5-5', 0, 0, 1.45)", (now(),))
-    llm = LLM(replace(settings, llm_enabled=True, max_usd_per_day=1.50), conn, client=FakeClient())
+                 " VALUES (?, 'editor', 'gemini-3.8-flash', 0, 0, 0.74)", (now(),))
+    llm = make_llm(replace(settings, llm_enabled=True, max_usd_per_day=0.75), conn, client=FakeGemini())
     with pytest.raises(BudgetExceeded, match="day"):
-        call(llm, max_tokens=16000, model="claude-opus-5-5")
-    call(llm, max_tokens=1000)  # a cheap Haiku call still fits under the cap
+        call(llm, max_tokens=16000, model="gemini-3.8-flash")
+    call(llm, max_tokens=1000)  # a cheap Flash-Lite call still fits under the cap
 
 
 def test_worst_case_is_an_upper_bound():
-    # 30k characters of prompt and 16k output tokens on Opus.
+    # 30k characters of prompt and 16k output tokens on Claude Opus.
     assert worst_case_usd("claude-opus-5-5", 30_000, 16_000) == pytest.approx((10_000 * 4 * 1.25 + 16_000 * 20) / 1e6)
 
 

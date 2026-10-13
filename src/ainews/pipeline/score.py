@@ -38,6 +38,20 @@ SCHEMA = {
 }
 
 
+def _clean(sc: dict) -> dict:
+    """Clamp scores to 0–3 and unknown sections to skip, whatever the model returned."""
+    out = dict(sc)
+    for k in ("relevance", "novelty", "actionability", "credibility"):
+        try:
+            out[k] = min(3, max(0, int(sc.get(k, 0))))
+        except (TypeError, ValueError):
+            out[k] = 0
+    if out.get("section") not in SECTIONS:
+        out["section"] = "skip"
+    out["why_it_matters"] = str(sc.get("why_it_matters") or "")[:300]
+    return out
+
+
 def load_prompt(prompts_dir: Path, name: str, profile: str) -> tuple[str, str]:
     """Returns (prompt text with the profile filled in, version tag from the first line)."""
     text = (prompts_dir / f"{name}.md").read_text(encoding="utf-8")
@@ -91,6 +105,7 @@ def judge(conn: sqlite3.Connection, llm, stories: list[Story], *, model: str, pr
             s = by_id.get(sc.get("id"))
             if s is None:
                 continue
+            sc = _clean(sc)
             s.score = sc
             conn.execute(
                 "INSERT OR REPLACE INTO scores VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
