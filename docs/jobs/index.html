@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the job search works</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1f;--muted:#5f6368;--border:#d5d7db;--sel:#2f6fdb;--line:#8a8f98;
+--chip:#eef3fb;--chip-border:#9db5dc;--llm:#f3ecfd;--llm-border:#9a7ad1;--store:#eaf6ef;--store-border:#6fae8a;
+--ext:#fdf3e6;--ext-border:#d39b4a;--good:#1e7d4f;--bad:#b3261e;--code:#f1f2f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;
+--border:#3a3e45;--sel:#6ea2ff;--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;
+--store:#16271e;--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}}
+:root[data-theme="dark"]{--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;
+--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;--store:#16271e;
+--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+a{color:var(--sel)}
+.top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:14px;margin-bottom:18px}
+.top .home{font-weight:600;margin-right:6px}
+.top nav{display:flex;flex-wrap:wrap;gap:6px}
+.top nav a{padding:2px 9px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--panel)}
+.top nav a[aria-current]{border-color:var(--sel);color:var(--sel);font-weight:600}
+h1{font-size:24px;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;scroll-margin-top:12px}
+h3{font-size:16px;margin:22px 0 6px}
+p,li{max-width:84ch}
+.lede{color:var(--muted);margin:0 0 8px;font-size:16px}
+.lede b{color:var(--ink)}
+.snap{font-size:13.5px;color:var(--muted)}
+.muted{color:var(--muted);font-size:14px}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:5px}
+pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);border:1px solid var(--border);
+border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0}
+pre code{background:none;padding:0}
+.callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
+.callout.key{border-left:4px solid var(--sel)}
+.callout ol,.callout ul{margin:6px 0 0;padding-left:22px}
+.callout li{margin:5px 0}
+.frame{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0}
+.frame svg{display:block;width:100%;height:auto;min-width:760px}
+.frame.small svg{min-width:560px}
+svg text{fill:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+svg .t{font-size:14px;font-weight:600}
+svg .s{font-size:12px;fill:var(--muted)}
+svg .h{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;fill:var(--muted)}
+svg .ext{fill:var(--ext);stroke:var(--ext-border)}
+svg .comp{fill:var(--panel);stroke:var(--border)}
+svg .llm{fill:var(--llm);stroke:var(--llm-border)}
+svg .store{fill:var(--store);stroke:var(--store-border)}
+svg .dash{fill:none;stroke:var(--border);stroke-dasharray:5 4}
+svg rect{stroke-width:1.3}
+svg .a{fill:none;stroke:var(--line);stroke-width:1.6}
+svg .a.dim{stroke-dasharray:5 4}
+svg .tip{fill:var(--line)}
+svg .good{fill:var(--good)} svg .bad{fill:var(--bad)}
+svg a:hover rect,svg a:focus-visible rect{stroke:var(--sel);stroke-width:2.2}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:10px 0}
+.step{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink);display:block}
+a.step:hover{border-color:var(--sel)}
+.step b{display:block;margin-bottom:4px}
+.step span{font-size:14px;color:var(--muted)}
+.flow{list-style:none;padding:0;margin:10px 0;counter-reset:f}
+.flow>li{counter-increment:f;position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;
+padding:10px 14px 10px 50px;margin:0 0 18px;max-width:none}
+.flow>li::before{content:counter(f);position:absolute;left:12px;top:10px;width:26px;height:26px;border-radius:50%;
+background:var(--chip);border:1px solid var(--chip-border);text-align:center;font:600 13px/26px system-ui,sans-serif}
+.flow>li:not(:last-child)::after{content:"↓";position:absolute;left:20px;bottom:-19px;color:var(--line);font-size:14px}
+.flow ul{margin:4px 0 0;padding-left:20px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.group td{background:var(--chip);font-weight:600;font-size:13px}
+.chip{display:inline-block;font-size:12px;padding:0 8px;margin:1px 2px 1px 0;border:1px solid var(--chip-border);background:var(--chip);border-radius:999px;white-space:nowrap}
+.yes{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+.bars{display:grid;gap:8px;margin:12px 0}
+.bar{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+.bar .fill{height:22px;border-radius:5px;background:var(--chip);border:1px solid var(--chip-border);min-width:6px}
+.bar .fill.llm{background:var(--llm);border-color:var(--llm-border)}
+.bar .fill.store{background:var(--store);border-color:var(--store-border)}
+.bar .fill.ext{background:var(--ext);border-color:var(--ext-border)}
+.bar .lbl{font-size:14px}.bar .lbl b{font-variant-numeric:tabular-nums}
+details{margin:8px 0}
+summary{cursor:pointer;color:var(--sel);font-weight:600;font-size:14px}
+.words{display:grid;grid-template-columns:minmax(120px,210px) 1fr;gap:6px 16px;margin:0}
+.words dt{font-weight:600}.words dd{margin:0}
+@media (max-width:560px){.words{grid-template-columns:1fr}.words dd{margin-bottom:8px}}
+.tool{background:var(--panel);border:1px solid var(--sel);border-radius:10px;padding:12px 16px;margin:10px 0}
+.tool label{font-weight:600;font-size:14px;display:block;margin-bottom:4px}
+.tool input[type=text]{width:100%;max-width:520px;font:15px system-ui,sans-serif;padding:7px 10px;border:1px solid var(--border);
+border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool input[type=number]{width:72px;font:15px system-ui,sans-serif;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool .out{margin-top:8px;font-size:15px}
+.tool .row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:6px 0}
+.tool .nw{white-space:nowrap}
+.tool button{font:14px system-ui,sans-serif;padding:3px 10px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--ink);cursor:pointer}
+.tool button:hover{border-color:var(--sel)}
+.foot{margin-top:32px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+.next{margin-top:28px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.next a{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel);text-decoration:none}
+.next a:hover{border-color:var(--sel)}
+</style>
+</head>
+<body>
+<main>
+<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html" aria-current="page">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="report.html">4 · Report &amp; fit</a><a href="operate.html">Run &amp; change it</a></nav></div>
+<h1>How the job search works</h1>
+<p class="lede">Every day the jobs lane (lane ② on the <a href="../architecture-diagram.html">architecture diagram</a>) collects open AI engineering jobs <b>straight from the employers' own career sites</b>. It keeps the ones in your target roles and markets, and has a model read each one into a fixed set of facts: skills, seniority, pay and remote policy. Once a week, code turns those facts into a report on what employers ask for, what they pay, who is hiring, and how your skills match.</p>
+<p class="snap">Numbers on these pages are a snapshot from 13 Oct 2026, the second day of tracking. Lists and limits are generated from the code and config, so they are always current.</p>
+
+<h2>The idea in four sentences</h2>
+<div class="callout key">
+<ol>
+<li><b>Go to the source.</b> Postings come from the employers' own job systems (97 employers on Greenhouse, Lever or Ashby, 32 on Workday), never from LinkedIn or Indeed, whose terms forbid programs.</li>
+<li><b>Keep only what's yours.</b> A title filter keeps your role families and a location filter keeps the US, Canada, UK, Switzerland, UAE and remote jobs.</li>
+<li><b>Read each posting once.</b> Gemini 3.1 Flash-Lite fills in the same form for every posting, and the form is read again only if the posting's text changes.</li>
+<li><b>Count in code, explain with the model.</b> Every number in the report is computed from the data. The model writes the commentary, and any sentence with a number that isn't in the data is removed.</li>
+</ol>
+</div>
+
+<h2>The six steps</h2>
+<p>Steps 1–3 run every day (<code>ainews jobs</code>); steps 4–6 run once a week (<code>ainews weekly</code>). Click a step to read how it works.</p>
+<div class="frame">
+<svg viewBox="0 0 1000 268" role="img" aria-label="The job search in six steps: sources, filter and track, read, count, explain, publish, with a SQLite database underneath">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="h" x="248" y="20" text-anchor="middle">Daily · ainews jobs</text>
+  <path class="a" d="M6 32 V27 H490 V32"/>
+  <text class="h" x="752" y="20" text-anchor="middle">Weekly · ainews weekly</text>
+  <path class="a" d="M510 32 V27 H994 V32"/>
+
+  <a href="sources.html"><rect class="ext" x="6" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="80" y="72" text-anchor="middle">1 · Sources</text>
+    <text class="s" x="80" y="94" text-anchor="middle">97 job-board APIs</text>
+    <text class="s" x="80" y="112" text-anchor="middle">32 Workday sites</text>
+    <text class="s" x="80" y="130" text-anchor="middle">employers' own</text></a>
+  <a href="poll.html"><rect class="comp" x="174" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="248" y="72" text-anchor="middle">2 · Filter &amp; track</text>
+    <text class="s" x="248" y="94" text-anchor="middle">role + market</text>
+    <text class="s" x="248" y="112" text-anchor="middle">new · changed</text>
+    <text class="s" x="248" y="130" text-anchor="middle">closed</text></a>
+  <a href="extract.html"><rect class="llm" x="342" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="416" y="72" text-anchor="middle">3 · Read</text>
+    <text class="s" x="416" y="94" text-anchor="middle">Flash-Lite fills</text>
+    <text class="s" x="416" y="112" text-anchor="middle">a fixed form</text>
+    <text class="s" x="416" y="130" text-anchor="middle">skills · pay · remote</text></a>
+  <a href="report.html#count"><rect class="comp" x="510" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="584" y="72" text-anchor="middle">4 · Count</text>
+    <text class="s" x="584" y="94" text-anchor="middle">skill shares</text>
+    <text class="s" x="584" y="112" text-anchor="middle">pay · who's hiring</text>
+    <text class="s" x="584" y="130" text-anchor="middle">your fit</text></a>
+  <a href="report.html#notes"><rect class="llm" x="678" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="752" y="72" text-anchor="middle">5 · Explain</text>
+    <text class="s" x="752" y="94" text-anchor="middle">3 short notes</text>
+    <text class="s" x="752" y="112" text-anchor="middle">every number</text>
+    <text class="s" x="752" y="130" text-anchor="middle">checked</text></a>
+  <a href="report.html#publish"><rect class="comp" x="846" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="920" y="72" text-anchor="middle">6 · Publish</text>
+    <text class="s" x="920" y="94" text-anchor="middle">out/jobs-….md</text>
+    <text class="s" x="920" y="112" text-anchor="middle">Telegram</text>
+    <text class="s" x="920" y="130" text-anchor="middle">when you send it</text></a>
+  <path class="a" d="M154 98 H170" marker-end="url(#arr)"/>
+  <path class="a" d="M322 98 H338" marker-end="url(#arr)"/>
+  <path class="a" d="M490 98 H506" marker-end="url(#arr)"/>
+  <path class="a" d="M658 98 H674" marker-end="url(#arr)"/>
+  <path class="a" d="M826 98 H842" marker-end="url(#arr)"/>
+
+  <a href="operate.html#data"><rect class="store" x="174" y="196" width="820" height="56" rx="9"/>
+    <text class="t" x="584" y="219" text-anchor="middle">SQLite database (data/ainews.sqlite)</text>
+    <text class="s" x="584" y="239" text-anchor="middle">job_boards · job_postings · job_extractions · reports</text></a>
+  <path class="a" d="M248 150 V192" marker-end="url(#arr)"/>
+  <text class="s" x="256" y="178">saves postings</text>
+  <path class="a" d="M416 150 V192" marker-start="url(#arr)" marker-end="url(#arr)"/>
+  <text class="s" x="424" y="178">reads postings, saves forms</text>
+  <path class="a" d="M584 192 V154" marker-end="url(#arr)"/>
+  <text class="s" x="592" y="178">reads the forms</text>
+  <path class="a" d="M920 150 V192" marker-end="url(#arr)"/>
+  <text class="s" x="928" y="178">saves the report</text>
+</svg>
+</div>
+<p class="muted">Colours as on the architecture diagram: orange is outside the project, white is plain code, purple is a model call, green is storage.</p>
+
+<h2>From 13,800 postings to one report</h2>
+<p>How much each step keeps, on 13 Oct 2026 (bars to scale):</p>
+<div class="bars">
+  <div class="bar"><div class="fill ext" style="width:100%"></div><div class="lbl"><b>12,948</b> open postings listed by the 97 job-board APIs (every job at those employers)</div></div>
+  <div class="bar"><div class="fill ext" style="width:6.8%"></div><div class="lbl"><b>885</b> search results with AI titles on the 32 Workday sites (only AI keywords are searched)</div></div>
+  <div class="bar"><div class="fill" style="width:17.6%"></div><div class="lbl"><b>2,275</b> kept: in a role family and in your markets (1,591 + 684)</div></div>
+  <div class="bar"><div class="fill llm" style="width:1.6%"></div><div class="lbl"><b>210</b> read by the model so far; the other 2,065 wait their turn, up to 200 a day</div></div>
+  <div class="bar"><div class="fill store" style="width:1.4%"></div><div class="lbl"><b>180</b> of those are open and in your 5 target families, so they count in the current report</div></div>
+</div>
+<p class="muted">The report grows as the backlog is read: about ten daily runs until all 2,275 have been read. After that, each day only adds the new postings.</p>
+
+<h2>A week in the life of the job search</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>When</th><th>Command</th><th>What happens</th><th class="num">Time</th><th class="num">Cost</th></tr></thead>
+<tbody>
+<tr><td>Every day</td><td><code>ainews jobs</code></td><td>Lists the 97 job boards; searches the 32 Workday sites (4 at a time); saves new, changed and closed postings; the model reads up to 200 unread postings, newest first</td><td class="num">about 10 min<br><span class="muted">1½ lists · 4 Workday · 4 reading</span></td><td class="num">about $0.22</td></tr>
+<tr><td>Monday</td><td><code>ainews weekly</code></td><td>Computes the statistics, the model writes three notes, and the report is saved to <code>out/jobs-&lt;date&gt;.md</code></td><td class="num">seconds</td><td class="num">about 1 cent</td></tr>
+<tr><td>When you're happy with it</td><td><code>ainews send --report</code></td><td>Posts the latest report to the Telegram channel, in as few messages as fit</td><td class="num">seconds</td><td class="num">free</td></tr>
+</tbody></table></div>
+<p class="muted">Today you run these by hand. After deployment, Cloud Scheduler runs <code>jobs</code> at 05:00 every day and <code>weekly</code> on Mondays at 07:00.</p>
+
+<h2 id="words">Words used on these pages</h2>
+<div class="callout"><dl class="words">
+<dt>Posting</dt><dd>One job advert on an employer's career site. The same job in two cities can be two postings.</dd>
+<dt>Job board / ATS</dt><dd>The system an employer uses to publish jobs and take applications (an applicant tracking system). Greenhouse, Lever and Ashby are popular with startups; Workday with banks, insurers, pharma and big tech.</dd>
+<dt>Tenant, career site</dt><dd>On Workday, each employer is a tenant (<code>nvidia</code>) with one or more career sites (<code>NVIDIAExternalCareerSite</code>).</dd>
+<dt>Role family</dt><dd>The kind of job, such as FDE / applied AI or ML engineer. Your 5 <b>target families</b> are FDE / applied AI, Solutions engineer, LLM / GenAI engineer, AI engineer, ML engineer.</dd>
+<dt>Market</dt><dd>Where the job is: USA, Canada, UK, Switzerland, UAE, or remote.</dd>
+<dt>Poll</dt><dd>One visit to every career site to see what's open today.</dd>
+<dt>Diff</dt><dd>Comparing today's postings with what is stored, to find new, changed and closed ones.</dd>
+<dt>Extraction</dt><dd>The model reading a posting and filling in the fixed form (skills, seniority, pay…).</dd>
+<dt>Canonical skill</dt><dd>One agreed name per skill, so “k8s” and “Kubernetes” are counted together.</dd>
+<dt>Share</dt><dd>The percentage of postings that ask for something: “Python 73%” means 73 of every 100 target postings name Python.</dd>
+<dt>Median</dt><dd>The middle value when numbers are sorted: half are above, half below. Used for pay so a few extreme salaries don't skew it.</dd>
+<dt>Confidence interval</dt><dd>The range a true share probably lies in, given how many postings we saw. Used to tell a real rise in demand from noise.</dd>
+<dt>Coverage</dt><dd>How much of the demand for the top skills your skills cover, weighted by how often each skill is asked for.</dd>
+</dl></div>
+
+<h2>What it never does</h2>
+<div class="callout">
+<ul>
+<li><b>No scraping of job sites that forbid it.</b> LinkedIn, Indeed, jobs.ch, Bayt and Naukrigulf ban automated access, so they are never visited. Planned: your own job-alert emails from them, read from a Gmail label.</li>
+<li><b>No logins and no getting around blocks.</b> Only public endpoints, the same ones the career page itself uses, and only parts of a site that its robots.txt allows.</li>
+<li><b>Your personal data stays private.</b> Your skills list (<code>private/skills.yaml</code>) and profile are gitignored and never in the public repo. These pages explain the fit calculation with made-up numbers.</li>
+<li><b>No guessed numbers.</b> If a number in the model's commentary isn't in the statistics, the sentence is dropped.</li>
+</ul>
+</div>
+
+<h2>Read next</h2>
+<div class="steps">
+<a class="step" href="sources.html"><b>1 · Where postings come from</b><span>Job-board APIs versus Workday search, how employers were chosen, the full list of 129.</span></a>
+<a class="step" href="poll.html"><b>2 · Filter and track</b><span>How a title becomes a role family, how a location becomes a market, and when a posting counts as closed.</span></a>
+<a class="step" href="extract.html"><b>3 · Read each posting</b><span>The form the model fills in, a worked example, the skills dictionary, pay and cost.</span></a>
+<a class="step" href="report.html"><b>4 · Weekly report and fit</b><span>Skill shares, pay medians, rising skills with confidence intervals, your coverage, checked notes.</span></a>
+<a class="step" href="operate.html"><b>Run and change it</b><span>Commands, settings, adding an employer, the tables, troubleshooting.</span></a>
+</div>
+
+<div class="next"><span></span><a href="sources.html">1 · Sources →</a></div>
+<p class="foot"><a href="#top">↑ Top</a><a href="../architecture-diagram.html">Architecture diagram</a><a href="../sources/job-boards.html">Job-board source list</a></p>
+</main>
+</body>
+</html>

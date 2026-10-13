@@ -117,6 +117,7 @@ h1{font-size:22px;margin:0 0 6px}
 h2{font-size:18px;margin:32px 0 8px}
 .lede{color:var(--muted);margin:0 0 6px;max-width:80ch}
 .lede b{color:var(--ink);font-weight:600}
+.guide{margin-top:10px;font-weight:600}
 .count{font-size:14px;color:var(--muted);margin:10px 0 12px}
 .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:14px;min-width:720px;table-layout:fixed}
@@ -212,10 +213,12 @@ def block_page(b):
         method_card(t, "Used here by: " + ", ".join(e(s["name"]) for s in b["sources"] if t in s["methods"]))
         for t in used
     )
+    g = b.get("guide")
+    guide = f'<p class="lede guide"><a href="{e(g["href"])}">{e(g["text"])} →</a></p>\n' if g else ""
     body = f"""<h1 id="top">{e(b["name"])}</h1>
 <p class="lede"><b>What:</b> {e(b["what"])}</p>
 <p class="lede"><b>Why:</b> {e(b["why"])}</p>
-<p class="count">{len(b["sources"])} sources · {len(used)} retrieval methods · links checked {DATA["updated"]}</p>
+{guide}<p class="count">{len(b["sources"])} sources · {len(used)} retrieval methods · links checked {DATA["updated"]}</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Source</th><th>Link</th><th>How it's retrieved</th></tr></thead>
 <tbody>{"".join(rows)}</tbody></table></div>

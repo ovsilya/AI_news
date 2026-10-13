@@ -1,0 +1,174 @@
+<h1>4 · The weekly report and your fit</h1>
+<p class="lede">Once a week, <code>ainews weekly</code> turns the filled-in forms into a report: which roles are open where, the skills employers ask for, what they pay, who is hiring most, and how your skills cover the demand. <b>Every number is computed in code.</b> The model writes three short notes on what the numbers mean, and code removes any sentence whose numbers aren't in the statistics. These are steps J3 and W1–W3 on the architecture diagram.</p>
+
+<div class="frame">
+<svg viewBox="0 0 1000 196" role="img" aria-label="Stored forms are filtered to open target postings, statistics are computed in code, tables are printed from them and the model writes notes that are number-checked, then the report is saved and optionally posted">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="store" x="2" y="54" width="150" height="88" rx="9"/>
+  <text class="t" x="77" y="82" text-anchor="middle">Stored forms</text>
+  <text class="s" x="77" y="102" text-anchor="middle">postings + what</text>
+  <text class="s" x="77" y="120" text-anchor="middle">the model read</text>
+  <a href="#count"><rect class="comp" x="180" y="54" width="150" height="88" rx="9"/>
+  <text class="t" x="255" y="82" text-anchor="middle">Which count</text>
+  <text class="s" x="255" y="102" text-anchor="middle">open, in your {{n_targets}}</text>
+  <text class="s" x="255" y="120" text-anchor="middle">target families</text></a>
+  <a href="#sections"><rect class="comp" x="358" y="54" width="160" height="88" rx="9"/>
+  <text class="t" x="438" y="82" text-anchor="middle">Statistics (code)</text>
+  <text class="s" x="438" y="102" text-anchor="middle">shares · pay · hiring</text>
+  <text class="s" x="438" y="120" text-anchor="middle">rising skills · your fit</text></a>
+  <rect class="comp" x="560" y="10" width="170" height="74" rx="9"/>
+  <text class="t" x="645" y="38" text-anchor="middle">Tables</text>
+  <text class="s" x="645" y="58" text-anchor="middle">printed straight from</text>
+  <text class="s" x="645" y="74" text-anchor="middle">the statistics</text>
+  <a href="#notes"><rect class="llm" x="560" y="112" width="170" height="74" rx="9"/>
+  <text class="t" x="645" y="140" text-anchor="middle">Notes · 3.5 Flash-Lite</text>
+  <text class="s" x="645" y="160" text-anchor="middle">market · skills · fit,</text>
+  <text class="s" x="645" y="176" text-anchor="middle">then a number check</text></a>
+  <a href="#publish"><rect class="comp" x="790" y="54" width="208" height="88" rx="9"/>
+  <text class="t" x="894" y="82" text-anchor="middle">The report</text>
+  <text class="s" x="894" y="102" text-anchor="middle">out/jobs-&lt;date&gt;.md</text>
+  <text class="s" x="894" y="120" text-anchor="middle">Telegram when you send it</text></a>
+  <path class="a" d="M152 98 H176" marker-end="url(#arr)"/>
+  <path class="a" d="M330 98 H354" marker-end="url(#arr)"/>
+  <path class="a" d="M518 98 H538 V47 H556" marker-end="url(#arr)"/>
+  <path class="a" d="M538 98 V149 H556" marker-end="url(#arr)"/>
+  <path class="a" d="M730 47 H760 V98 H786" marker-end="url(#arr)"/>
+  <path class="a" d="M730 149 H760 V98" />
+</svg>
+</div>
+
+<h2 id="count">Which postings count</h2>
+<ul>
+<li><b>Only postings the model has read.</b> The family, skills and pay come from the form. Until the backlog is read, the report covers fewer postings than are stored: on 13 Oct 2026 it was 180 of 2,275.</li>
+<li><b>Only open postings</b>, except for “new this week”, “closed this week” and the rising and falling skills, which look at when postings were published.</li>
+<li><b>The model's family, not the title's guess.</b> Your {{n_targets}} target families are {{targets}}. ML research and data science are shown as “Also open”, and postings the model files as “other” are left out.</li>
+<li><b>These employers, not the whole market.</b> The report says so, and the model is told not to present the numbers as market-wide.</li>
+</ul>
+
+<h2 id="sections">What each section shows, and how it's computed</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:20%">Section</th><th>What you see</th><th style="width:40%">How it's computed</th></tr></thead>
+<tbody>
+<tr><td>Headline</td><td>Open roles in your target families, how many employers, new and closed this week</td><td>“New this week”: published in the last 7 days (the board's date, or when we first saw it). “Closed”: closing time in the last 7 days</td></tr>
+<tr><td>🧭 Roles and markets</td><td>Open and new per target family; “Also open”; markets; seniority; remote and customer-facing shares; visa sponsorship</td><td>Counts over open target postings. Remote = the form says remote (not hybrid). Visa = postings that say yes</td></tr>
+<tr><td>🧰 Skills employers ask for</td><td>The top 15 skills with their share; the top 5 per target family; rising and falling skills</td><td>Share = postings naming the skill (required or preferred) ÷ open target postings. Ties are broken alphabetically. <a href="#movement">Rising and falling, explained below</a></td></tr>
+<tr><td>💰 Pay</td><td>A typical base range per year, per family and currency: “Solutions engineer: $180k–$248k (30 postings)”</td><td>Monthly pay ×12, hourly ×2,080. Low = the median of the minimums, high = the median of the maximums. Shown only with at least {{min_salary}} postings</td></tr>
+<tr><td>🏢 Who's hiring most</td><td>The top 10 employers by open target postings, with their FDE / applied AI count</td><td>Counts per employer</td></tr>
+<tr><td>🎯 Your fit</td><td>Coverage %, your skills that are in demand, the biggest gaps</td><td>Compares the top {{top_skills}} skills with <code>private/skills.yaml</code>. <a href="#fit">Explained below</a></td></tr>
+</tbody></table></div>
+
+<h3>A snapshot: what the first 180 postings ask for</h3>
+<p class="muted">From the 13 Oct 2026 preview, mostly AI companies, since the Workday postings hadn't been read yet. Bars show the share of the 180 open target postings that name each skill.</p>
+<div class="bars">
+  <div class="bar"><div class="fill" style="width:73%"></div><div class="lbl"><b>73%</b> Python</div></div>
+  <div class="bar"><div class="fill" style="width:51%"></div><div class="lbl"><b>51%</b> System design</div></div>
+  <div class="bar"><div class="fill" style="width:46%"></div><div class="lbl"><b>46%</b> Distributed systems</div></div>
+  <div class="bar"><div class="fill" style="width:38%"></div><div class="lbl"><b>38%</b> Customer-facing work</div></div>
+  <div class="bar"><div class="fill" style="width:36%"></div><div class="lbl"><b>36%</b> Machine learning</div></div>
+  <div class="bar"><div class="fill" style="width:32%"></div><div class="lbl"><b>32%</b> Communication</div></div>
+  <div class="bar"><div class="fill" style="width:28%"></div><div class="lbl"><b>28%</b> Cloud platforms</div></div>
+  <div class="bar"><div class="fill" style="width:27%"></div><div class="lbl"><b>27%</b> Technical presentations</div></div>
+  <div class="bar"><div class="fill" style="width:23%"></div><div class="lbl"><b>23%</b> AI agents</div></div>
+  <div class="bar"><div class="fill" style="width:22%"></div><div class="lbl"><b>22%</b> PyTorch</div></div>
+</div>
+<p>What sets the roles apart (top skills per family in the same preview):</p>
+<ul>
+<li><b>FDE / applied AI:</b> Customer-facing work, Python, Communication, AI agents, Technical presentations</li>
+<li><b>Solutions engineer:</b> Customer-facing work, Technical presentations, Python, System design, Stakeholder management</li>
+<li><b>LLM / GenAI engineer:</b> Python, System design, AI agents, LLM evaluation, Observability</li>
+<li><b>AI engineer:</b> Distributed systems, Python, System design, Machine learning, Kubernetes</li>
+<li><b>ML engineer:</b> Python, PyTorch, CUDA, Distributed systems, Machine learning</li>
+</ul>
+
+<h2 id="movement">Rising and falling skills, explained</h2>
+<p>Is a skill really in more demand, or did we just see a few more postings that mention it? Each week compares two groups of target postings:</p>
+<ul>
+<li><b>This week:</b> postings published in the last 7 days.</li>
+<li><b>Before:</b> postings published in the 4 weeks before that (days 8–35).</li>
+</ul>
+<p>For each skill, both shares get a <b>95% confidence interval</b> (a Wilson interval), the range the true share probably lies in given how many postings we saw. Fewer postings mean a wider range. A skill counts as <b>rising</b> only if this week's whole range sits above the earlier range, and <b>falling</b> only if it sits below. Overlapping ranges mean “can't tell yet”, and nothing is claimed.</p>
+<div class="callout">
+<p><b>Example.</b> A skill named in 24 of 60 postings this week (40%, interval {{wilson_a}}) and in 30 of 200 before (15%, interval {{wilson_b}}): the ranges don't overlap, so it's <b>rising</b>.<br>
+With 9 of 40 this week (22.5%, interval {{wilson_c}}), the share still looks higher, but the range overlaps {{wilson_b}}, so <b>no claim is made</b>.</p>
+</div>
+<p>Three safety rules: each group needs at least {{min_cohort}} postings; a skill needs at least {{min_skill}} mentions on the side that's moving; and nothing is reported until <b>{{min_tracking_days}} days after tracking started</b> (13 Oct 2026, so from 27 Oct). Why the wait: on the first days, the “before” group holds only older postings that were <i>still open</i> when we started. Those are the hard-to-fill roles, not a fair sample, and comparing them with this week would invent trends.</p>
+
+<div class="tool" id="wilson">
+<label>Try it: is this skill rising?</label>
+<div class="row"><b style="min-width:80px">This week</b><span class="nw"><input type="number" id="k1" value="24" min="0" aria-label="postings naming the skill this week"> of <input type="number" id="n1" value="60" min="1" aria-label="postings this week"> postings</span></div>
+<div class="row"><b style="min-width:80px">Before</b><span class="nw"><input type="number" id="k2" value="30" min="0" aria-label="postings naming the skill before"> of <input type="number" id="n2" value="200" min="1" aria-label="postings before"> postings</span></div>
+<svg id="wilson-svg" viewBox="0 0 420 112" role="img" aria-label="The two confidence intervals on a 0 to 100 percent scale" style="width:100%;max-width:560px;height:auto;display:block;margin-top:6px"></svg>
+<div class="out" id="wilson-out" aria-live="polite"></div>
+</div>
+
+<h2 id="fit">Your fit, explained</h2>
+<p>You keep two lists in <code>private/skills.yaml</code>, which is gitignored and never leaves your machine: skills you <b>have</b> (used in production or shown in a project) and skills you're <b>learning</b>. The report compares them with the top {{top_skills}} skills in your target families.</p>
+<p><b>Coverage</b> is weighted by demand: a skill named in 70% of postings counts 3½ times as much as one named in 20%. Here is a made-up example with five skills; your real numbers appear only in your own report:</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Skill</th><th class="num">Share of postings</th><th>You</th><th class="num">Counts toward coverage</th></tr></thead>
+<tbody>
+<tr><td>Python</td><td class="num">70%</td><td class="yes">have</td><td class="num">70</td></tr>
+<tr><td>System design</td><td class="num">50%</td><td>learning</td><td class="num">0</td></tr>
+<tr><td>Customer-facing work</td><td class="num">40%</td><td class="yes">have</td><td class="num">40</td></tr>
+<tr><td>Kubernetes</td><td class="num">20%</td><td>—</td><td class="num">0</td></tr>
+<tr><td>PyTorch</td><td class="num">20%</td><td>—</td><td class="num">0</td></tr>
+<tr><td><b>Total</b></td><td class="num">200</td><td></td><td class="num"><b>110 → coverage 110 ÷ 200 = 55%</b></td></tr>
+</tbody></table></div>
+<p>The <b>gaps</b> are the top skills you don't have, biggest share first, marked “(learning)” if you're on it and “↑” if the skill is rising. In the example: System design 50% (learning), Kubernetes 20%, PyTorch 20%. The model's “Comment from a pro” then picks one or two gaps to close first and suggests a small project and how to show it.</p>
+
+<h2 id="notes">The notes: written by the model, checked by code</h2>
+<p>Gemini 3.5 Flash-Lite gets the statistics as JSON (not the postings) and the prompt <code>prompts/weekly.md</code> (version <code>{{weekly_version}}</code>). It writes a headline and three notes, each an intro plus 3–4 labelled bullets:</p>
+<ul>
+<li><b>Market (💬 What it means):</b> the busiest roles and markets, how remote and customer-facing the work is, who's hiring, pay.</li>
+<li><b>Skills (💬 What it means):</b> the core skills, what sets FDE and applied AI roles apart, and what's rising or falling. Before trends are ready, it says so once and describes current demand instead.</li>
+<li><b>Fit (🎓 Comment from a pro):</b> written as your supervisor, a senior GenAI/ML engineer, in a one-to-one. Labels: Focus, Learn, Try (a small project to ship this month), Show it (how to present it in a CV, portfolio or interview), Career.</li>
+</ul>
+<p>The prompt's rules: use only numbers from the JSON, written the same way; calculate nothing new (no differences or sums); quote pay ranges exactly (“$180k–$248k”); don't present the numbers as market-wide; use plain words, with no hype, emojis or exclamation marks.</p>
+<div class="callout key">
+<p><b>The number check.</b> Every sentence and bullet in the notes, and the headline, is scanned for numbers. Each number must appear in the statistics JSON. Formatting is ignored, so “0.30” and “0.3” match. A sentence with even one unsupported number is dropped, and <code>ainews weekly</code> prints a warning naming it. So the model can explain, but it can't invent.</p>
+</div>
+
+<h2 id="publish">Publishing</h2>
+<ul>
+<li><b>Always saved locally:</b> <code>out/jobs-&lt;date&gt;.md</code>, and a row in the <code>reports</code> table with the statistics it was written from, the text, and the cost (about 1 cent).</li>
+<li><b>Posted only when you say so:</b> <code>ainews weekly --send</code> builds and posts in one go; <code>ainews send --report</code> posts the latest saved report. It's packed into as few Telegram messages as fit (each up to 4,096 characters), and only the first makes a sound.</li>
+<li><b>The footer says where the data comes from:</b> how many employers on which systems, and the run's cost.</li>
+</ul>
+
+<script>
+(() => {
+  const z = 1.96;
+  const wilson = (k, n) => {
+    if (!n) return [0, 0];
+    const p = k / n, c = (p + z * z / (2 * n)) / (1 + z * z / n);
+    const h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n);
+    return [c - h, c + h];
+  };
+  const MIN_COHORT = {{min_cohort}}, MIN_SKILL = {{min_skill}};
+  const ids = ["k1", "n1", "k2", "n2"], el = id => document.getElementById(id);
+  const svg = el("wilson-svg"), out = el("wilson-out");
+  const pct = x => Math.round(100 * x) + "%";
+  const X = v => 16 + 380 * v;
+  const draw = () => {
+    let [k1, n1, k2, n2] = ids.map(id => Math.max(0, parseInt(el(id).value, 10) || 0));
+    k1 = Math.min(k1, n1); k2 = Math.min(k2, n2);
+    const a = wilson(k1, n1), b = wilson(k2, n2);
+    const row = (y, iv, share, label, cls) =>
+      `<rect x="${X(iv[0])}" y="${y}" width="${Math.max(2, X(iv[1]) - X(iv[0]))}" height="16" rx="4" class="${cls}"/>` +
+      `<circle cx="${X(share)}" cy="${y + 8}" r="4" fill="var(--ink)"/>` +
+      `<text x="16" y="${y - 5}" class="s">${label}: ${pct(share)} (interval ${pct(iv[0])}–${pct(iv[1])})</text>`;
+    let ticks = "";
+    for (let t = 0; t <= 100; t += 25) ticks += `<line x1="${X(t / 100)}" y1="90" x2="${X(t / 100)}" y2="95" stroke="var(--line)"/><text x="${X(t / 100)}" y="107" class="s" text-anchor="middle">${t}%</text>`;
+    svg.innerHTML = `<line x1="16" y1="90" x2="396" y2="90" stroke="var(--line)"/>${ticks}` +
+      row(18, a, n1 ? k1 / n1 : 0, "This week", "llm") + row(58, b, n2 ? k2 / n2 : 0, "Before", "store");
+    let verdict;
+    if (n1 < MIN_COHORT || n2 < MIN_COHORT) verdict = `Too few postings: each group needs at least ${MIN_COHORT}.`;
+    else if (a[0] > b[1] && k1 >= MIN_SKILL) verdict = '<span class="yes">Rising</span>: this week\'s whole range is above the earlier one.';
+    else if (a[1] < b[0] && k2 >= MIN_SKILL) verdict = '<span class="no">Falling</span>: this week\'s whole range is below the earlier one.';
+    else verdict = "No claim: the ranges overlap, so the difference could be chance.";
+    out.innerHTML = verdict;
+  };
+  ids.forEach(id => el(id).addEventListener("input", draw));
+  draw();
+})();
+</script>

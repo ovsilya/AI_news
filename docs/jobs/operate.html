@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job search: run and change it</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1f;--muted:#5f6368;--border:#d5d7db;--sel:#2f6fdb;--line:#8a8f98;
+--chip:#eef3fb;--chip-border:#9db5dc;--llm:#f3ecfd;--llm-border:#9a7ad1;--store:#eaf6ef;--store-border:#6fae8a;
+--ext:#fdf3e6;--ext-border:#d39b4a;--good:#1e7d4f;--bad:#b3261e;--code:#f1f2f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;
+--border:#3a3e45;--sel:#6ea2ff;--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;
+--store:#16271e;--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}}
+:root[data-theme="dark"]{--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;
+--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;--store:#16271e;
+--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+a{color:var(--sel)}
+.top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:14px;margin-bottom:18px}
+.top .home{font-weight:600;margin-right:6px}
+.top nav{display:flex;flex-wrap:wrap;gap:6px}
+.top nav a{padding:2px 9px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--panel)}
+.top nav a[aria-current]{border-color:var(--sel);color:var(--sel);font-weight:600}
+h1{font-size:24px;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;scroll-margin-top:12px}
+h3{font-size:16px;margin:22px 0 6px}
+p,li{max-width:84ch}
+.lede{color:var(--muted);margin:0 0 8px;font-size:16px}
+.lede b{color:var(--ink)}
+.snap{font-size:13.5px;color:var(--muted)}
+.muted{color:var(--muted);font-size:14px}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:5px}
+pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);border:1px solid var(--border);
+border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0}
+pre code{background:none;padding:0}
+.callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
+.callout.key{border-left:4px solid var(--sel)}
+.callout ol,.callout ul{margin:6px 0 0;padding-left:22px}
+.callout li{margin:5px 0}
+.frame{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0}
+.frame svg{display:block;width:100%;height:auto;min-width:760px}
+.frame.small svg{min-width:560px}
+svg text{fill:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+svg .t{font-size:14px;font-weight:600}
+svg .s{font-size:12px;fill:var(--muted)}
+svg .h{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;fill:var(--muted)}
+svg .ext{fill:var(--ext);stroke:var(--ext-border)}
+svg .comp{fill:var(--panel);stroke:var(--border)}
+svg .llm{fill:var(--llm);stroke:var(--llm-border)}
+svg .store{fill:var(--store);stroke:var(--store-border)}
+svg .dash{fill:none;stroke:var(--border);stroke-dasharray:5 4}
+svg rect{stroke-width:1.3}
+svg .a{fill:none;stroke:var(--line);stroke-width:1.6}
+svg .a.dim{stroke-dasharray:5 4}
+svg .tip{fill:var(--line)}
+svg .good{fill:var(--good)} svg .bad{fill:var(--bad)}
+svg a:hover rect,svg a:focus-visible rect{stroke:var(--sel);stroke-width:2.2}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:10px 0}
+.step{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink);display:block}
+a.step:hover{border-color:var(--sel)}
+.step b{display:block;margin-bottom:4px}
+.step span{font-size:14px;color:var(--muted)}
+.flow{list-style:none;padding:0;margin:10px 0;counter-reset:f}
+.flow>li{counter-increment:f;position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;
+padding:10px 14px 10px 50px;margin:0 0 18px;max-width:none}
+.flow>li::before{content:counter(f);position:absolute;left:12px;top:10px;width:26px;height:26px;border-radius:50%;
+background:var(--chip);border:1px solid var(--chip-border);text-align:center;font:600 13px/26px system-ui,sans-serif}
+.flow>li:not(:last-child)::after{content:"↓";position:absolute;left:20px;bottom:-19px;color:var(--line);font-size:14px}
+.flow ul{margin:4px 0 0;padding-left:20px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.group td{background:var(--chip);font-weight:600;font-size:13px}
+.chip{display:inline-block;font-size:12px;padding:0 8px;margin:1px 2px 1px 0;border:1px solid var(--chip-border);background:var(--chip);border-radius:999px;white-space:nowrap}
+.yes{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+.bars{display:grid;gap:8px;margin:12px 0}
+.bar{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+.bar .fill{height:22px;border-radius:5px;background:var(--chip);border:1px solid var(--chip-border);min-width:6px}
+.bar .fill.llm{background:var(--llm);border-color:var(--llm-border)}
+.bar .fill.store{background:var(--store);border-color:var(--store-border)}
+.bar .fill.ext{background:var(--ext);border-color:var(--ext-border)}
+.bar .lbl{font-size:14px}.bar .lbl b{font-variant-numeric:tabular-nums}
+details{margin:8px 0}
+summary{cursor:pointer;color:var(--sel);font-weight:600;font-size:14px}
+.words{display:grid;grid-template-columns:minmax(120px,210px) 1fr;gap:6px 16px;margin:0}
+.words dt{font-weight:600}.words dd{margin:0}
+@media (max-width:560px){.words{grid-template-columns:1fr}.words dd{margin-bottom:8px}}
+.tool{background:var(--panel);border:1px solid var(--sel);border-radius:10px;padding:12px 16px;margin:10px 0}
+.tool label{font-weight:600;font-size:14px;display:block;margin-bottom:4px}
+.tool input[type=text]{width:100%;max-width:520px;font:15px system-ui,sans-serif;padding:7px 10px;border:1px solid var(--border);
+border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool input[type=number]{width:72px;font:15px system-ui,sans-serif;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool .out{margin-top:8px;font-size:15px}
+.tool .row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:6px 0}
+.tool .nw{white-space:nowrap}
+.tool button{font:14px system-ui,sans-serif;padding:3px 10px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--ink);cursor:pointer}
+.tool button:hover{border-color:var(--sel)}
+.foot{margin-top:32px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+.next{margin-top:28px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.next a{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel);text-decoration:none}
+.next a:hover{border-color:var(--sel)}
+</style>
+</head>
+<body>
+<main>
+<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="report.html">4 · Report &amp; fit</a><a href="operate.html" aria-current="page">Run &amp; change it</a></nav></div>
+<h1>Run and change the job search</h1>
+<p class="lede">The commands, the files you edit, how to add an employer or change what counts, where everything is stored, and what to do when something looks wrong. Commands run from the repo folder, as <code>.venv/bin/ainews …</code>.</p>
+
+<h2 id="commands">Commands</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:36%">Command</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>ainews jobs</code></td><td>The daily run: polls all 129 employers, saves new, changed and closed postings, then the model reads up to 200 unread ones. Prints a summary such as “polled 129 boards (0 errors) … 148 new, 0 changed, 0 closed”</td></tr>
+<tr><td><code>ainews jobs --no-llm</code></td><td>Polls only, with no model calls, for free</td></tr>
+<tr><td><code>ainews jobs --only nvidia,td</code></td><td>Polls only these employers (ids from <code>companies.yaml</code>)</td></tr>
+<tr><td><code>ainews jobs --max-extract 50</code></td><td>Lets the model read at most 50 postings this run</td></tr>
+<tr><td><code>ainews jobs-probe &lt;slug&gt; …</code></td><td>Finds which of Greenhouse, Lever or Ashby an employer uses and prints a <code>companies.yaml</code> line</td></tr>
+<tr><td><code>ainews jobs-probe --workday &lt;tenant&gt; …</code></td><td>Lists a Workday tenant's career sites that robots.txt allows, with their open postings</td></tr>
+<tr><td><code>ainews weekly</code></td><td>Builds the weekly report (about 1 cent) and saves <code>out/jobs-&lt;date&gt;.md</code></td></tr>
+<tr><td><code>ainews weekly --no-llm</code></td><td>The report's tables only, without the notes, for free</td></tr>
+<tr><td><code>ainews weekly --send</code></td><td>Builds the report and posts it to Telegram</td></tr>
+<tr><td><code>ainews send --report</code></td><td>Posts the latest saved report to Telegram</td></tr>
+<tr><td><code>ainews budget</code></td><td>Shows model spending against the caps</td></tr>
+</tbody></table></div>
+
+<h2 id="settings">Settings</h2>
+<p>In <code>.env</code> (see <code>.env.example</code>); all are optional.</p>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:36%">Setting</th><th>Default</th><th>What it's for</th></tr></thead>
+<tbody>
+<tr><td><code>AINEWS_LLM_ENABLED</code></td><td><code>false</code></td><td>The on/off switch for all model calls. When off, <code>ainews jobs</code> polls only</td></tr>
+<tr><td><code>AINEWS_MAX_JOBS_EXTRACT</code></td><td><code>200</code></td><td>Postings the model reads per run</td></tr>
+<tr><td><code>AINEWS_MAX_USD_PER_RUN</code> · <code>_DAY</code> · <code>_MONTH</code></td><td>0.30 · 0.75 · 10</td><td>Spending caps in US dollars, shared with the daily brief</td></tr>
+<tr><td><code>AINEWS_COMPANIES</code></td><td><code>config/companies.yaml</code></td><td>Another employer list, for example for a test</td></tr>
+<tr><td><code>AINEWS_FIT</code></td><td><code>private/skills.yaml</code></td><td>Your have and learning lists</td></tr>
+<tr><td><code>AINEWS_DB</code></td><td><code>data/ainews.sqlite</code></td><td>The database, for example a copy to experiment on</td></tr>
+<tr><td><code>MODEL_JUDGE</code> · <code>MODEL_EDITOR</code></td><td>3.1 Flash-Lite · 3.5 Flash-Lite</td><td>The reading model and the notes model</td></tr>
+</tbody></table></div>
+
+<h2 id="files">Files you edit</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:36%">File</th><th>What it controls</th><th style="width:22%">After editing</th></tr></thead>
+<tbody>
+<tr><td><code>config/companies.yaml</code></td><td>Which employers are polled, on which system, and whether each counts as an AI company</td><td>Next run</td></tr>
+<tr><td><code>config/skills.yaml</code></td><td>Canonical skill names and aliases</td><td>The next report re-applies it to every stored form</td></tr>
+<tr><td><code>private/skills.yaml</code> (private)</td><td>Your <code>have</code> and <code>learning</code> lists for “Your fit”</td><td>Next report</td></tr>
+<tr><td><code>prompts/job_extract.md</code></td><td>What the model is asked to read from a posting</td><td>Raise the version on line 1 to re-read every open posting</td></tr>
+<tr><td><code>prompts/weekly.md</code></td><td>How the notes are written</td><td>Next report</td></tr>
+<tr><td><code>src/ainews/jobs/filters.py</code></td><td>Role families (title rules) and markets (place names)</td><td>Next run; run the tests</td></tr>
+<tr><td><code>src/ainews/jobs/stats.py</code></td><td>Target families, top-skill count, trend thresholds, pay rules</td><td>Next report</td></tr>
+<tr><td><code>src/ainews/jobs/workday.py</code></td><td>Workday keywords and per-run limits (60 reads, 30 checks)</td><td>Next run</td></tr>
+</tbody></table></div>
+
+<h2 id="add">Add an employer</h2>
+<ol class="flow">
+<li><b>Find its system.</b> Open the employer's careers page and look at the address of a job: <code>job-boards.greenhouse.io/…</code>, <code>jobs.lever.co/…</code>, <code>jobs.ashbyhq.com/…</code> or <code>….myworkdayjobs.com/…</code>. Or simply try the probe.</li>
+<li><b>Probe it.</b> <code>ainews jobs-probe acme</code>, or <code>ainews jobs-probe --workday acme</code>, where the tenant is the first part of the Workday address. If the employer has several sites, keep the main one; sites that repeat it add nothing.</li>
+<li><b>Paste the line</b> into <code>config/companies.yaml</code> under the right group. Give it a readable <code>name</code>, and set <code>ai_native: false</code> unless it's an AI company.</li>
+<li><b>Try it:</b> <code>ainews jobs --no-llm --only acme</code>. The summary shows how many postings were listed and kept.</li>
+<li><b>Rebuild these pages</b> so the employer list is current: <code>.venv/bin/python scripts/build_job_pages.py</code>.</li>
+</ol>
+
+<h2 id="change">Change what counts</h2>
+<ul>
+<li><b>Another target role family:</b> add it to <code>FAMILIES</code> and a title rule to <code>_RULES</code> in <code>filters.py</code> (order matters: first match wins), add it to the <code>role_family</code> list in the extraction prompt and raise its version, and add it to <code>TARGET</code> in <code>stats.py</code> if it should be in the report's main numbers.</li>
+<li><b>Another market:</b> add a code to <code>MARKETS</code>, its place names to <code>_PATTERNS</code> and its two-letter country code to <code>_COUNTRY_CODES</code> in <code>filters.py</code>, and its country names to <code>COUNTRIES</code> in <code>workday.py</code> so the Workday country filter ticks it.</li>
+<li><b>A skill that's counted under two names:</b> add the second name as an alias in <code>config/skills.yaml</code>. No re-reading is needed.</li>
+<li><b>Workday keywords:</b> <code>QUERIES</code> in <code>workday.py</code>. Each keyword adds up to 10 search requests per site per day.</li>
+</ul>
+<p class="muted">After code changes, run the tests: <code>.venv/bin/pytest</code>.</p>
+
+<h2 id="data">Where everything is stored</h2>
+<p>All in the SQLite file <code>data/ainews.sqlite</code>, which is gitignored. Open it with <code>sqlite3 data/ainews.sqlite</code>.</p>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:22%">Table</th><th>What's in it</th></tr></thead>
+<tbody>
+<tr><td><code>job_boards</code></td><td>One row per employer: last poll time, status (<code>ok</code> or the error), postings listed and kept</td></tr>
+<tr><td><code>job_postings</code></td><td>Every kept posting, open or closed: title, link, places, markets, text, the board's salary, posted date, first and last seen, closed at</td></tr>
+<tr><td><code>job_extractions</code></td><td>The model's form for each posting, with the prompt version and the text fingerprint it was read from</td></tr>
+<tr><td><code>reports</code></td><td>Every weekly report: the statistics, the Markdown and Telegram text, message IDs once sent, and the cost</td></tr>
+<tr><td><code>snapshots</code></td><td><code>workday:&lt;employer&gt;:skipped</code>: Workday postings read before and outside your roles or markets</td></tr>
+<tr><td><code>llm_calls</code></td><td>Every model call: purpose (<code>jobs</code>, <code>weekly</code>…), tokens and cost</td></tr>
+<tr><td><code>runs</code></td><td>Every run: lane, start and end, status, and its counts</td></tr>
+</tbody></table></div>
+<p>Useful questions to ask it:</p>
+<pre><code>-- boards that failed on their last poll
+SELECT company, last_polled_at, last_status FROM job_boards WHERE last_status != 'ok';
+
+-- open postings per role family (the title's guess)
+SELECT title_family, COUNT(*) FROM job_postings WHERE closed_at IS NULL GROUP BY 1 ORDER BY 2 DESC;
+
+-- postings still waiting for the model
+SELECT COUNT(*) FROM job_postings p LEFT JOIN job_extractions e ON e.posting_id = p.id
+WHERE p.closed_at IS NULL AND e.posting_id IS NULL;
+
+-- open FDE / applied AI postings in the UK
+SELECT company, title, url FROM job_postings
+WHERE closed_at IS NULL AND title_family = 'fde_applied_ai' AND markets LIKE '%"UK"%';
+
+-- model spending on job reading this month
+SELECT ROUND(SUM(cost_usd), 3) FROM llm_calls WHERE purpose = 'jobs' AND at >= strftime('%Y-%m-01', 'now');</code></pre>
+
+<h2 id="trouble">When something looks wrong</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:32%">You see</th><th>What it means, and what to do</th></tr></thead>
+<tbody>
+<tr><td>“polled 129 boards (2 errors)”</td><td>Two boards failed and were skipped; they closed nothing. The <code>job_boards</code> query above shows why. A 404 usually means the employer moved to another system or renamed its board: probe it again. A timeout usually clears by the next day.</td></tr>
+<tr><td><code>PermissionError: robots.txt disallows …</code></td><td>A Workday site's robots.txt no longer allows it, so it's no longer searched. Probe the tenant for another allowed site, or remove the employer.</td></tr>
+<tr><td>A warning like “403 Forbidden” for one Workday posting</td><td>That one page refused us. It's skipped and tried again next run. Many of them on one site would mean we're being throttled, so lower <code>WORKDAY_WORKERS</code> or <code>MAX_DETAILS</code>.</td></tr>
+<tr><td>“281 Workday postings wait for the next run”</td><td>Normal in the first days: each site reads at most 60 new postings per run.</td></tr>
+<tr><td>“extraction skipped: …”</td><td>Model calls are off (<code>AINEWS_LLM_ENABLED</code>) or not set up. Polling still happened.</td></tr>
+<tr><td>“stopped: … cap”</td><td>A spending cap was reached. Reading resumes on the next run; <code>ainews budget</code> shows where you stand.</td></tr>
+<tr><td>The report covers few postings</td><td>The backlog hasn't been read yet. Each run reads 200; run <code>ainews jobs</code> again later the same day to go faster.</td></tr>
+<tr><td>No rising or falling skills</td><td>Expected for the first 14 days, and in any week with fewer than 30 new target postings.</td></tr>
+<tr><td>A job you expected is missing</td><td>Check the title with the <a href="poll.html#tester">title tester</a> and the location against the <a href="poll.html#markets">market examples</a>. On Workday, the job must also turn up for one of the 7 keywords; German or French titles (“KI-Ingenieur”) don't.</td></tr>
+<tr><td>A sentence missing from the notes, with a warning</td><td>The number check removed it because it used a number that isn't in the statistics. That's the check working.</td></tr>
+</tbody></table></div>
+
+<h2 id="code">Code map</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:36%">File</th><th>What's in it</th></tr></thead>
+<tbody>
+<tr><td><code>src/ainews/jobs/boards.py</code></td><td>The employer list, the Greenhouse, Lever and Ashby readers, and the probe</td></tr>
+<tr><td><code>src/ainews/jobs/workday.py</code></td><td>Workday search, posting pages, the country filter, and the Workday probe</td></tr>
+<tr><td><code>src/ainews/jobs/filters.py</code></td><td>Role families from titles, markets from locations</td></tr>
+<tr><td><code>src/ainews/jobs/poll.py</code></td><td>The diff (new, changed, closed), the Workday run, and searching sites in parallel</td></tr>
+<tr><td><code>src/ainews/jobs/extract.py</code></td><td>The model's form, the skills dictionary, and the salary rule</td></tr>
+<tr><td><code>src/ainews/jobs/stats.py</code></td><td>The statistics, Wilson intervals, and fit</td></tr>
+<tr><td><code>src/ainews/jobs/report.py</code></td><td>The weekly report: sections, notes, number check, Markdown and Telegram</td></tr>
+<tr><td><code>src/ainews/http.py</code></td><td>Polite fetching: User-Agent, one request a second per host, retries</td></tr>
+<tr><td><code>src/ainews/cli.py</code></td><td>The commands above</td></tr>
+<tr><td><code>tests/test_jobs.py</code></td><td>Tests for all of the above, with fake boards and a fake model</td></tr>
+<tr><td><code>scripts/build_job_pages.py</code></td><td>Builds these pages from <code>docs/jobs/src/</code>, the config and the code</td></tr>
+</tbody></table></div>
+
+<div class="next"><a href="report.html">← 4 · Report &amp; fit</a><span></span></div>
+<p class="foot"><a href="#top">↑ Top</a><a href="../architecture-diagram.html">Architecture diagram</a><a href="../sources/job-boards.html">Job-board source list</a></p>
+</main>
+</body>
+</html>

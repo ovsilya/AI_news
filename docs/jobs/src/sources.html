@@ -1,0 +1,122 @@
+<h1>1 · Where postings come from</h1>
+<p class="lede">Every posting comes from the employer's own career system: <b>{{n_employers}} employers</b>, {{n_list}} of them on Greenhouse, Lever or Ashby ({{n_greenhouse}}, {{n_lever}} and {{n_ashby}}) and {{n_workday}} on Workday. These are the same public endpoints the employers' career pages use, so there are no keys and no logins, and none of the job sites whose terms forbid programs.</p>
+
+<h2>Two kinds of career systems</h2>
+<p>The difference that shapes everything downstream: Greenhouse, Lever and Ashby hand over an employer's <b>full list</b> of open jobs in one request. Workday only offers <b>search</b>, 20 results at a time and ranked by relevance, so there is no full list to compare against.</p>
+<div class="frame">
+<svg viewBox="0 0 1000 276" role="img" aria-label="Two paths: a job-board API returns the full list in one request; Workday is searched with AI keywords, new postings are read one by one, and a missing posting's own page is checked before it is closed">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="h" x="10" y="26">Greenhouse · Lever · Ashby · {{n_list}} employers</text>
+  <rect class="ext" x="10" y="36" width="210" height="84" rx="9"/>
+  <text class="t" x="115" y="62" text-anchor="middle">Job-board API</text>
+  <text class="s" x="115" y="82" text-anchor="middle">one request</text>
+  <text class="s" x="115" y="100" text-anchor="middle">per employer</text>
+  <rect class="comp" x="262" y="36" width="210" height="84" rx="9"/>
+  <text class="t" x="367" y="62" text-anchor="middle">The full list</text>
+  <text class="s" x="367" y="82" text-anchor="middle">every open posting, with</text>
+  <text class="s" x="367" y="100" text-anchor="middle">its text and often its pay</text>
+  <a href="poll.html#titles"><rect class="comp" x="514" y="36" width="210" height="84" rx="9"/>
+  <text class="t" x="619" y="62" text-anchor="middle">Keep role + market</text>
+  <text class="s" x="619" y="82" text-anchor="middle">title and location</text>
+  <text class="s" x="619" y="100" text-anchor="middle">filters (step 2)</text></a>
+  <a href="poll.html#track"><rect class="comp" x="766" y="36" width="224" height="84" rx="9"/>
+  <text class="t" x="878" y="62" text-anchor="middle">Not in the list?</text>
+  <text class="s" x="878" y="82" text-anchor="middle">missing for {{close_after_h}} hours</text>
+  <text class="s" x="878" y="100" text-anchor="middle">→ closed</text></a>
+  <path class="a" d="M220 78 H258" marker-end="url(#arr)"/>
+  <path class="a" d="M472 78 H510" marker-end="url(#arr)"/>
+  <path class="a" d="M724 78 H762" marker-end="url(#arr)"/>
+
+  <text class="h" x="10" y="168">Workday · {{n_workday}} employers</text>
+  <rect class="ext" x="10" y="178" width="210" height="84" rx="9"/>
+  <text class="t" x="115" y="204" text-anchor="middle">Career-site search</text>
+  <text class="s" x="115" y="224" text-anchor="middle">{{n_queries}} AI keywords</text>
+  <text class="s" x="115" y="242" text-anchor="middle">20 results a page</text>
+  <rect class="comp" x="262" y="178" width="210" height="84" rx="9"/>
+  <text class="t" x="367" y="204" text-anchor="middle">AI titles in results</text>
+  <text class="s" x="367" y="224" text-anchor="middle">ranked by relevance,</text>
+  <text class="s" x="367" y="242" text-anchor="middle">no full list</text>
+  <a href="poll.html#workday"><rect class="comp" x="514" y="178" width="210" height="84" rx="9"/>
+  <text class="t" x="619" y="204" text-anchor="middle">New? Read it once</text>
+  <text class="s" x="619" y="224" text-anchor="middle">one request per posting,</text>
+  <text class="s" x="619" y="242" text-anchor="middle">then role + market</text></a>
+  <a href="poll.html#workday"><rect class="comp" x="766" y="178" width="224" height="84" rx="9"/>
+  <text class="t" x="878" y="204" text-anchor="middle">Missing {{close_after_h}} hours?</text>
+  <text class="s" x="878" y="224" text-anchor="middle">ask the posting's own page:</text>
+  <text class="s" x="878" y="242" text-anchor="middle">gone → closed</text></a>
+  <path class="a" d="M220 220 H258" marker-end="url(#arr)"/>
+  <path class="a" d="M472 220 H510" marker-end="url(#arr)"/>
+  <path class="a" d="M724 220 H762" marker-end="url(#arr)"/>
+</svg>
+</div>
+
+<div class="tablewrap"><table>
+<thead><tr><th style="width:22%"></th><th>Greenhouse · Lever · Ashby</th><th>Workday</th></tr></thead>
+<tbody>
+<tr><td>Who uses it</td><td>AI labs, AI startups and many tech companies</td><td>Banks, insurers, pharma, consultancies and big tech (NVIDIA, Salesforce, Adobe, Intel…)</td></tr>
+<tr><td>One request returns</td><td>Every open posting at the employer, with its full text</td><td>20 search results: title, place and a link, no text</td></tr>
+<tr><td>Getting the text</td><td>Already in the list</td><td>One more request per posting, done once</td></tr>
+<tr><td>Knowing a job closed</td><td>It's missing from the list for {{close_after_h}} hours</td><td>It's missing from the results for {{close_after_h}} hours <i>and</i> its own page says it's gone</td></tr>
+<tr><td>Salary</td><td>Often a structured field (Greenhouse pay ranges, Lever salary range, Ashby compensation)</td><td>Only in the text, where the model reads it (US pay-transparency laws make it common)</td></tr>
+<tr><td>Endpoint</td><td><code>boards-api.greenhouse.io/v1/boards/{board}/jobs</code><br><code>api.lever.co/v0/postings/{board}</code><br><code>api.ashbyhq.com/posting-api/job-board/{board}</code></td><td><code>POST {tenant}.wdN.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs</code><br><code>GET …/{site}/job/{path}</code> for one posting</td></tr>
+<tr><td>Daily time</td><td>About 80 seconds for all {{n_list}} (some lists are over 10 MB)</td><td>About 4 minutes for all {{n_workday}}, {{workers}} sites at a time</td></tr>
+<tr><td>Documented?</td><td>Yes, public APIs published for job boards</td><td>No: it's what the career page itself calls. robots.txt allows it and lists the career sites</td></tr>
+</tbody></table></div>
+
+<h2>Which employers, and why these</h2>
+<p>The list lives in <code>config/companies.yaml</code>. It was built by hand from groups of employers that hire AI engineers and FDEs in your markets, then checked automatically:</p>
+<div class="steps">
+<div class="step"><b>Frontier labs and model companies</b><span>Anthropic, OpenAI, Cohere, xAI… They hire research, applied AI and FDE roles.</span></div>
+<div class="step"><b>AI applications and agents</b><span>Sierra, Decagon, Harvey, Glean, Cursor… The main FDE employers.</span></div>
+<div class="step"><b>Tooling, data and evals</b><span>LangChain, Scale, Databricks, Arize… Tools AI engineers use, and their solutions roles.</span></div>
+<div class="step"><b>Inference and compute</b><span>Together, Baseten, Modal, Cerebras, CoreWeave… Serving and infrastructure roles.</span></div>
+<div class="step"><b>Tech companies building AI features</b><span>Stripe, Datadog, Cloudflare, Snowflake… Only AI-titled roles count here.</span></div>
+<div class="step"><b>Enterprises on Workday</b><span>NVIDIA, Salesforce, Capital One, TD, Barclays, Roche… Big employers of GenAI engineers outside the startup world.</span></div>
+</div>
+
+<h3>“AI company” or not: why it matters</h3>
+<p>Each employer is marked <code>ai_native</code> (an AI company) or not. At an AI company, a “Solutions Architect”, “Research Engineer”, “Data Scientist” or “Member of Technical Staff” is almost always an AI role, so these titles count. At a bank or a database company the same titles usually aren't, so they count only when the title itself names AI or ML (“Solutions Architect, GenAI”). {{n_ai_native}} of the {{n_employers}} employers are marked as AI companies, NVIDIA among them.</p>
+
+<h2 id="probe">How a new employer is found: probing</h2>
+<p>You rarely know which system an employer uses. The probe command tries them for you and prints a line ready to paste into <code>config/companies.yaml</code>:</p>
+<ul>
+<li><b><code>ainews jobs-probe anthropic</code></b> tries the name on Greenhouse, Lever, Lever's EU instance and Ashby, and reports which answer and how many postings each has.</li>
+<li><b><code>ainews jobs-probe --workday nvidia</code></b> tries the {{n_wd_hosts}} Workday data centres ({{wd_hosts}}). On each it reads <code>robots.txt</code>, which lists the career sites crawlers may use (<code>Allow: /NVIDIAExternalCareerSite/</code>). It skips sites named like internships, students, early careers, alumni or private postings, then asks each remaining site how many postings it has.</li>
+</ul>
+<pre><code>$ ainews jobs-probe --workday nvidia rbc
+  - {id: nvidia, name: nvidia, ats: workday, board: "nvidia.wd5/NVIDIAExternalCareerSite", ai_native: false}   # 2000 open
+# rbc: no Workday career site that robots.txt allows</code></pre>
+<p>Then you choose: give the employer a proper name, set <code>ai_native</code>, and when an employer has several sites keep the main one. On 13 Oct 2026 the probe tried 70 Workday tenants, and these choices were made:</p>
+<ul>
+<li><b>Sibling sites that repeat each other were dropped:</b> Sun Life's and Julius Baer's second sites list the same postings.</li>
+<li><b>Different sites that don't overlap were both kept:</b> PwC US and Genentech (on Roche's tenant) are separate from their parents.</li>
+<li><b>Low-yield sites were dropped:</b> PwC's global site has no country filter, and only 1 in 60 of its AI postings was in your markets.</li>
+<li><b>RBC is out:</b> its robots.txt disallows its main site (<code>Disallow: /RBCGLOBAL1/</code>) and allows only early-talent roles.</li>
+<li><b>Not on Workday, or no site that robots.txt allows:</b> Citi, Dell, AMD, Qualcomm, EY, KPMG, Deloitte, Scotiabank, Telus, Shopify, HSBC, NatWest, BP, Vodafone, Sky, BT, UBS, Nestlé, Zurich, Swiss Re, ABB, and the UAE employers tried (G42, ADNOC, e&amp;, Emirates NBD, FAB, Mubadala, Careem). The tenant called <code>lloyds</code> turned out to be Lloyd's of London, not Lloyds Bank.</li>
+</ul>
+
+<h2 id="polite">Staying polite and allowed</h2>
+<div class="callout">
+<ul>
+<li><b>We say who we are.</b> Every request carries a User-Agent naming the bot and this project.</li>
+<li><b>One request a second per site.</b> Each host gets at least a second between requests. The {{n_workday}} Workday sites run {{workers}} at a time, but each on its own host, so no single site sees more than one request a second.</li>
+<li><b>Back off on trouble.</b> A “too many requests” (429) or server error is retried after a pause that doubles each time. A board that still fails is recorded and skipped for the day, and it closes nothing.</li>
+<li><b>robots.txt decides.</b> A Workday site that robots.txt doesn't allow is never searched; the run records it as an error instead.</li>
+<li><b>Small and steady.</b> A daily Workday run is usually 10–70 search requests per site, plus one request per new posting, at most {{max_details}}.</li>
+</ul>
+</div>
+
+<h2 id="gaps">What isn't covered yet</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:30%">Gap</th><th>Why</th><th style="width:30%">Plan</th></tr></thead>
+<tbody>
+<tr><td>LinkedIn, Indeed, jobs.ch, Bayt, Naukrigulf</td><td>Their terms forbid automated access, so they are never visited</td><td>Read your own job-alert emails from them (a Gmail label)</td></tr>
+<tr><td>Employers on SuccessFactors, Oracle Recruiting or SmartRecruiters (Swiss Re, JPMorgan, ServiceNow…)</td><td>Each system needs its own collector</td><td>Next systems to add</td></tr>
+<tr><td>Local UAE employers</td><td>None found on Workday. UAE roles come from global employers for now (Salesforce has FDE roles in Dubai)</td><td>SerpApi Google Jobs and alert emails</td></tr>
+<tr><td>Employers that don't use any of these systems</td><td>Their own custom career sites</td><td>SerpApi Google Jobs twice a week</td></tr>
+<tr><td>Anduril</td><td>2,500 postings, almost all defence hardware: a large daily download for a few AI roles</td><td>Disabled in the config</td></tr>
+</tbody></table></div>
+
+<h2 id="employers">All {{n_employers}} employers</h2>
+<p class="muted">Generated from <code>config/companies.yaml</code>. Each link opens that employer's public job page.</p>
+{{employers_table}}

@@ -1,0 +1,131 @@
+<h1>How the job search works</h1>
+<p class="lede">Every day the jobs lane (lane ② on the <a href="../architecture-diagram.html">architecture diagram</a>) collects open AI engineering jobs <b>straight from the employers' own career sites</b>. It keeps the ones in your target roles and markets, and has a model read each one into a fixed set of facts: skills, seniority, pay and remote policy. Once a week, code turns those facts into a report on what employers ask for, what they pay, who is hiring, and how your skills match.</p>
+<p class="snap">Numbers on these pages are a snapshot from 13 Oct 2026, the second day of tracking. Lists and limits are generated from the code and config, so they are always current.</p>
+
+<h2>The idea in four sentences</h2>
+<div class="callout key">
+<ol>
+<li><b>Go to the source.</b> Postings come from the employers' own job systems ({{n_list}} employers on Greenhouse, Lever or Ashby, {{n_workday}} on Workday), never from LinkedIn or Indeed, whose terms forbid programs.</li>
+<li><b>Keep only what's yours.</b> A title filter keeps your role families and a location filter keeps the US, Canada, UK, Switzerland, UAE and remote jobs.</li>
+<li><b>Read each posting once.</b> Gemini 3.1 Flash-Lite fills in the same form for every posting, and the form is read again only if the posting's text changes.</li>
+<li><b>Count in code, explain with the model.</b> Every number in the report is computed from the data. The model writes the commentary, and any sentence with a number that isn't in the data is removed.</li>
+</ol>
+</div>
+
+<h2>The six steps</h2>
+<p>Steps 1–3 run every day (<code>ainews jobs</code>); steps 4–6 run once a week (<code>ainews weekly</code>). Click a step to read how it works.</p>
+<div class="frame">
+<svg viewBox="0 0 1000 268" role="img" aria-label="The job search in six steps: sources, filter and track, read, count, explain, publish, with a SQLite database underneath">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="h" x="248" y="20" text-anchor="middle">Daily · ainews jobs</text>
+  <path class="a" d="M6 32 V27 H490 V32"/>
+  <text class="h" x="752" y="20" text-anchor="middle">Weekly · ainews weekly</text>
+  <path class="a" d="M510 32 V27 H994 V32"/>
+
+  <a href="sources.html"><rect class="ext" x="6" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="80" y="72" text-anchor="middle">1 · Sources</text>
+    <text class="s" x="80" y="94" text-anchor="middle">{{n_list}} job-board APIs</text>
+    <text class="s" x="80" y="112" text-anchor="middle">{{n_workday}} Workday sites</text>
+    <text class="s" x="80" y="130" text-anchor="middle">employers' own</text></a>
+  <a href="poll.html"><rect class="comp" x="174" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="248" y="72" text-anchor="middle">2 · Filter &amp; track</text>
+    <text class="s" x="248" y="94" text-anchor="middle">role + market</text>
+    <text class="s" x="248" y="112" text-anchor="middle">new · changed</text>
+    <text class="s" x="248" y="130" text-anchor="middle">closed</text></a>
+  <a href="extract.html"><rect class="llm" x="342" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="416" y="72" text-anchor="middle">3 · Read</text>
+    <text class="s" x="416" y="94" text-anchor="middle">Flash-Lite fills</text>
+    <text class="s" x="416" y="112" text-anchor="middle">a fixed form</text>
+    <text class="s" x="416" y="130" text-anchor="middle">skills · pay · remote</text></a>
+  <a href="report.html#count"><rect class="comp" x="510" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="584" y="72" text-anchor="middle">4 · Count</text>
+    <text class="s" x="584" y="94" text-anchor="middle">skill shares</text>
+    <text class="s" x="584" y="112" text-anchor="middle">pay · who's hiring</text>
+    <text class="s" x="584" y="130" text-anchor="middle">your fit</text></a>
+  <a href="report.html#notes"><rect class="llm" x="678" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="752" y="72" text-anchor="middle">5 · Explain</text>
+    <text class="s" x="752" y="94" text-anchor="middle">3 short notes</text>
+    <text class="s" x="752" y="112" text-anchor="middle">every number</text>
+    <text class="s" x="752" y="130" text-anchor="middle">checked</text></a>
+  <a href="report.html#publish"><rect class="comp" x="846" y="46" width="148" height="104" rx="9"/>
+    <text class="t" x="920" y="72" text-anchor="middle">6 · Publish</text>
+    <text class="s" x="920" y="94" text-anchor="middle">out/jobs-….md</text>
+    <text class="s" x="920" y="112" text-anchor="middle">Telegram</text>
+    <text class="s" x="920" y="130" text-anchor="middle">when you send it</text></a>
+  <path class="a" d="M154 98 H170" marker-end="url(#arr)"/>
+  <path class="a" d="M322 98 H338" marker-end="url(#arr)"/>
+  <path class="a" d="M490 98 H506" marker-end="url(#arr)"/>
+  <path class="a" d="M658 98 H674" marker-end="url(#arr)"/>
+  <path class="a" d="M826 98 H842" marker-end="url(#arr)"/>
+
+  <a href="operate.html#data"><rect class="store" x="174" y="196" width="820" height="56" rx="9"/>
+    <text class="t" x="584" y="219" text-anchor="middle">SQLite database (data/ainews.sqlite)</text>
+    <text class="s" x="584" y="239" text-anchor="middle">job_boards · job_postings · job_extractions · reports</text></a>
+  <path class="a" d="M248 150 V192" marker-end="url(#arr)"/>
+  <text class="s" x="256" y="178">saves postings</text>
+  <path class="a" d="M416 150 V192" marker-start="url(#arr)" marker-end="url(#arr)"/>
+  <text class="s" x="424" y="178">reads postings, saves forms</text>
+  <path class="a" d="M584 192 V154" marker-end="url(#arr)"/>
+  <text class="s" x="592" y="178">reads the forms</text>
+  <path class="a" d="M920 150 V192" marker-end="url(#arr)"/>
+  <text class="s" x="928" y="178">saves the report</text>
+</svg>
+</div>
+<p class="muted">Colours as on the architecture diagram: orange is outside the project, white is plain code, purple is a model call, green is storage.</p>
+
+<h2>From 13,800 postings to one report</h2>
+<p>How much each step keeps, on 13 Oct 2026 (bars to scale):</p>
+<div class="bars">
+  <div class="bar"><div class="fill ext" style="width:100%"></div><div class="lbl"><b>12,948</b> open postings listed by the {{n_list}} job-board APIs (every job at those employers)</div></div>
+  <div class="bar"><div class="fill ext" style="width:6.8%"></div><div class="lbl"><b>885</b> search results with AI titles on the {{n_workday}} Workday sites (only AI keywords are searched)</div></div>
+  <div class="bar"><div class="fill" style="width:17.6%"></div><div class="lbl"><b>2,275</b> kept: in a role family and in your markets (1,591 + 684)</div></div>
+  <div class="bar"><div class="fill llm" style="width:1.6%"></div><div class="lbl"><b>210</b> read by the model so far; the other 2,065 wait their turn, up to 200 a day</div></div>
+  <div class="bar"><div class="fill store" style="width:1.4%"></div><div class="lbl"><b>180</b> of those are open and in your {{n_targets}} target families, so they count in the current report</div></div>
+</div>
+<p class="muted">The report grows as the backlog is read: about ten daily runs until all 2,275 have been read. After that, each day only adds the new postings.</p>
+
+<h2>A week in the life of the job search</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>When</th><th>Command</th><th>What happens</th><th class="num">Time</th><th class="num">Cost</th></tr></thead>
+<tbody>
+<tr><td>Every day</td><td><code>ainews jobs</code></td><td>Lists the {{n_list}} job boards; searches the {{n_workday}} Workday sites ({{workers}} at a time); saves new, changed and closed postings; the model reads up to 200 unread postings, newest first</td><td class="num">about 10 min<br><span class="muted">1½ lists · 4 Workday · 4 reading</span></td><td class="num">about $0.22</td></tr>
+<tr><td>Monday</td><td><code>ainews weekly</code></td><td>Computes the statistics, the model writes three notes, and the report is saved to <code>out/jobs-&lt;date&gt;.md</code></td><td class="num">seconds</td><td class="num">about 1 cent</td></tr>
+<tr><td>When you're happy with it</td><td><code>ainews send --report</code></td><td>Posts the latest report to the Telegram channel, in as few messages as fit</td><td class="num">seconds</td><td class="num">free</td></tr>
+</tbody></table></div>
+<p class="muted">Today you run these by hand. After deployment, Cloud Scheduler runs <code>jobs</code> at 05:00 every day and <code>weekly</code> on Mondays at 07:00.</p>
+
+<h2 id="words">Words used on these pages</h2>
+<div class="callout"><dl class="words">
+<dt>Posting</dt><dd>One job advert on an employer's career site. The same job in two cities can be two postings.</dd>
+<dt>Job board / ATS</dt><dd>The system an employer uses to publish jobs and take applications (an applicant tracking system). Greenhouse, Lever and Ashby are popular with startups; Workday with banks, insurers, pharma and big tech.</dd>
+<dt>Tenant, career site</dt><dd>On Workday, each employer is a tenant (<code>nvidia</code>) with one or more career sites (<code>NVIDIAExternalCareerSite</code>).</dd>
+<dt>Role family</dt><dd>The kind of job, such as FDE / applied AI or ML engineer. Your {{n_targets}} <b>target families</b> are {{targets}}.</dd>
+<dt>Market</dt><dd>Where the job is: USA, Canada, UK, Switzerland, UAE, or remote.</dd>
+<dt>Poll</dt><dd>One visit to every career site to see what's open today.</dd>
+<dt>Diff</dt><dd>Comparing today's postings with what is stored, to find new, changed and closed ones.</dd>
+<dt>Extraction</dt><dd>The model reading a posting and filling in the fixed form (skills, seniority, pay…).</dd>
+<dt>Canonical skill</dt><dd>One agreed name per skill, so “k8s” and “Kubernetes” are counted together.</dd>
+<dt>Share</dt><dd>The percentage of postings that ask for something: “Python 73%” means 73 of every 100 target postings name Python.</dd>
+<dt>Median</dt><dd>The middle value when numbers are sorted: half are above, half below. Used for pay so a few extreme salaries don't skew it.</dd>
+<dt>Confidence interval</dt><dd>The range a true share probably lies in, given how many postings we saw. Used to tell a real rise in demand from noise.</dd>
+<dt>Coverage</dt><dd>How much of the demand for the top skills your skills cover, weighted by how often each skill is asked for.</dd>
+</dl></div>
+
+<h2>What it never does</h2>
+<div class="callout">
+<ul>
+<li><b>No scraping of job sites that forbid it.</b> LinkedIn, Indeed, jobs.ch, Bayt and Naukrigulf ban automated access, so they are never visited. Planned: your own job-alert emails from them, read from a Gmail label.</li>
+<li><b>No logins and no getting around blocks.</b> Only public endpoints, the same ones the career page itself uses, and only parts of a site that its robots.txt allows.</li>
+<li><b>Your personal data stays private.</b> Your skills list (<code>private/skills.yaml</code>) and profile are gitignored and never in the public repo. These pages explain the fit calculation with made-up numbers.</li>
+<li><b>No guessed numbers.</b> If a number in the model's commentary isn't in the statistics, the sentence is dropped.</li>
+</ul>
+</div>
+
+<h2>Read next</h2>
+<div class="steps">
+<a class="step" href="sources.html"><b>1 · Where postings come from</b><span>Job-board APIs versus Workday search, how employers were chosen, the full list of {{n_employers}}.</span></a>
+<a class="step" href="poll.html"><b>2 · Filter and track</b><span>How a title becomes a role family, how a location becomes a market, and when a posting counts as closed.</span></a>
+<a class="step" href="extract.html"><b>3 · Read each posting</b><span>The form the model fills in, a worked example, the skills dictionary, pay and cost.</span></a>
+<a class="step" href="report.html"><b>4 · Weekly report and fit</b><span>Skill shares, pay medians, rising skills with confidence intervals, your coverage, checked notes.</span></a>
+<a class="step" href="operate.html"><b>Run and change it</b><span>Commands, settings, adding an employer, the tables, troubleshooting.</span></a>
+</div>

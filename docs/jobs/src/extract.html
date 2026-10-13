@@ -1,0 +1,105 @@
+<h1>3 · Read each posting with the model</h1>
+<p class="lede">A title and a location don't say what a job asks for. So <b>Gemini 3.1 Flash-Lite reads each new or changed posting and fills in the same form</b>: role family, seniority, skills, remote policy, pay and more. Code then tidies the answers so they can be counted, for example so that “k8s” and “Kubernetes” are the same skill. This is step J2 on the architecture diagram.</p>
+
+<div class="frame">
+<svg viewBox="0 0 1000 140" role="img" aria-label="Unread postings are sent five at a time to Gemini 3.1 Flash-Lite with the extraction prompt; code cleans the answers and saves them with the prompt version and the text fingerprint">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="store" x="2" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="88" y="48" text-anchor="middle">Unread postings</text>
+  <text class="s" x="88" y="70" text-anchor="middle">open, newest first</text>
+  <text class="s" x="88" y="88" text-anchor="middle">up to 200 a run</text>
+  <rect class="comp" x="208" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="294" y="48" text-anchor="middle">A batch of {{batch}}</text>
+  <text class="s" x="294" y="70" text-anchor="middle">title, employer, places,</text>
+  <text class="s" x="294" y="88" text-anchor="middle">department, and the first</text>
+  <text class="s" x="294" y="106" text-anchor="middle">{{text_chars}} characters</text>
+  <rect class="llm" x="414" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="500" y="48" text-anchor="middle">3.1 Flash-Lite</text>
+  <text class="s" x="500" y="70" text-anchor="middle">the extraction prompt</text>
+  <text class="s" x="500" y="88" text-anchor="middle">+ {{n_skills}} skill names</text>
+  <text class="s" x="500" y="106" text-anchor="middle">→ a strict JSON form</text>
+  <rect class="comp" x="620" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="706" y="48" text-anchor="middle">Code tidies it</text>
+  <text class="s" x="706" y="70" text-anchor="middle">one name per skill</text>
+  <text class="s" x="706" y="88" text-anchor="middle">board salary wins</text>
+  <rect class="store" x="826" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="912" y="48" text-anchor="middle">job_extractions</text>
+  <text class="s" x="912" y="70" text-anchor="middle">the form, plus the</text>
+  <text class="s" x="912" y="88" text-anchor="middle">prompt version and</text>
+  <text class="s" x="912" y="106" text-anchor="middle">text fingerprint</text>
+  <path class="a" d="M174 70 H204" marker-end="url(#arr)"/>
+  <path class="a" d="M380 70 H410" marker-end="url(#arr)"/>
+  <path class="a" d="M586 70 H616" marker-end="url(#arr)"/>
+  <path class="a" d="M792 70 H822" marker-end="url(#arr)"/>
+</svg>
+</div>
+
+<h2>Why a model, and why this one</h2>
+<p>Postings are long, inconsistent prose. One says “must have 5+ years of Python”, another “you're fluent in Python”. Rules can't reliably pull skills, seniority and pay out of that; a model reads it the way a person would. The cheapest Gemini model is enough, because it fills in a fixed form instead of writing anything creative, and the form is checked by a <b>strict JSON schema</b>: every answer must have exactly these fields, with values from fixed lists. Five postings per call keeps the instructions (and the {{n_skills}} skill names) from being sent once per posting.</p>
+
+<h2 id="form">The form the model fills in</h2>
+<p>The prompt is <code>prompts/job_extract.md</code> (version <code>{{extract_version}}</code>). Its main rules:</p>
+<ul>
+<li>Judge the <b>role family from the duties</b>, not just the title, and file roles where AI is only the company's product as “other”.</li>
+<li>Split skills into <b>required</b> and <b>preferred</b> by the posting's own words (“must” versus “nice to have”); if it doesn't say, they count as required. At most 15 required and 10 preferred, most important first.</li>
+<li>Use the <b>canonical skill names</b> whenever one fits; otherwise a short common name (“Kubernetes”, not “experience running k8s clusters”). Skip generic traits such as “passion”; keep concrete ones such as “Customer-facing work”.</li>
+<li><b>Use only what the posting says.</b> No skills guessed from the company's reputation, and a salary only if the text states one.</li>
+</ul>
+{{fields_table}}
+
+<h2 id="example">A worked example</h2>
+<p>Legora's “Junior/Mid-level Forward Deployed Engineer” in New York City: 6,246 characters of posting text, and a salary range the board publishes as a structured field ($175,100–$245,000 a year). The model's form, after code tidied it:</p>
+<pre><code>{
+  "role_family": "fde_applied_ai",
+  "seniority": "mid",
+  "years_min": 2,
+  "skills_required": ["Software engineering", "REST APIs", "Authentication", "Integration",
+                      "Data pipelines", "Customer-facing work", "Communication", "Debugging"],
+  "skills_preferred": ["TypeScript", "B2B", "AI agents", "Product sense"],
+  "customer_facing": true,
+  "travel": "unknown",
+  "remote_policy": "onsite",
+  "visa_sponsorship": "unknown",
+  "summary": "Builds and deploys integrations and software solutions by working directly with
+              enterprise customers to solve their specific legal workflow needs.",
+  "salary": {"min": 175100, "max": 245000, "currency": "USD", "period": "year", "source": "board"}
+}</code></pre>
+<ul>
+<li><b>Seniority “mid” and 2 years:</b> taken from the title and the years the posting asks for.</li>
+<li><b>Skills:</b> names such as “REST APIs”, “Customer-facing work” and “AI agents” are canonical names from the dictionary below. “B2B” and “Authentication” aren't in it, so they are kept as the model wrote them.</li>
+<li><b>Salary, source “board”:</b> the board's own number was used, not the model's reading of the text.</li>
+<li><b>Travel and visa “unknown”:</b> the posting doesn't say, and the model is told not to guess.</li>
+</ul>
+<div class="callout">
+<p><b>When the title misleads.</b> Cloudflare's “Senior Forward Deployed Infrastructure Engineer” looks like an FDE role by its title. The model read the duties (“collaborates with strategic customers to deploy and manage large-scale infrastructure and compute capacity”) and filed it as <b>Solutions engineer</b>. The report uses the model's family, so infrastructure roles don't inflate the FDE numbers.</p>
+</div>
+
+<h2 id="skills">The skills dictionary</h2>
+<p>Counting skills only works if each skill has one name. <code>config/skills.yaml</code> holds <b>{{n_skills}} canonical names in {{n_skill_categories}} categories</b>, each with its aliases. The model is given the names; code then maps whatever it wrote through the aliases, ignoring case: “k8s” becomes Kubernetes and “sklearn” becomes scikit-learn. A skill that appears in both lists counts once, as required.</p>
+<p>The weekly statistics apply <b>today's</b> dictionary to every stored form. Adding an alias therefore also fixes postings read weeks ago, with no need to read them again.</p>
+<details><summary>Show all {{n_skills}} canonical names</summary>{{skills_table}}</details>
+
+<h2 id="pay">Pay: whose number wins</h2>
+<ol>
+<li><b>The board's structured salary</b>, when there is one: Greenhouse pay ranges, Lever's salary range or Ashby's compensation. Saved with <code>"source": "board"</code>.</li>
+<li><b>Otherwise, a range the model found in the text</b>, which is common in the US because of pay-transparency laws. Saved with <code>"source": "text"</code>. It needs a minimum, a maximum and a currency.</li>
+<li><b>Otherwise none.</b> Bonuses, equity and “competitive salary” don't count.</li>
+</ol>
+<p class="muted">Of the first 210 postings read, 105 had a board salary, 17 a salary in the text, and 88 none. Workday boards have no salary field, so their pay always comes from the text.</p>
+
+<h2 id="again">When a posting is read again</h2>
+<ul>
+<li><b>Its text changed:</b> the stored fingerprint (hash) of the title and text no longer matches the form's.</li>
+<li><b>The prompt changed:</b> raising the version at the top of <code>prompts/job_extract.md</code> makes every open posting due again, newest first.</li>
+<li><b>Never for closed postings:</b> only open postings are read.</li>
+</ul>
+
+<h2 id="cost">Cost, speed and limits</h2>
+<div class="tablewrap"><table>
+<tbody>
+<tr><td style="width:34%">Per posting</td><td>About $0.0011: roughly 1,600 tokens in and 460 out (the first 210 postings cost $0.23 in 42 calls)</td></tr>
+<tr><td>Per run</td><td>Up to 200 postings (<code>AINEWS_MAX_JOBS_EXTRACT</code>), newest first: about $0.22 and 4 minutes for 40 calls</td></tr>
+<tr><td>Spending guard</td><td>Every call is checked against the caps first ($0.30 a run, $0.75 a day, $10 a month). A call that could break a cap isn't sent; reading stops cleanly and resumes on the next run</td></tr>
+<tr><td>A failed batch</td><td>Logged and skipped; its five postings stay unread and are tried again next run</td></tr>
+<tr><td>The backlog</td><td>On 13 Oct 2026, 2,065 postings were waiting: about ten daily runs, or five if you run it twice a day</td></tr>
+</tbody></table></div>

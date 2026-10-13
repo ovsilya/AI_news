@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job search: reading postings</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1f;--muted:#5f6368;--border:#d5d7db;--sel:#2f6fdb;--line:#8a8f98;
+--chip:#eef3fb;--chip-border:#9db5dc;--llm:#f3ecfd;--llm-border:#9a7ad1;--store:#eaf6ef;--store-border:#6fae8a;
+--ext:#fdf3e6;--ext-border:#d39b4a;--good:#1e7d4f;--bad:#b3261e;--code:#f1f2f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;
+--border:#3a3e45;--sel:#6ea2ff;--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;
+--store:#16271e;--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}}
+:root[data-theme="dark"]{--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;
+--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;--store:#16271e;
+--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+a{color:var(--sel)}
+.top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:14px;margin-bottom:18px}
+.top .home{font-weight:600;margin-right:6px}
+.top nav{display:flex;flex-wrap:wrap;gap:6px}
+.top nav a{padding:2px 9px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--panel)}
+.top nav a[aria-current]{border-color:var(--sel);color:var(--sel);font-weight:600}
+h1{font-size:24px;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;scroll-margin-top:12px}
+h3{font-size:16px;margin:22px 0 6px}
+p,li{max-width:84ch}
+.lede{color:var(--muted);margin:0 0 8px;font-size:16px}
+.lede b{color:var(--ink)}
+.snap{font-size:13.5px;color:var(--muted)}
+.muted{color:var(--muted);font-size:14px}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:5px}
+pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);border:1px solid var(--border);
+border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0}
+pre code{background:none;padding:0}
+.callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
+.callout.key{border-left:4px solid var(--sel)}
+.callout ol,.callout ul{margin:6px 0 0;padding-left:22px}
+.callout li{margin:5px 0}
+.frame{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0}
+.frame svg{display:block;width:100%;height:auto;min-width:760px}
+.frame.small svg{min-width:560px}
+svg text{fill:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+svg .t{font-size:14px;font-weight:600}
+svg .s{font-size:12px;fill:var(--muted)}
+svg .h{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;fill:var(--muted)}
+svg .ext{fill:var(--ext);stroke:var(--ext-border)}
+svg .comp{fill:var(--panel);stroke:var(--border)}
+svg .llm{fill:var(--llm);stroke:var(--llm-border)}
+svg .store{fill:var(--store);stroke:var(--store-border)}
+svg .dash{fill:none;stroke:var(--border);stroke-dasharray:5 4}
+svg rect{stroke-width:1.3}
+svg .a{fill:none;stroke:var(--line);stroke-width:1.6}
+svg .a.dim{stroke-dasharray:5 4}
+svg .tip{fill:var(--line)}
+svg .good{fill:var(--good)} svg .bad{fill:var(--bad)}
+svg a:hover rect,svg a:focus-visible rect{stroke:var(--sel);stroke-width:2.2}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:10px 0}
+.step{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink);display:block}
+a.step:hover{border-color:var(--sel)}
+.step b{display:block;margin-bottom:4px}
+.step span{font-size:14px;color:var(--muted)}
+.flow{list-style:none;padding:0;margin:10px 0;counter-reset:f}
+.flow>li{counter-increment:f;position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;
+padding:10px 14px 10px 50px;margin:0 0 18px;max-width:none}
+.flow>li::before{content:counter(f);position:absolute;left:12px;top:10px;width:26px;height:26px;border-radius:50%;
+background:var(--chip);border:1px solid var(--chip-border);text-align:center;font:600 13px/26px system-ui,sans-serif}
+.flow>li:not(:last-child)::after{content:"↓";position:absolute;left:20px;bottom:-19px;color:var(--line);font-size:14px}
+.flow ul{margin:4px 0 0;padding-left:20px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.group td{background:var(--chip);font-weight:600;font-size:13px}
+.chip{display:inline-block;font-size:12px;padding:0 8px;margin:1px 2px 1px 0;border:1px solid var(--chip-border);background:var(--chip);border-radius:999px;white-space:nowrap}
+.yes{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+.bars{display:grid;gap:8px;margin:12px 0}
+.bar{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+.bar .fill{height:22px;border-radius:5px;background:var(--chip);border:1px solid var(--chip-border);min-width:6px}
+.bar .fill.llm{background:var(--llm);border-color:var(--llm-border)}
+.bar .fill.store{background:var(--store);border-color:var(--store-border)}
+.bar .fill.ext{background:var(--ext);border-color:var(--ext-border)}
+.bar .lbl{font-size:14px}.bar .lbl b{font-variant-numeric:tabular-nums}
+details{margin:8px 0}
+summary{cursor:pointer;color:var(--sel);font-weight:600;font-size:14px}
+.words{display:grid;grid-template-columns:minmax(120px,210px) 1fr;gap:6px 16px;margin:0}
+.words dt{font-weight:600}.words dd{margin:0}
+@media (max-width:560px){.words{grid-template-columns:1fr}.words dd{margin-bottom:8px}}
+.tool{background:var(--panel);border:1px solid var(--sel);border-radius:10px;padding:12px 16px;margin:10px 0}
+.tool label{font-weight:600;font-size:14px;display:block;margin-bottom:4px}
+.tool input[type=text]{width:100%;max-width:520px;font:15px system-ui,sans-serif;padding:7px 10px;border:1px solid var(--border);
+border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool input[type=number]{width:72px;font:15px system-ui,sans-serif;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool .out{margin-top:8px;font-size:15px}
+.tool .row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:6px 0}
+.tool .nw{white-space:nowrap}
+.tool button{font:14px system-ui,sans-serif;padding:3px 10px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--ink);cursor:pointer}
+.tool button:hover{border-color:var(--sel)}
+.foot{margin-top:32px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+.next{margin-top:28px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.next a{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel);text-decoration:none}
+.next a:hover{border-color:var(--sel)}
+</style>
+</head>
+<body>
+<main>
+<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html" aria-current="page">3 · Read</a><a href="report.html">4 · Report &amp; fit</a><a href="operate.html">Run &amp; change it</a></nav></div>
+<h1>3 · Read each posting with the model</h1>
+<p class="lede">A title and a location don't say what a job asks for. So <b>Gemini 3.1 Flash-Lite reads each new or changed posting and fills in the same form</b>: role family, seniority, skills, remote policy, pay and more. Code then tidies the answers so they can be counted, for example so that “k8s” and “Kubernetes” are the same skill. This is step J2 on the architecture diagram.</p>
+
+<div class="frame">
+<svg viewBox="0 0 1000 140" role="img" aria-label="Unread postings are sent five at a time to Gemini 3.1 Flash-Lite with the extraction prompt; code cleans the answers and saves them with the prompt version and the text fingerprint">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="store" x="2" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="88" y="48" text-anchor="middle">Unread postings</text>
+  <text class="s" x="88" y="70" text-anchor="middle">open, newest first</text>
+  <text class="s" x="88" y="88" text-anchor="middle">up to 200 a run</text>
+  <rect class="comp" x="208" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="294" y="48" text-anchor="middle">A batch of 5</text>
+  <text class="s" x="294" y="70" text-anchor="middle">title, employer, places,</text>
+  <text class="s" x="294" y="88" text-anchor="middle">department, and the first</text>
+  <text class="s" x="294" y="106" text-anchor="middle">7,000 characters</text>
+  <rect class="llm" x="414" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="500" y="48" text-anchor="middle">3.1 Flash-Lite</text>
+  <text class="s" x="500" y="70" text-anchor="middle">the extraction prompt</text>
+  <text class="s" x="500" y="88" text-anchor="middle">+ 147 skill names</text>
+  <text class="s" x="500" y="106" text-anchor="middle">→ a strict JSON form</text>
+  <rect class="comp" x="620" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="706" y="48" text-anchor="middle">Code tidies it</text>
+  <text class="s" x="706" y="70" text-anchor="middle">one name per skill</text>
+  <text class="s" x="706" y="88" text-anchor="middle">board salary wins</text>
+  <rect class="store" x="826" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="912" y="48" text-anchor="middle">job_extractions</text>
+  <text class="s" x="912" y="70" text-anchor="middle">the form, plus the</text>
+  <text class="s" x="912" y="88" text-anchor="middle">prompt version and</text>
+  <text class="s" x="912" y="106" text-anchor="middle">text fingerprint</text>
+  <path class="a" d="M174 70 H204" marker-end="url(#arr)"/>
+  <path class="a" d="M380 70 H410" marker-end="url(#arr)"/>
+  <path class="a" d="M586 70 H616" marker-end="url(#arr)"/>
+  <path class="a" d="M792 70 H822" marker-end="url(#arr)"/>
+</svg>
+</div>
+
+<h2>Why a model, and why this one</h2>
+<p>Postings are long, inconsistent prose. One says “must have 5+ years of Python”, another “you're fluent in Python”. Rules can't reliably pull skills, seniority and pay out of that; a model reads it the way a person would. The cheapest Gemini model is enough, because it fills in a fixed form instead of writing anything creative, and the form is checked by a <b>strict JSON schema</b>: every answer must have exactly these fields, with values from fixed lists. Five postings per call keeps the instructions (and the 147 skill names) from being sent once per posting.</p>
+
+<h2 id="form">The form the model fills in</h2>
+<p>The prompt is <code>prompts/job_extract.md</code> (version <code>jobs-extract-v1</code>). Its main rules:</p>
+<ul>
+<li>Judge the <b>role family from the duties</b>, not just the title, and file roles where AI is only the company's product as “other”.</li>
+<li>Split skills into <b>required</b> and <b>preferred</b> by the posting's own words (“must” versus “nice to have”); if it doesn't say, they count as required. At most 15 required and 10 preferred, most important first.</li>
+<li>Use the <b>canonical skill names</b> whenever one fits; otherwise a short common name (“Kubernetes”, not “experience running k8s clusters”). Skip generic traits such as “passion”; keep concrete ones such as “Customer-facing work”.</li>
+<li><b>Use only what the posting says.</b> No skills guessed from the company's reputation, and a salary only if the text states one.</li>
+</ul>
+<div class="tablewrap"><table><thead><tr><th style="width:24%">Field</th><th>What it holds</th><th style="width:26%">Used for</th></tr></thead><tbody><tr><td><code>role_family</code></td><td>What the job really is, judged from the duties: one of the role families<br><span class="muted">string</span></td><td>Which postings count; roles table</td></tr><tr><td><code>seniority</code></td><td>intern … principal, lead, manager, or unknown; from the title first, then the years asked for<br><span class="muted">intern · junior · mid · senior · staff · principal · lead · manager · unknown</span></td><td>Seniority shares</td></tr><tr><td><code>years_min</code></td><td>Minimum years of experience asked for (0 if not stated)<br><span class="muted">integer</span></td><td>Kept for later questions</td></tr><tr><td><code>skills_required</code></td><td>Up to 15 skills the posting requires, most important first<br><span class="muted">array</span></td><td>Skill shares, fit</td></tr><tr><td><code>skills_preferred</code></td><td>Up to 10 nice-to-have skills<br><span class="muted">array</span></td><td>Skill shares (a skill counts once per posting)</td></tr><tr><td><code>customer_facing</code></td><td>Does the job involve working directly with customers?<br><span class="muted">boolean</span></td><td>Customer-facing share</td></tr><tr><td><code>travel</code></td><td>none, some, frequent or unknown<br><span class="muted">none · some · frequent · unknown</span></td><td>Kept for later questions</td></tr><tr><td><code>remote_policy</code></td><td>onsite, hybrid, remote or unknown<br><span class="muted">onsite · hybrid · remote · unknown</span></td><td>Remote share</td></tr><tr><td><code>visa_sponsorship</code></td><td>yes, no or unknown, only from what the posting says<br><span class="muted">yes · no · unknown</span></td><td>Visa count</td></tr><tr><td><code>salary_min · max · currency</code></td><td>Base salary range, only when the text states one<br><span class="muted">number</span></td><td>Pay medians, if the board gave none</td></tr><tr><td><code>salary_period</code></td><td>year, month, hour or unknown<br><span class="muted">year · month · hour · unknown</span></td><td></td></tr><tr><td><code>summary</code></td><td>One plain sentence on what the person does<br><span class="muted">string</span></td><td>Kept for the daily brief&#x27;s job picks (planned)</td></tr></tbody></table></div>
+
+<h2 id="example">A worked example</h2>
+<p>Legora's “Junior/Mid-level Forward Deployed Engineer” in New York City: 6,246 characters of posting text, and a salary range the board publishes as a structured field ($175,100–$245,000 a year). The model's form, after code tidied it:</p>
+<pre><code>{
+  "role_family": "fde_applied_ai",
+  "seniority": "mid",
+  "years_min": 2,
+  "skills_required": ["Software engineering", "REST APIs", "Authentication", "Integration",
+                      "Data pipelines", "Customer-facing work", "Communication", "Debugging"],
+  "skills_preferred": ["TypeScript", "B2B", "AI agents", "Product sense"],
+  "customer_facing": true,
+  "travel": "unknown",
+  "remote_policy": "onsite",
+  "visa_sponsorship": "unknown",
+  "summary": "Builds and deploys integrations and software solutions by working directly with
+              enterprise customers to solve their specific legal workflow needs.",
+  "salary": {"min": 175100, "max": 245000, "currency": "USD", "period": "year", "source": "board"}
+}</code></pre>
+<ul>
+<li><b>Seniority “mid” and 2 years:</b> taken from the title and the years the posting asks for.</li>
+<li><b>Skills:</b> names such as “REST APIs”, “Customer-facing work” and “AI agents” are canonical names from the dictionary below. “B2B” and “Authentication” aren't in it, so they are kept as the model wrote them.</li>
+<li><b>Salary, source “board”:</b> the board's own number was used, not the model's reading of the text.</li>
+<li><b>Travel and visa “unknown”:</b> the posting doesn't say, and the model is told not to guess.</li>
+</ul>
+<div class="callout">
+<p><b>When the title misleads.</b> Cloudflare's “Senior Forward Deployed Infrastructure Engineer” looks like an FDE role by its title. The model read the duties (“collaborates with strategic customers to deploy and manage large-scale infrastructure and compute capacity”) and filed it as <b>Solutions engineer</b>. The report uses the model's family, so infrastructure roles don't inflate the FDE numbers.</p>
+</div>
+
+<h2 id="skills">The skills dictionary</h2>
+<p>Counting skills only works if each skill has one name. <code>config/skills.yaml</code> holds <b>147 canonical names in 12 categories</b>, each with its aliases. The model is given the names; code then maps whatever it wrote through the aliases, ignoring case: “k8s” becomes Kubernetes and “sklearn” becomes scikit-learn. A skill that appears in both lists counts once, as required.</p>
+<p>The weekly statistics apply <b>today's</b> dictionary to every stored form. Adding an alias therefore also fixes postings read weeks ago, with no need to read them again.</p>
+<details><summary>Show all 147 canonical names</summary><div class="tablewrap"><table><thead><tr><th style="width:22%">Category</th><th>Canonical names <span class="muted">(aliases that map to them)</span></th></tr></thead><tbody><tr><td>Languages<br><span class="muted">12 names</span></td><td><span class="chip" title="also: python3">Python <span class="muted">(python3)</span></span><span class="chip" title="also: ts">TypeScript <span class="muted">(ts)</span></span><span class="chip" title="also: js">JavaScript <span class="muted">(js)</span></span><span class="chip" title="also: golang">Go <span class="muted">(golang)</span></span><span class="chip" title="">Rust</span><span class="chip" title="">Java</span><span class="chip" title="also: cpp, c/c++">C++ <span class="muted">(cpp, c/c++)</span></span><span class="chip" title="">Scala</span><span class="chip" title="">SQL</span><span class="chip" title="">CUDA</span><span class="chip" title="">Kotlin</span><span class="chip" title="also: csharp, .net">C# <span class="muted">(csharp, .net)</span></span></td></tr><tr><td>ML frameworks<br><span class="muted">7 names</span></td><td><span class="chip" title="also: torch">PyTorch <span class="muted">(torch)</span></span><span class="chip" title="also: tf">TensorFlow <span class="muted">(tf)</span></span><span class="chip" title="">JAX</span><span class="chip" title="also: sklearn, scikit learn">scikit-learn <span class="muted">(sklearn, scikit learn)</span></span><span class="chip" title="also: transformers, hugging face, huggingface">Hugging Face Transformers <span class="muted">(transformers, hugging face, huggingface)</span></span><span class="chip" title="">XGBoost</span><span class="chip" title="">Keras</span></td></tr><tr><td>LLM frameworks<br><span class="muted">12 names</span></td><td><span class="chip" title="">LangChain</span><span class="chip" title="">LangGraph</span><span class="chip" title="also: llama index, llama-index">LlamaIndex <span class="muted">(llama index, llama-index)</span></span><span class="chip" title="">DSPy</span><span class="chip" title="">Semantic Kernel</span><span class="chip" title="">CrewAI</span><span class="chip" title="">AutoGen</span><span class="chip" title="also: agents sdk">OpenAI Agents SDK <span class="muted">(agents sdk)</span></span><span class="chip" title="">Claude Agent SDK</span><span class="chip" title="also: pydanticai">Pydantic AI <span class="muted">(pydanticai)</span></span><span class="chip" title="">Haystack</span><span class="chip" title="also: ai sdk">Vercel AI SDK <span class="muted">(ai sdk)</span></span></td></tr><tr><td>LLM techniques<br><span class="muted">27 names</span></td><td><span class="chip" title="also: retrieval-augmented generation, retrieval augmented generation, retrieval">RAG <span class="muted">(retrieval-augmented generation, retrieval augmented generation, retrieval)</span></span><span class="chip" title="also: agents, agentic systems, agentic ai, agentic workflows, multi-agent systems, llm agents">AI agents <span class="muted">(agents, agentic systems, agentic ai, agentic workflows, multi-agent systems, llm agents)</span></span><span class="chip" title="also: finetuning, fine tuning, sft, supervised fine-tuning, lora, peft">Fine-tuning <span class="muted">(finetuning, fine tuning, sft, supervised fine-tuning, lora, peft)</span></span><span class="chip" title="also: reinforcement learning from human feedback, rlaif, dpo, preference optimization">RLHF <span class="muted">(reinforcement learning from human feedback, rlaif, dpo, preference optimization)</span></span><span class="chip" title="also: prompting, prompt design">Prompt engineering <span class="muted">(prompting, prompt design)</span></span><span class="chip" title="also: evals, evaluation, llm evals, model evaluation, evaluation frameworks">LLM evaluation <span class="muted">(evals, evaluation, llm evals, model evaluation, evaluation frameworks)</span></span><span class="chip" title="also: function calling, tool calling">Tool use <span class="muted">(function calling, tool calling)</span></span><span class="chip" title="also: model context protocol">MCP <span class="muted">(model context protocol)</span></span><span class="chip" title="also: text embeddings, vector embeddings">Embeddings <span class="muted">(text embeddings, vector embeddings)</span></span><span class="chip" title="also: semantic search, similarity search, vector databases, vector db">Vector search <span class="muted">(semantic search, similarity search, vector databases, vector db)</span></span><span class="chip" title="also: ai safety guardrails, content moderation">Guardrails <span class="muted">(ai safety guardrails, content moderation)</span></span><span class="chip" title="also: adversarial testing, ai red teaming">Red teaming <span class="muted">(adversarial testing, ai red teaming)</span></span><span class="chip" title="">Context engineering</span><span class="chip" title="also: llm ops">LLMOps <span class="muted">(llm ops)</span></span><span class="chip" title="also: model optimization, llm inference, inference">Inference optimization <span class="muted">(model optimization, llm inference, inference)</span></span><span class="chip" title="">Quantization</span><span class="chip" title="also: large-scale training, model parallelism">Distributed training <span class="muted">(large-scale training, model parallelism)</span></span><span class="chip" title="also: pre-training">Pretraining <span class="muted">(pre-training)</span></span><span class="chip" title="also: rl">Reinforcement learning <span class="muted">(rl)</span></span><span class="chip" title="also: multimodal, vision-language models, vlms">Multimodal models <span class="muted">(multimodal, vision-language models, vlms)</span></span><span class="chip" title="also: speech recognition, asr, tts, text-to-speech, voice ai">Speech AI <span class="muted">(speech recognition, asr, tts, text-to-speech, voice ai)</span></span><span class="chip" title="also: cv, image recognition">Computer vision <span class="muted">(cv, image recognition)</span></span><span class="chip" title="also: natural language processing">NLP <span class="muted">(natural language processing)</span></span><span class="chip" title="also: recommendation systems, recsys">Recommender systems <span class="muted">(recommendation systems, recsys)</span></span><span class="chip" title="also: knowledge graph">Knowledge graphs <span class="muted">(knowledge graph)</span></span><span class="chip" title="also: llm integration, llm apis, llm application development, llm applications">LLM APIs <span class="muted">(llm integration, llm apis, llm application development, llm applications)</span></span><span class="chip" title="also: safety, responsible ai, trust and safety">AI safety <span class="muted">(safety, responsible ai, trust and safety)</span></span></td></tr><tr><td>ML practice<br><span class="muted">8 names</span></td><td><span class="chip" title="also: ml ops, ml infrastructure, ml platform">MLOps <span class="muted">(ml ops, ml infrastructure, ml platform)</span></span><span class="chip" title="also: neural networks">Deep learning <span class="muted">(neural networks)</span></span><span class="chip" title="also: ml, ai/ml systems, ml systems, ai/ml">Machine learning <span class="muted">(ml, ai/ml systems, ml systems, ai/ml)</span></span><span class="chip" title="also: model deployment, serving, model inference serving">Model serving <span class="muted">(model deployment, serving, model inference serving)</span></span><span class="chip" title="also: statistical modeling">Statistics <span class="muted">(statistical modeling)</span></span><span class="chip" title="also: a/b testing, ab testing">Experimentation <span class="muted">(a/b testing, ab testing)</span></span><span class="chip" title="also: etl, data engineering">Data pipelines <span class="muted">(etl, data engineering)</span></span><span class="chip" title="">Feature engineering</span></td></tr><tr><td>Model providers<br><span class="muted">10 names</span></td><td><span class="chip" title="also: openai, gpt-4, gpt, chatgpt api">OpenAI API <span class="muted">(openai, gpt-4, gpt, chatgpt api)</span></span><span class="chip" title="also: anthropic, claude">Anthropic API <span class="muted">(anthropic, claude)</span></span><span class="chip" title="also: gemini, google gemini">Gemini API <span class="muted">(gemini, google gemini)</span></span><span class="chip" title="also: meta llama, llama models">Llama <span class="muted">(meta llama, llama models)</span></span><span class="chip" title="">Mistral</span><span class="chip" title="also: open-weight models, open source models, oss llms">Open-source LLMs <span class="muted">(open-weight models, open source models, oss llms)</span></span><span class="chip" title="">Azure OpenAI</span><span class="chip" title="also: bedrock, amazon bedrock">AWS Bedrock <span class="muted">(bedrock, amazon bedrock)</span></span><span class="chip" title="also: google vertex ai">Vertex AI <span class="muted">(google vertex ai)</span></span><span class="chip" title="also: amazon sagemaker, aws sagemaker">SageMaker <span class="muted">(amazon sagemaker, aws sagemaker)</span></span></td></tr><tr><td>Serving and inference<br><span class="muted">8 names</span></td><td><span class="chip" title="">vLLM</span><span class="chip" title="also: tensorrt">TensorRT-LLM <span class="muted">(tensorrt)</span></span><span class="chip" title="also: triton inference server">Triton <span class="muted">(triton inference server)</span></span><span class="chip" title="">SGLang</span><span class="chip" title="also: onnx runtime">ONNX <span class="muted">(onnx runtime)</span></span><span class="chip" title="">llama.cpp</span><span class="chip" title="">Ollama</span><span class="chip" title="also: ray serve, anyscale">Ray <span class="muted">(ray serve, anyscale)</span></span></td></tr><tr><td>Vector databases and search<br><span class="muted">9 names</span></td><td><span class="chip" title="">Pinecone</span><span class="chip" title="">Weaviate</span><span class="chip" title="">Qdrant</span><span class="chip" title="also: zilliz">Milvus <span class="muted">(zilliz)</span></span><span class="chip" title="">pgvector</span><span class="chip" title="also: chromadb">Chroma <span class="muted">(chromadb)</span></span><span class="chip" title="also: elastic">Elasticsearch <span class="muted">(elastic)</span></span><span class="chip" title="">OpenSearch</span><span class="chip" title="">Redis</span></td></tr><tr><td>Evaluation and observability<br><span class="muted">12 names</span></td><td><span class="chip" title="">LangSmith</span><span class="chip" title="">Langfuse</span><span class="chip" title="also: wandb, w&amp;b">Weights &amp; Biases <span class="muted">(wandb, w&amp;b)</span></span><span class="chip" title="">MLflow</span><span class="chip" title="also: arize phoenix, phoenix">Arize <span class="muted">(arize phoenix, phoenix)</span></span><span class="chip" title="">Braintrust</span><span class="chip" title="">Ragas</span><span class="chip" title="">Promptfoo</span><span class="chip" title="also: otel">OpenTelemetry <span class="muted">(otel)</span></span><span class="chip" title="">Datadog</span><span class="chip" title="">Prometheus</span><span class="chip" title="">Grafana</span></td></tr><tr><td>Cloud and infrastructure<br><span class="muted">18 names</span></td><td><span class="chip" title="also: amazon web services">AWS <span class="muted">(amazon web services)</span></span><span class="chip" title="also: google cloud, google cloud platform">GCP <span class="muted">(google cloud, google cloud platform)</span></span><span class="chip" title="also: microsoft azure">Azure <span class="muted">(microsoft azure)</span></span><span class="chip" title="also: k8s">Kubernetes <span class="muted">(k8s)</span></span><span class="chip" title="also: containers">Docker <span class="muted">(containers)</span></span><span class="chip" title="also: infrastructure as code, iac">Terraform <span class="muted">(infrastructure as code, iac)</span></span><span class="chip" title="also: ci, continuous integration">CI/CD <span class="muted">(ci, continuous integration)</span></span><span class="chip" title="">Linux</span><span class="chip" title="also: apache spark, pyspark">Spark <span class="muted">(apache spark, pyspark)</span></span><span class="chip" title="">Databricks</span><span class="chip" title="">Snowflake</span><span class="chip" title="also: apache airflow">Airflow <span class="muted">(apache airflow)</span></span><span class="chip" title="also: apache kafka">Kafka <span class="muted">(apache kafka)</span></span><span class="chip" title="">dbt</span><span class="chip" title="">Distributed systems</span><span class="chip" title="also: cloud, cloud computing, cloud infrastructure, cloud platforms">Cloud platforms <span class="muted">(cloud, cloud computing, cloud infrastructure, cloud platforms)</span></span><span class="chip" title="also: monitoring, logging, observability">Observability <span class="muted">(monitoring, logging, observability)</span></span><span class="chip" title="also: gpu, gpu programming">GPUs <span class="muted">(gpu, gpu programming)</span></span></td></tr><tr><td>Backend and web<br><span class="muted">15 names</span></td><td><span class="chip" title="">FastAPI</span><span class="chip" title="">Django</span><span class="chip" title="">Flask</span><span class="chip" title="also: node, nodejs">Node.js <span class="muted">(node, nodejs)</span></span><span class="chip" title="also: react.js, reactjs">React <span class="muted">(react.js, reactjs)</span></span><span class="chip" title="also: nextjs">Next.js <span class="muted">(nextjs)</span></span><span class="chip" title="also: rest, restful apis, apis, api design">REST APIs <span class="muted">(rest, restful apis, apis, api design)</span></span><span class="chip" title="">GraphQL</span><span class="chip" title="">gRPC</span><span class="chip" title="also: postgres">PostgreSQL <span class="muted">(postgres)</span></span><span class="chip" title="">MongoDB</span><span class="chip" title="">Microservices</span><span class="chip" title="also: software architecture">System design <span class="muted">(software architecture)</span></span><span class="chip" title="">Git</span><span class="chip" title="also: data structures, algorithms, data structures and algorithms">Algorithms and data structures <span class="muted">(data structures, algorithms, data structures and algorithms)</span></span></td></tr><tr><td>Customer-facing and soft skills<br><span class="muted">9 names</span></td><td><span class="chip" title="also: customer facing, client-facing, customer engagement, working with customers">Customer-facing work <span class="muted">(customer facing, client-facing, customer engagement, working with customers)</span></span><span class="chip" title="also: presentations, demos, technical demos, public speaking">Technical presentations <span class="muted">(presentations, demos, technical demos, public speaking)</span></span><span class="chip" title="also: stakeholder communication, executive communication">Stakeholder management <span class="muted">(stakeholder communication, executive communication)</span></span><span class="chip" title="also: presales, technical sales, sales engineering">Pre-sales <span class="muted">(presales, technical sales, sales engineering)</span></span><span class="chip" title="also: technical consulting, solution design">Consulting <span class="muted">(technical consulting, solution design)</span></span><span class="chip" title="also: discovery, scoping">Requirements gathering <span class="muted">(discovery, scoping)</span></span><span class="chip" title="also: communication skills, written communication">Communication <span class="muted">(communication skills, written communication)</span></span><span class="chip" title="also: product thinking, product intuition">Product sense <span class="muted">(product thinking, product intuition)</span></span><span class="chip" title="also: technical leadership, mentoring, team leadership">Leadership <span class="muted">(technical leadership, mentoring, team leadership)</span></span></td></tr></tbody></table></div></details>
+
+<h2 id="pay">Pay: whose number wins</h2>
+<ol>
+<li><b>The board's structured salary</b>, when there is one: Greenhouse pay ranges, Lever's salary range or Ashby's compensation. Saved with <code>"source": "board"</code>.</li>
+<li><b>Otherwise, a range the model found in the text</b>, which is common in the US because of pay-transparency laws. Saved with <code>"source": "text"</code>. It needs a minimum, a maximum and a currency.</li>
+<li><b>Otherwise none.</b> Bonuses, equity and “competitive salary” don't count.</li>
+</ol>
+<p class="muted">Of the first 210 postings read, 105 had a board salary, 17 a salary in the text, and 88 none. Workday boards have no salary field, so their pay always comes from the text.</p>
+
+<h2 id="again">When a posting is read again</h2>
+<ul>
+<li><b>Its text changed:</b> the stored fingerprint (hash) of the title and text no longer matches the form's.</li>
+<li><b>The prompt changed:</b> raising the version at the top of <code>prompts/job_extract.md</code> makes every open posting due again, newest first.</li>
+<li><b>Never for closed postings:</b> only open postings are read.</li>
+</ul>
+
+<h2 id="cost">Cost, speed and limits</h2>
+<div class="tablewrap"><table>
+<tbody>
+<tr><td style="width:34%">Per posting</td><td>About $0.0011: roughly 1,600 tokens in and 460 out (the first 210 postings cost $0.23 in 42 calls)</td></tr>
+<tr><td>Per run</td><td>Up to 200 postings (<code>AINEWS_MAX_JOBS_EXTRACT</code>), newest first: about $0.22 and 4 minutes for 40 calls</td></tr>
+<tr><td>Spending guard</td><td>Every call is checked against the caps first ($0.30 a run, $0.75 a day, $10 a month). A call that could break a cap isn't sent; reading stops cleanly and resumes on the next run</td></tr>
+<tr><td>A failed batch</td><td>Logged and skipped; its five postings stay unread and are tried again next run</td></tr>
+<tr><td>The backlog</td><td>On 13 Oct 2026, 2,065 postings were waiting: about ten daily runs, or five if you run it twice a day</td></tr>
+</tbody></table></div>
+
+<div class="next"><a href="poll.html">← 2 · Filter &amp; track</a><a href="report.html">4 · Report &amp; fit →</a></div>
+<p class="foot"><a href="#top">↑ Top</a><a href="../architecture-diagram.html">Architecture diagram</a><a href="../sources/job-boards.html">Job-board source list</a></p>
+</main>
+</body>
+</html>

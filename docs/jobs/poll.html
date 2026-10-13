@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job search: filter and track</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1f;--muted:#5f6368;--border:#d5d7db;--sel:#2f6fdb;--line:#8a8f98;
+--chip:#eef3fb;--chip-border:#9db5dc;--llm:#f3ecfd;--llm-border:#9a7ad1;--store:#eaf6ef;--store-border:#6fae8a;
+--ext:#fdf3e6;--ext-border:#d39b4a;--good:#1e7d4f;--bad:#b3261e;--code:#f1f2f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;
+--border:#3a3e45;--sel:#6ea2ff;--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;
+--store:#16271e;--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}}
+:root[data-theme="dark"]{--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;
+--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;--store:#16271e;
+--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+a{color:var(--sel)}
+.top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:14px;margin-bottom:18px}
+.top .home{font-weight:600;margin-right:6px}
+.top nav{display:flex;flex-wrap:wrap;gap:6px}
+.top nav a{padding:2px 9px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--panel)}
+.top nav a[aria-current]{border-color:var(--sel);color:var(--sel);font-weight:600}
+h1{font-size:24px;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;scroll-margin-top:12px}
+h3{font-size:16px;margin:22px 0 6px}
+p,li{max-width:84ch}
+.lede{color:var(--muted);margin:0 0 8px;font-size:16px}
+.lede b{color:var(--ink)}
+.snap{font-size:13.5px;color:var(--muted)}
+.muted{color:var(--muted);font-size:14px}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:5px}
+pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);border:1px solid var(--border);
+border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0}
+pre code{background:none;padding:0}
+.callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
+.callout.key{border-left:4px solid var(--sel)}
+.callout ol,.callout ul{margin:6px 0 0;padding-left:22px}
+.callout li{margin:5px 0}
+.frame{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0}
+.frame svg{display:block;width:100%;height:auto;min-width:760px}
+.frame.small svg{min-width:560px}
+svg text{fill:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+svg .t{font-size:14px;font-weight:600}
+svg .s{font-size:12px;fill:var(--muted)}
+svg .h{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;fill:var(--muted)}
+svg .ext{fill:var(--ext);stroke:var(--ext-border)}
+svg .comp{fill:var(--panel);stroke:var(--border)}
+svg .llm{fill:var(--llm);stroke:var(--llm-border)}
+svg .store{fill:var(--store);stroke:var(--store-border)}
+svg .dash{fill:none;stroke:var(--border);stroke-dasharray:5 4}
+svg rect{stroke-width:1.3}
+svg .a{fill:none;stroke:var(--line);stroke-width:1.6}
+svg .a.dim{stroke-dasharray:5 4}
+svg .tip{fill:var(--line)}
+svg .good{fill:var(--good)} svg .bad{fill:var(--bad)}
+svg a:hover rect,svg a:focus-visible rect{stroke:var(--sel);stroke-width:2.2}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:10px 0}
+.step{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink);display:block}
+a.step:hover{border-color:var(--sel)}
+.step b{display:block;margin-bottom:4px}
+.step span{font-size:14px;color:var(--muted)}
+.flow{list-style:none;padding:0;margin:10px 0;counter-reset:f}
+.flow>li{counter-increment:f;position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;
+padding:10px 14px 10px 50px;margin:0 0 18px;max-width:none}
+.flow>li::before{content:counter(f);position:absolute;left:12px;top:10px;width:26px;height:26px;border-radius:50%;
+background:var(--chip);border:1px solid var(--chip-border);text-align:center;font:600 13px/26px system-ui,sans-serif}
+.flow>li:not(:last-child)::after{content:"↓";position:absolute;left:20px;bottom:-19px;color:var(--line);font-size:14px}
+.flow ul{margin:4px 0 0;padding-left:20px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.group td{background:var(--chip);font-weight:600;font-size:13px}
+.chip{display:inline-block;font-size:12px;padding:0 8px;margin:1px 2px 1px 0;border:1px solid var(--chip-border);background:var(--chip);border-radius:999px;white-space:nowrap}
+.yes{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+.bars{display:grid;gap:8px;margin:12px 0}
+.bar{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+.bar .fill{height:22px;border-radius:5px;background:var(--chip);border:1px solid var(--chip-border);min-width:6px}
+.bar .fill.llm{background:var(--llm);border-color:var(--llm-border)}
+.bar .fill.store{background:var(--store);border-color:var(--store-border)}
+.bar .fill.ext{background:var(--ext);border-color:var(--ext-border)}
+.bar .lbl{font-size:14px}.bar .lbl b{font-variant-numeric:tabular-nums}
+details{margin:8px 0}
+summary{cursor:pointer;color:var(--sel);font-weight:600;font-size:14px}
+.words{display:grid;grid-template-columns:minmax(120px,210px) 1fr;gap:6px 16px;margin:0}
+.words dt{font-weight:600}.words dd{margin:0}
+@media (max-width:560px){.words{grid-template-columns:1fr}.words dd{margin-bottom:8px}}
+.tool{background:var(--panel);border:1px solid var(--sel);border-radius:10px;padding:12px 16px;margin:10px 0}
+.tool label{font-weight:600;font-size:14px;display:block;margin-bottom:4px}
+.tool input[type=text]{width:100%;max-width:520px;font:15px system-ui,sans-serif;padding:7px 10px;border:1px solid var(--border);
+border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool input[type=number]{width:72px;font:15px system-ui,sans-serif;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool .out{margin-top:8px;font-size:15px}
+.tool .row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:6px 0}
+.tool .nw{white-space:nowrap}
+.tool button{font:14px system-ui,sans-serif;padding:3px 10px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--ink);cursor:pointer}
+.tool button:hover{border-color:var(--sel)}
+.foot{margin-top:32px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+.next{margin-top:28px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.next a{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel);text-decoration:none}
+.next a:hover{border-color:var(--sel)}
+</style>
+</head>
+<body>
+<main>
+<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html" aria-current="page">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="report.html">4 · Report &amp; fit</a><a href="operate.html">Run &amp; change it</a></nav></div>
+<h1>2 · Filter and track postings</h1>
+<p class="lede">Each day, <code>ainews jobs</code> fetches every employer's postings and keeps the ones that fit you. That means a title in one of your <b>role families</b> and a location in one of your <b>markets</b>. It then compares them with what is stored, to find postings that are <b>new</b>, <b>changed</b> or <b>closed</b>. This is step J1 on the architecture diagram, and it uses no model.</p>
+
+<h2 id="titles">Filter 1: the title decides the role family</h2>
+<p>Titles are checked in three passes:</p>
+<ol>
+<li><b>Is it an engineering or science role at all?</b> The title must contain one of: engineer, engineering, architect, developer, scientist, deployed, deployment, strategist, researcher, technical staff. “Product Manager, AI” is not kept.</li>
+<li><b>Is it a role we never track?</b> Intern, internship, recruiter, account executive or manager, counsel, attorney, paralegal, designer, writer, sales or business development, talent.</li>
+<li><b>Which family?</b> The rules below are tried in order, and the <b>first match wins</b>. So “Applied AI Solutions Architect” is FDE / applied AI rather than Solutions engineer, and “LLM Inference Engineer” is LLM / GenAI rather than ML engineer.</li>
+</ol>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:5%">#</th><th style="width:19%">Family</th><th>Titles it catches</th><th style="width:24%">Where it counts</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><b>FDE / applied AI</b></td><td>Forward Deployed Engineer · Deployment Strategist · Applied AI Engineer · AI Deployment · AI/ML/LLM Solutions Engineer or Architect · Solutions Engineer, GenAI</td><td>Everywhere</td></tr>
+<tr><td>2</td><td><b>Solutions engineer</b></td><td>Solutions Engineer or Architect · Sales Engineer · Customer Engineer · Field Engineer · Technical Account Manager / Success Engineer</td><td>AI companies, or when the title names AI</td></tr>
+<tr><td>3</td><td><b>LLM / GenAI engineer</b></td><td>LLM Engineer · Large Language Model… · Generative AI / GenAI Engineer · Prompt Engineer · Engineer, Agents</td><td>Everywhere</td></tr>
+<tr><td>4</td><td><b>ML engineer</b></td><td>Machine Learning / ML Engineer · MLOps · Deep Learning · NLP · Computer Vision · Inference · Model Serving or Training</td><td>Everywhere</td></tr>
+<tr><td>5</td><td><b>ML research</b></td><td>Research Engineer · Research Scientist · Applied Scientist · Researcher</td><td>AI companies, or when the title names AI</td></tr>
+<tr><td>6</td><td><b>AI engineer</b></td><td>Any other engineering title naming AI or artificial intelligence (“Software Engineer, AI Platform”)</td><td>Everywhere</td></tr>
+<tr><td>7</td><td><b>AI engineer</b></td><td>Member of Technical Staff, the AI labs' generic title</td><td>AI companies only</td></tr>
+<tr><td>8</td><td><b>Data science</b></td><td>Data Scientist</td><td>AI companies, or when the title names AI</td></tr>
+</tbody></table></div>
+<p>“Names AI” means the title contains AI, ML, machine learning, LLM, GenAI or generative AI, deep learning, NLP or artificial intelligence. Your 5 <b>target families</b> are FDE / applied AI, Solutions engineer, LLM / GenAI engineer, AI engineer, ML engineer. ML research and data science are kept too, for context, and appear in the report as “Also open”.</p>
+
+<div class="tool" id="tester">
+<label for="title-in">Try a title</label>
+<input id="title-in" type="text" value="Senior Solutions Architect" autocomplete="off" spellcheck="false">
+<div class="row"><span class="muted">Examples:</span>
+<button type="button">Forward Deployed Engineer</button><button type="button">Solutions Architect, Generative AI</button>
+<button type="button">Member of Technical Staff</button><button type="button">Staff Software Engineer</button>
+<button type="button">ML Research Engineer</button><button type="button">AI Recruiter</button></div>
+<div class="out" id="title-out" aria-live="polite"></div>
+</div>
+<details><summary>The exact patterns (from src/ainews/jobs/filters.py)</summary><pre><code>Title must name a role:  (engineer|engineering|architect|developer|scientist|deployed|deployment|strategist|researcher|technical staff)
+Never kept:              \b(intern|internship|recruit\w*|account (executive|manager)|counsel|attorney|paralegal|designer|writer|sales development|business development|talent)\b
+&#x27;Names AI&#x27;:              (\bai\b|\bml\b|machine learning|\bllms?\b|gen(erative)?[ -]?ai|deep learning|\bnlp\b|artificial intelligence)
+
+Rules, first match wins:
+  fde_applied_ai  forward[- ]deployed|deployment strategist|applied ai|ai deployment|(ai|ml|llm|genai) solutions? (engineer|architect)|solutions? (engineer|architect),? (ai|ml|llm|genai|applied ai)
+  solutions_eng   (AI company or AI in title) solutions? (engineer|architect)|sales engineer|customer engineer|field engineer|technical (account|success) (manager|engineer)
+  llm_genai_eng   \bllms?\b|large language model|gen(erative)?[ -]?ai|prompt engineer|\bagents?\b.*engineer|engineer.*\bagents?\b
+  ml_eng          machine learning|\bml\b|mlops|ml ?ops|deep learning|\bnlp\b|computer vision|inference|model (serving|training)
+  ml_research     (AI company or AI in title) research (engineer|scientist)|applied scientist|researcher
+  ai_eng          \bai\b|artificial intelligence
+  ai_eng          (AI company or AI in title) member of technical staff
+  data_science    (AI company or AI in title) data scientist</code></pre></details>
+<p class="muted">The title gives only a first guess. When the model reads the posting (step 3) it judges the family again from the duties, and the report uses the model's judgement. For example, Cloudflare's “Senior Forward Deployed Infrastructure Engineer” deploys and runs infrastructure for strategic customers, so the model files it as a solutions role.</p>
+
+<h2 id="markets">Filter 2: the location decides the market</h2>
+<p>Your markets are the <b>USA, Canada, UK, Switzerland, UAE</b>, plus <b>remote</b>. A posting is kept if any of its locations is in one of them. Locations are free text, so they're matched in four ways:</p>
+<ul>
+<li><b>Country and city names</b>, in any case: “United States”, “Canada”, “London”, “Zürich”, “Dubai”, “Bay Area”, about 70 names in all.</li>
+<li><b>US state and Canadian province codes</b> after a comma, in capitals only: “Austin, TX”, “Toronto, ON”. Capitals only, because “New York, On-site” must not count as Ontario.</li>
+<li><b>The board's own country field</b>, when it has one: Lever's <code>country</code>, Ashby's address and Workday's <code>country</code>. This catches cities not on the list, such as Barclays' Whippany or Wilmington.</li>
+<li><b>Remote:</b> a remote job that names one of your countries counts in both (“Remote - US” is USA and remote). One that names no place counts as remote. One that names another country (“Remote - Germany”) is dropped.</li>
+</ul>
+<p class="muted">Generated by running the real filter on these examples:</p>
+<div class="tablewrap"><table><thead><tr><th>Location on the posting</th><th>Markets</th><th>Why</th></tr></thead><tbody><tr><td><code>San Francisco, CA</code></td><td><span class="chip">USA</span></td><td class="muted">a US city</td></tr><tr><td><code>Austin, TX</code></td><td><span class="chip">USA</span></td><td class="muted">a state code after a comma</td></tr><tr><td><code>Toronto, ON</code></td><td><span class="chip">Canada</span></td><td class="muted">a province code after a comma</td></tr><tr><td><code>London, UK</code></td><td><span class="chip">UK</span></td><td class="muted"></td></tr><tr><td><code>Zurich</code></td><td><span class="chip">Switzerland</span></td><td class="muted"></td></tr><tr><td><code>Dubai</code></td><td><span class="chip">UAE</span></td><td class="muted"></td></tr><tr><td><code>Wilmington</code><br><span class=muted>board country: United States of America</span></td><td><span class="chip">USA</span></td><td class="muted">city unknown, but the board says the country</td></tr><tr><td><code>New York, On-site</code></td><td><span class="chip">USA</span></td><td class="muted">“On” is not Ontario: codes match in capitals only</td></tr><tr><td><code>Remote</code></td><td><span class="chip">Remote</span></td><td class="muted">remote, no country named</td></tr><tr><td><code>Remote - US</code></td><td><span class="chip">USA</span> <span class="chip">Remote</span></td><td class="muted">remote within a market</td></tr><tr><td><code>US, CA, Remote</code></td><td><span class="chip">USA</span> <span class="chip">Remote</span></td><td class="muted">Workday style: country, state, city</td></tr><tr><td><code>Remote - Germany</code></td><td><span class="no">dropped</span></td><td class="muted">remote, but in another country</td></tr><tr><td><code>Paris</code><br><span class=muted>board: remote</span></td><td><span class="no">dropped</span></td><td class="muted">the board says remote, but names another place</td></tr><tr><td><code>Berlin</code></td><td><span class="no">dropped</span></td><td class="muted">outside our markets</td></tr></tbody></table></div>
+
+<h2 id="track">Compare with what's stored: new, changed, closed</h2>
+<p>Every kept posting gets a key: employer plus the board's own job ID (<code>salesforce:JR123456</code>). Each poll compares the kept postings with the stored ones:</p>
+<div class="frame">
+<svg viewBox="0 0 980 250" role="img" aria-label="A posting's life: new, open, missing, closed; a missing posting seen again is open; a closed posting that comes back is opened again">
+  <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="ext" x="20" y="96" width="140" height="68" rx="9"/>
+  <text class="t" x="90" y="120" text-anchor="middle">New</text>
+  <text class="s" x="90" y="138" text-anchor="middle">first sighting;</text>
+  <text class="s" x="90" y="154" text-anchor="middle">the model reads it</text>
+  <rect class="store" x="270" y="96" width="140" height="68" rx="9"/>
+  <text class="t" x="340" y="120" text-anchor="middle">Open</text>
+  <text class="s" x="340" y="138" text-anchor="middle">seen in today's poll</text>
+  <text class="s" x="340" y="154" text-anchor="middle">text changed → re-read</text>
+  <rect class="comp" x="540" y="96" width="140" height="68" rx="9"/>
+  <text class="t" x="610" y="120" text-anchor="middle">Missing</text>
+  <text class="s" x="610" y="138" text-anchor="middle">still counts as open</text>
+  <text class="s" x="610" y="154" text-anchor="middle">(grace period)</text>
+  <rect class="comp" x="820" y="96" width="140" height="68" rx="9"/>
+  <text class="t" x="890" y="120" text-anchor="middle">Closed</text>
+  <text class="s" x="890" y="138" text-anchor="middle">closed at = the time</text>
+  <text class="s" x="890" y="154" text-anchor="middle">it was last seen</text>
+  <path class="a" d="M160 130 H266" marker-end="url(#arr2)"/>
+  <text class="s" x="213" y="122" text-anchor="middle">saved</text>
+  <path class="a" d="M410 130 H536" marker-end="url(#arr2)"/>
+  <text class="s" x="473" y="122" text-anchor="middle">not in today's poll</text>
+  <path class="a" d="M680 130 H816" marker-end="url(#arr2)"/>
+  <text class="s" x="748" y="122" text-anchor="middle">unseen 36 hours</text>
+  <text class="s" x="748" y="150" text-anchor="middle">Workday: and page gone</text>
+  <path class="a" d="M610 96 C610 44, 340 44, 340 92" marker-end="url(#arr2)"/>
+  <text class="s" x="475" y="40" text-anchor="middle">seen again</text>
+  <path class="a" d="M890 164 C890 226, 340 226, 340 168" marker-end="url(#arr2)"/>
+  <text class="s" x="615" y="222" text-anchor="middle">comes back: open again</text>
+</svg>
+</div>
+<ul>
+<li><b>New:</b> a key that isn't stored yet. It's saved with “first seen” and “last seen” set to now.</li>
+<li><b>Changed:</b> the title or text differs from the stored copy (a fingerprint of the text, its hash, changed). The stored copy is updated, and the model reads it again in step 3.</li>
+<li><b>Missing:</b> stored and open, but not in today's poll. It isn't closed straight away: a board can drop a posting for a few hours, or a poll can go wrong.</li>
+<li><b>Closed:</b> missing for more than 36 hours, counted only from polls that worked. Its closing time is when it was last seen, so the report can later measure how long roles stay open.</li>
+<li><b>A board that fails closes nothing.</b> If an employer's board errors (timeout, server error), the error is recorded in <code>job_boards</code> and the board is skipped for the day. Its postings keep their old “last seen”.</li>
+</ul>
+
+<h2 id="workday">Workday: searching instead of listing</h2>
+<p>Workday has no full list, and search results are ranked by relevance, so their order shifts from day to day. A posting missing from today's results may still be open. So each Workday site goes through these steps:</p>
+<ol class="flow">
+<li><b>Check robots.txt.</b> The site must be one that its robots.txt allows. If not, the board is recorded as an error and nothing is fetched.</li>
+<li><b>Find the country filter.</b> One request reads the site's filters, and the country filter gets ticked for the US, Canada, UK, Switzerland and UAE. Tenants name it differently (<code>locationCountry</code>, <code>Location_Country</code>, NVIDIA's <code>locationHierarchy1</code>), so a filter counts if its name says “country” or at least a tenth of its values are your countries. That rule rejects city lists that happen to contain “United Kingdom” (Roche, AstraZeneca). Without a country filter (PayPal, Barclays, Capital One…), the search runs worldwide and the location filter after reading does the job.</li>
+<li><b>Search 7 keywords:</b> “machine learning” · “LLM” · “generative AI” · “AI engineer” · “artificial intelligence” · “forward deployed” · “applied AI”. Each keyword is paged 20 results at a time. Paging stops at a page with no title in a role family, a short page, the end of the results, or 10 pages.</li>
+<li><b>Sort each result</b> by its requisition ID (the employer's own job number):
+<ul><li><b>already stored</b> → marked as seen today, with no extra request;</li>
+<li><b>read before and outside your roles or markets</b> → ignored (the run remembers these, so they aren't read again);</li>
+<li><b>new</b> → read in step 5.</li></ul></li>
+<li><b>Read each new posting once.</b> One request fetches its own page: the full text, all its places, its country, its start date and whether it's remote. That's up to 60 per site per run; the rest wait for the next run. The title and location filters run again. A kept posting is saved as new; one that isn't is remembered as skipped. A posting that no longer takes applications counts as gone.</li>
+<li><b>Check the missing ones.</b> A stored posting not seen for 36 hours has its own page opened, oldest first, up to 30 per site per run:
+<ul><li><b>gone</b> (page not found, no longer posted, applications closed) → <b>closed</b>;</li>
+<li><b>still there</b> → kept open (it only dropped down the search ranking);</li>
+<li><b>an error</b> → no decision; it's checked again next run.</li></ul></li>
+<li><b>Save.</b> The searching and reading for 4 sites run at the same time; saving happens one site at a time, in one place.</li>
+</ol>
+<div class="callout">
+<p><b>On 13 Oct 2026:</b> the first Workday run took 6 minutes and found 885 AI-titled results. It saved 503, and 281 waited for the next run. The second run took 4 minutes: 536 results were already stored and needed no request, and 148 were new. The daily run settles at about 4 minutes, mostly spent searching.</p>
+</div>
+
+<h2 id="stored">What gets stored</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:22%">Table</th><th>One row per</th><th>Columns</th></tr></thead>
+<tbody>
+<tr><td><code>job_postings</code></td><td>kept posting, open or closed</td><td>key (employer:job ID), employer, title, link, locations, markets, title family (the title's guess), department, text (up to 12,000 characters), text hash, the board's salary, posted date, first seen, last seen, closed at</td></tr>
+<tr><td><code>job_boards</code></td><td>employer</td><td>last poll time, status (<code>ok</code> or the error), postings listed (Workday: AI-titled search results), postings kept</td></tr>
+<tr><td><code>snapshots</code></td><td>Workday site</td><td><code>workday:&lt;employer&gt;:skipped</code>: job IDs read before and outside your roles or markets</td></tr>
+</tbody></table></div>
+<p class="muted">Only kept postings are stored. The other ~11,000 postings on the boards are counted in <code>job_boards</code> but not saved.</p>
+
+<script>
+(() => {
+  const R = {"role": "(engineer|engineering|architect|developer|scientist|deployed|deployment|strategist|researcher|technical staff)", "exclude": "\\b(intern|internship|recruit\\w*|account (executive|manager)|counsel|attorney|paralegal|designer|writer|sales development|business development|talent)\\b", "ai": "(\\bai\\b|\\bml\\b|machine learning|\\bllms?\\b|gen(erative)?[ -]?ai|deep learning|\\bnlp\\b|artificial intelligence)", "rules": [["fde_applied_ai", "forward[- ]deployed|deployment strategist|applied ai|ai deployment|(ai|ml|llm|genai) solutions? (engineer|architect)|solutions? (engineer|architect),? (ai|ml|llm|genai|applied ai)", false], ["solutions_eng", "solutions? (engineer|architect)|sales engineer|customer engineer|field engineer|technical (account|success) (manager|engineer)", true], ["llm_genai_eng", "\\bllms?\\b|large language model|gen(erative)?[ -]?ai|prompt engineer|\\bagents?\\b.*engineer|engineer.*\\bagents?\\b", false], ["ml_eng", "machine learning|\\bml\\b|mlops|ml ?ops|deep learning|\\bnlp\\b|computer vision|inference|model (serving|training)", false], ["ml_research", "research (engineer|scientist)|applied scientist|researcher", true], ["ai_eng", "\\bai\\b|artificial intelligence", false], ["ai_eng", "member of technical staff", true], ["data_science", "data scientist", true]], "names": {"fde_applied_ai": "FDE / applied AI", "solutions_eng": "Solutions engineer", "llm_genai_eng": "LLM / GenAI engineer", "ai_eng": "AI engineer", "ml_eng": "ML engineer", "ml_research": "ML research", "data_science": "Data science", "other": "Other"}};
+  const role = new RegExp(R.role, "i"), excl = new RegExp(R.exclude, "i"), ai = new RegExp(R.ai, "i");
+  const rules = R.rules.map(([f, p, n]) => [f, new RegExp(p, "i"), n]);
+  const family = (t, aiNative) => {
+    if (excl.test(t)) return [null, "a role we never track"];
+    if (!role.test(t)) return [null, "not an engineering or science title"];
+    const namesAi = ai.test(t);
+    let blocked = null;
+    for (const [f, p, needsAi] of rules) {
+      if (!p.test(t)) continue;
+      if (!needsAi || aiNative || namesAi) return [f, null];
+      blocked = blocked || f;
+    }
+    return [null, blocked ? `would be ${R.names[blocked]}, but needs an AI company or AI in the title` : "no rule matches"];
+  };
+  const inp = document.getElementById("title-in"), out = document.getElementById("title-out");
+  const esc = s => s.replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  const line = (where, [f, why]) => f
+    ? `<div>${where}: <span class="yes">kept</span> as <b>${R.names[f]}</b></div>`
+    : `<div>${where}: <span class="no">not kept</span> <span class="muted">(${esc(why)})</span></div>`;
+  const run = () => {
+    const t = inp.value.trim();
+    out.innerHTML = t ? line("At an AI company", family(t, true)) + line("At any other employer", family(t, false)) : "";
+  };
+  inp.addEventListener("input", run);
+  document.querySelectorAll("#tester button").forEach(b => b.addEventListener("click", () => { inp.value = b.textContent; run(); }));
+  run();
+})();
+</script>
+
+<div class="next"><a href="sources.html">← 1 · Sources</a><a href="extract.html">3 · Read →</a></div>
+<p class="foot"><a href="#top">↑ Top</a><a href="../architecture-diagram.html">Architecture diagram</a><a href="../sources/job-boards.html">Job-board source list</a></p>
+</main>
+</body>
+</html>

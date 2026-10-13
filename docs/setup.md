@@ -134,7 +134,7 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
 
 ## 5. Jobs lane and the weekly jobs report
 
-Nothing to sign up for: the employers' job boards (Greenhouse, Lever, Ashby) are public APIs, and the Workday career sites of banks, pharma and big tech answer the same JSON requests their own pages send.
+Nothing to sign up for: the employers' job boards (Greenhouse, Lever, Ashby) are public APIs, and the Workday career sites of banks, pharma and big tech answer the same JSON requests their own pages send. How each step works, with the settings and what to do when something looks wrong: [How the job search works](jobs/index.html) and [Run and change it](jobs/operate.html).
 
 1. **Your skills.** `private/skills.yaml` lists the skills you `have` and are `learning`; the report's "Your fit" section compares them with what postings ask for. It was drafted from `private/profile.md`, so check it. Names follow [config/skills.yaml](../config/skills.yaml) (aliases such as `k8s` work).
 2. **Daily, after the brief:**

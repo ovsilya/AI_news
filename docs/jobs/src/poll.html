@@ -1,0 +1,151 @@
+<h1>2 · Filter and track postings</h1>
+<p class="lede">Each day, <code>ainews jobs</code> fetches every employer's postings and keeps the ones that fit you. That means a title in one of your <b>role families</b> and a location in one of your <b>markets</b>. It then compares them with what is stored, to find postings that are <b>new</b>, <b>changed</b> or <b>closed</b>. This is step J1 on the architecture diagram, and it uses no model.</p>
+
+<h2 id="titles">Filter 1: the title decides the role family</h2>
+<p>Titles are checked in three passes:</p>
+<ol>
+<li><b>Is it an engineering or science role at all?</b> The title must contain one of: engineer, engineering, architect, developer, scientist, deployed, deployment, strategist, researcher, technical staff. “Product Manager, AI” is not kept.</li>
+<li><b>Is it a role we never track?</b> Intern, internship, recruiter, account executive or manager, counsel, attorney, paralegal, designer, writer, sales or business development, talent.</li>
+<li><b>Which family?</b> The rules below are tried in order, and the <b>first match wins</b>. So “Applied AI Solutions Architect” is FDE / applied AI rather than Solutions engineer, and “LLM Inference Engineer” is LLM / GenAI rather than ML engineer.</li>
+</ol>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:5%">#</th><th style="width:19%">Family</th><th>Titles it catches</th><th style="width:24%">Where it counts</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><b>FDE / applied AI</b></td><td>Forward Deployed Engineer · Deployment Strategist · Applied AI Engineer · AI Deployment · AI/ML/LLM Solutions Engineer or Architect · Solutions Engineer, GenAI</td><td>Everywhere</td></tr>
+<tr><td>2</td><td><b>Solutions engineer</b></td><td>Solutions Engineer or Architect · Sales Engineer · Customer Engineer · Field Engineer · Technical Account Manager / Success Engineer</td><td>AI companies, or when the title names AI</td></tr>
+<tr><td>3</td><td><b>LLM / GenAI engineer</b></td><td>LLM Engineer · Large Language Model… · Generative AI / GenAI Engineer · Prompt Engineer · Engineer, Agents</td><td>Everywhere</td></tr>
+<tr><td>4</td><td><b>ML engineer</b></td><td>Machine Learning / ML Engineer · MLOps · Deep Learning · NLP · Computer Vision · Inference · Model Serving or Training</td><td>Everywhere</td></tr>
+<tr><td>5</td><td><b>ML research</b></td><td>Research Engineer · Research Scientist · Applied Scientist · Researcher</td><td>AI companies, or when the title names AI</td></tr>
+<tr><td>6</td><td><b>AI engineer</b></td><td>Any other engineering title naming AI or artificial intelligence (“Software Engineer, AI Platform”)</td><td>Everywhere</td></tr>
+<tr><td>7</td><td><b>AI engineer</b></td><td>Member of Technical Staff, the AI labs' generic title</td><td>AI companies only</td></tr>
+<tr><td>8</td><td><b>Data science</b></td><td>Data Scientist</td><td>AI companies, or when the title names AI</td></tr>
+</tbody></table></div>
+<p>“Names AI” means the title contains AI, ML, machine learning, LLM, GenAI or generative AI, deep learning, NLP or artificial intelligence. Your {{n_targets}} <b>target families</b> are {{targets}}. ML research and data science are kept too, for context, and appear in the report as “Also open”.</p>
+
+<div class="tool" id="tester">
+<label for="title-in">Try a title</label>
+<input id="title-in" type="text" value="Senior Solutions Architect" autocomplete="off" spellcheck="false">
+<div class="row"><span class="muted">Examples:</span>
+<button type="button">Forward Deployed Engineer</button><button type="button">Solutions Architect, Generative AI</button>
+<button type="button">Member of Technical Staff</button><button type="button">Staff Software Engineer</button>
+<button type="button">ML Research Engineer</button><button type="button">AI Recruiter</button></div>
+<div class="out" id="title-out" aria-live="polite"></div>
+</div>
+<details><summary>The exact patterns (from src/ainews/jobs/filters.py)</summary>{{rules_detail}}</details>
+<p class="muted">The title gives only a first guess. When the model reads the posting (step 3) it judges the family again from the duties, and the report uses the model's judgement. For example, Cloudflare's “Senior Forward Deployed Infrastructure Engineer” deploys and runs infrastructure for strategic customers, so the model files it as a solutions role.</p>
+
+<h2 id="markets">Filter 2: the location decides the market</h2>
+<p>Your markets are the <b>USA, Canada, UK, Switzerland, UAE</b>, plus <b>remote</b>. A posting is kept if any of its locations is in one of them. Locations are free text, so they're matched in four ways:</p>
+<ul>
+<li><b>Country and city names</b>, in any case: “United States”, “Canada”, “London”, “Zürich”, “Dubai”, “Bay Area”, about 70 names in all.</li>
+<li><b>US state and Canadian province codes</b> after a comma, in capitals only: “Austin, TX”, “Toronto, ON”. Capitals only, because “New York, On-site” must not count as Ontario.</li>
+<li><b>The board's own country field</b>, when it has one: Lever's <code>country</code>, Ashby's address and Workday's <code>country</code>. This catches cities not on the list, such as Barclays' Whippany or Wilmington.</li>
+<li><b>Remote:</b> a remote job that names one of your countries counts in both (“Remote - US” is USA and remote). One that names no place counts as remote. One that names another country (“Remote - Germany”) is dropped.</li>
+</ul>
+<p class="muted">Generated by running the real filter on these examples:</p>
+{{market_examples}}
+
+<h2 id="track">Compare with what's stored: new, changed, closed</h2>
+<p>Every kept posting gets a key: employer plus the board's own job ID (<code>salesforce:JR123456</code>). Each poll compares the kept postings with the stored ones:</p>
+<div class="frame">
+<svg viewBox="0 0 980 250" role="img" aria-label="A posting's life: new, open, missing, closed; a missing posting seen again is open; a closed posting that comes back is opened again">
+  <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="ext" x="20" y="96" width="140" height="68" rx="9"/>
+  <text class="t" x="90" y="120" text-anchor="middle">New</text>
+  <text class="s" x="90" y="138" text-anchor="middle">first sighting;</text>
+  <text class="s" x="90" y="154" text-anchor="middle">the model reads it</text>
+  <rect class="store" x="270" y="96" width="140" height="68" rx="9"/>
+  <text class="t" x="340" y="120" text-anchor="middle">Open</text>
+  <text class="s" x="340" y="138" text-anchor="middle">seen in today's poll</text>
+  <text class="s" x="340" y="154" text-anchor="middle">text changed → re-read</text>
+  <rect class="comp" x="540" y="96" width="140" height="68" rx="9"/>
+  <text class="t" x="610" y="120" text-anchor="middle">Missing</text>
+  <text class="s" x="610" y="138" text-anchor="middle">still counts as open</text>
+  <text class="s" x="610" y="154" text-anchor="middle">(grace period)</text>
+  <rect class="comp" x="820" y="96" width="140" height="68" rx="9"/>
+  <text class="t" x="890" y="120" text-anchor="middle">Closed</text>
+  <text class="s" x="890" y="138" text-anchor="middle">closed at = the time</text>
+  <text class="s" x="890" y="154" text-anchor="middle">it was last seen</text>
+  <path class="a" d="M160 130 H266" marker-end="url(#arr2)"/>
+  <text class="s" x="213" y="122" text-anchor="middle">saved</text>
+  <path class="a" d="M410 130 H536" marker-end="url(#arr2)"/>
+  <text class="s" x="473" y="122" text-anchor="middle">not in today's poll</text>
+  <path class="a" d="M680 130 H816" marker-end="url(#arr2)"/>
+  <text class="s" x="748" y="122" text-anchor="middle">unseen {{close_after_h}} hours</text>
+  <text class="s" x="748" y="150" text-anchor="middle">Workday: and page gone</text>
+  <path class="a" d="M610 96 C610 44, 340 44, 340 92" marker-end="url(#arr2)"/>
+  <text class="s" x="475" y="40" text-anchor="middle">seen again</text>
+  <path class="a" d="M890 164 C890 226, 340 226, 340 168" marker-end="url(#arr2)"/>
+  <text class="s" x="615" y="222" text-anchor="middle">comes back: open again</text>
+</svg>
+</div>
+<ul>
+<li><b>New:</b> a key that isn't stored yet. It's saved with “first seen” and “last seen” set to now.</li>
+<li><b>Changed:</b> the title or text differs from the stored copy (a fingerprint of the text, its hash, changed). The stored copy is updated, and the model reads it again in step 3.</li>
+<li><b>Missing:</b> stored and open, but not in today's poll. It isn't closed straight away: a board can drop a posting for a few hours, or a poll can go wrong.</li>
+<li><b>Closed:</b> missing for more than {{close_after_h}} hours, counted only from polls that worked. Its closing time is when it was last seen, so the report can later measure how long roles stay open.</li>
+<li><b>A board that fails closes nothing.</b> If an employer's board errors (timeout, server error), the error is recorded in <code>job_boards</code> and the board is skipped for the day. Its postings keep their old “last seen”.</li>
+</ul>
+
+<h2 id="workday">Workday: searching instead of listing</h2>
+<p>Workday has no full list, and search results are ranked by relevance, so their order shifts from day to day. A posting missing from today's results may still be open. So each Workday site goes through these steps:</p>
+<ol class="flow">
+<li><b>Check robots.txt.</b> The site must be one that its robots.txt allows. If not, the board is recorded as an error and nothing is fetched.</li>
+<li><b>Find the country filter.</b> One request reads the site's filters, and the country filter gets ticked for the US, Canada, UK, Switzerland and UAE. Tenants name it differently (<code>locationCountry</code>, <code>Location_Country</code>, NVIDIA's <code>locationHierarchy1</code>), so a filter counts if its name says “country” or at least a tenth of its values are your countries. That rule rejects city lists that happen to contain “United Kingdom” (Roche, AstraZeneca). Without a country filter (PayPal, Barclays, Capital One…), the search runs worldwide and the location filter after reading does the job.</li>
+<li><b>Search {{n_queries}} keywords:</b> {{queries}}. Each keyword is paged {{page_size}} results at a time. Paging stops at a page with no title in a role family, a short page, the end of the results, or {{max_pages}} pages.</li>
+<li><b>Sort each result</b> by its requisition ID (the employer's own job number):
+<ul><li><b>already stored</b> → marked as seen today, with no extra request;</li>
+<li><b>read before and outside your roles or markets</b> → ignored (the run remembers these, so they aren't read again);</li>
+<li><b>new</b> → read in step 5.</li></ul></li>
+<li><b>Read each new posting once.</b> One request fetches its own page: the full text, all its places, its country, its start date and whether it's remote. That's up to {{max_details}} per site per run; the rest wait for the next run. The title and location filters run again. A kept posting is saved as new; one that isn't is remembered as skipped. A posting that no longer takes applications counts as gone.</li>
+<li><b>Check the missing ones.</b> A stored posting not seen for {{close_after_h}} hours has its own page opened, oldest first, up to {{max_checks}} per site per run:
+<ul><li><b>gone</b> (page not found, no longer posted, applications closed) → <b>closed</b>;</li>
+<li><b>still there</b> → kept open (it only dropped down the search ranking);</li>
+<li><b>an error</b> → no decision; it's checked again next run.</li></ul></li>
+<li><b>Save.</b> The searching and reading for {{workers}} sites run at the same time; saving happens one site at a time, in one place.</li>
+</ol>
+<div class="callout">
+<p><b>On 13 Oct 2026:</b> the first Workday run took 6 minutes and found 885 AI-titled results. It saved 503, and 281 waited for the next run. The second run took 4 minutes: 536 results were already stored and needed no request, and 148 were new. The daily run settles at about 4 minutes, mostly spent searching.</p>
+</div>
+
+<h2 id="stored">What gets stored</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:22%">Table</th><th>One row per</th><th>Columns</th></tr></thead>
+<tbody>
+<tr><td><code>job_postings</code></td><td>kept posting, open or closed</td><td>key (employer:job ID), employer, title, link, locations, markets, title family (the title's guess), department, text (up to {{description_chars}} characters), text hash, the board's salary, posted date, first seen, last seen, closed at</td></tr>
+<tr><td><code>job_boards</code></td><td>employer</td><td>last poll time, status (<code>ok</code> or the error), postings listed (Workday: AI-titled search results), postings kept</td></tr>
+<tr><td><code>snapshots</code></td><td>Workday site</td><td><code>workday:&lt;employer&gt;:skipped</code>: job IDs read before and outside your roles or markets</td></tr>
+</tbody></table></div>
+<p class="muted">Only kept postings are stored. The other ~11,000 postings on the boards are counted in <code>job_boards</code> but not saved.</p>
+
+<script>
+(() => {
+  const R = {{tester_data}};
+  const role = new RegExp(R.role, "i"), excl = new RegExp(R.exclude, "i"), ai = new RegExp(R.ai, "i");
+  const rules = R.rules.map(([f, p, n]) => [f, new RegExp(p, "i"), n]);
+  const family = (t, aiNative) => {
+    if (excl.test(t)) return [null, "a role we never track"];
+    if (!role.test(t)) return [null, "not an engineering or science title"];
+    const namesAi = ai.test(t);
+    let blocked = null;
+    for (const [f, p, needsAi] of rules) {
+      if (!p.test(t)) continue;
+      if (!needsAi || aiNative || namesAi) return [f, null];
+      blocked = blocked || f;
+    }
+    return [null, blocked ? `would be ${R.names[blocked]}, but needs an AI company or AI in the title` : "no rule matches"];
+  };
+  const inp = document.getElementById("title-in"), out = document.getElementById("title-out");
+  const esc = s => s.replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  const line = (where, [f, why]) => f
+    ? `<div>${where}: <span class="yes">kept</span> as <b>${R.names[f]}</b></div>`
+    : `<div>${where}: <span class="no">not kept</span> <span class="muted">(${esc(why)})</span></div>`;
+  const run = () => {
+    const t = inp.value.trim();
+    out.innerHTML = t ? line("At an AI company", family(t, true)) + line("At any other employer", family(t, false)) : "";
+  };
+  inp.addEventListener("input", run);
+  document.querySelectorAll("#tester button").forEach(b => b.addEventListener("click", () => { inp.value = b.textContent; run(); }));
+  run();
+})();
+</script>

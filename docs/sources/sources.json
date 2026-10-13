@@ -832,9 +832,10 @@
     {
       "id": "src-jobs",
       "slug": "job-boards",
+      "guide": {"href": "../jobs/index.html", "text": "How the job search works: the sources, the filters, the model and the weekly report"},
       "name": "Job boards",
       "what": "Live now: the Greenhouse, Lever and Ashby job-board APIs for 97 employers, mostly AI companies, and the Workday career sites of 32 banks, insurers, pharma and big-tech employers such as NVIDIA, Salesforce, Capital One, TD, Barclays and Roche (config/companies.yaml). Together about 2,400 open postings in your target roles and markets. Next, for all five markets: SuccessFactors, Oracle Recruiting and SmartRecruiters career sites; SerpApi Google Jobs twice a week (free tier); and your job-alert emails read through Gmail. Extras: the Reed API (UK, daily), swissdevjobs.ch RSS (CH, daily) and USAJobs (US, weekly). The UAE relies on SerpApi plus alert emails, and on global employers' UAE roles (Salesforce has FDE roles in Dubai).",
-      "why": "Data straight from employers: legal, free, with full descriptions and often salary. SerpApi and alert emails fill the big-tech, bank and enterprise gaps without scraping LinkedIn or Indeed. Your alert emails are legal to parse because they are sent to you.",
+      "why": "Data straight from employers: legal, free, with full descriptions and often salary. SerpApi and alert emails will fill the remaining gaps without scraping LinkedIn or Indeed. Your alert emails are legal to parse because they are sent to you.",
       "sources": [
         {
           "name": "Greenhouse job boards",

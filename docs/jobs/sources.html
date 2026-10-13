@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job search: where postings come from</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1f;--muted:#5f6368;--border:#d5d7db;--sel:#2f6fdb;--line:#8a8f98;
+--chip:#eef3fb;--chip-border:#9db5dc;--llm:#f3ecfd;--llm-border:#9a7ad1;--store:#eaf6ef;--store-border:#6fae8a;
+--ext:#fdf3e6;--ext-border:#d39b4a;--good:#1e7d4f;--bad:#b3261e;--code:#f1f2f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;
+--border:#3a3e45;--sel:#6ea2ff;--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;
+--store:#16271e;--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}}
+:root[data-theme="dark"]{--bg:#141518;--panel:#1c1e22;--ink:#e8e9eb;--muted:#a0a4ab;--border:#3a3e45;--sel:#6ea2ff;
+--line:#7d838c;--chip:#18202c;--chip-border:#3f5a85;--llm:#261d36;--llm-border:#8c6cc6;--store:#16271e;
+--store-border:#4f8d69;--ext:#2b2216;--ext-border:#b07f38;--good:#5cc28d;--bad:#ff8a80;--code:#25282d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+a{color:var(--sel)}
+.top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:14px;margin-bottom:18px}
+.top .home{font-weight:600;margin-right:6px}
+.top nav{display:flex;flex-wrap:wrap;gap:6px}
+.top nav a{padding:2px 9px;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--ink);background:var(--panel)}
+.top nav a[aria-current]{border-color:var(--sel);color:var(--sel);font-weight:600}
+h1{font-size:24px;margin:0 0 6px}
+h2{font-size:19px;margin:36px 0 8px;scroll-margin-top:12px}
+h3{font-size:16px;margin:22px 0 6px}
+p,li{max-width:84ch}
+.lede{color:var(--muted);margin:0 0 8px;font-size:16px}
+.lede b{color:var(--ink)}
+.snap{font-size:13.5px;color:var(--muted)}
+.muted{color:var(--muted);font-size:14px}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:5px}
+pre{font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);border:1px solid var(--border);
+border-radius:10px;padding:12px 14px;overflow-x:auto;margin:8px 0}
+pre code{background:none;padding:0}
+.callout{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
+.callout.key{border-left:4px solid var(--sel)}
+.callout ol,.callout ul{margin:6px 0 0;padding-left:22px}
+.callout li{margin:5px 0}
+.frame{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0}
+.frame svg{display:block;width:100%;height:auto;min-width:760px}
+.frame.small svg{min-width:560px}
+svg text{fill:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+svg .t{font-size:14px;font-weight:600}
+svg .s{font-size:12px;fill:var(--muted)}
+svg .h{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;fill:var(--muted)}
+svg .ext{fill:var(--ext);stroke:var(--ext-border)}
+svg .comp{fill:var(--panel);stroke:var(--border)}
+svg .llm{fill:var(--llm);stroke:var(--llm-border)}
+svg .store{fill:var(--store);stroke:var(--store-border)}
+svg .dash{fill:none;stroke:var(--border);stroke-dasharray:5 4}
+svg rect{stroke-width:1.3}
+svg .a{fill:none;stroke:var(--line);stroke-width:1.6}
+svg .a.dim{stroke-dasharray:5 4}
+svg .tip{fill:var(--line)}
+svg .good{fill:var(--good)} svg .bad{fill:var(--bad)}
+svg a:hover rect,svg a:focus-visible rect{stroke:var(--sel);stroke-width:2.2}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:10px 0}
+.step{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink);display:block}
+a.step:hover{border-color:var(--sel)}
+.step b{display:block;margin-bottom:4px}
+.step span{font-size:14px;color:var(--muted)}
+.flow{list-style:none;padding:0;margin:10px 0;counter-reset:f}
+.flow>li{counter-increment:f;position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;
+padding:10px 14px 10px 50px;margin:0 0 18px;max-width:none}
+.flow>li::before{content:counter(f);position:absolute;left:12px;top:10px;width:26px;height:26px;border-radius:50%;
+background:var(--chip);border:1px solid var(--chip-border);text-align:center;font:600 13px/26px system-ui,sans-serif}
+.flow>li:not(:last-child)::after{content:"↓";position:absolute;left:20px;bottom:-19px;color:var(--line);font-size:14px}
+.flow ul{margin:4px 0 0;padding-left:20px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.group td{background:var(--chip);font-weight:600;font-size:13px}
+.chip{display:inline-block;font-size:12px;padding:0 8px;margin:1px 2px 1px 0;border:1px solid var(--chip-border);background:var(--chip);border-radius:999px;white-space:nowrap}
+.yes{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+.bars{display:grid;gap:8px;margin:12px 0}
+.bar{display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+.bar .fill{height:22px;border-radius:5px;background:var(--chip);border:1px solid var(--chip-border);min-width:6px}
+.bar .fill.llm{background:var(--llm);border-color:var(--llm-border)}
+.bar .fill.store{background:var(--store);border-color:var(--store-border)}
+.bar .fill.ext{background:var(--ext);border-color:var(--ext-border)}
+.bar .lbl{font-size:14px}.bar .lbl b{font-variant-numeric:tabular-nums}
+details{margin:8px 0}
+summary{cursor:pointer;color:var(--sel);font-weight:600;font-size:14px}
+.words{display:grid;grid-template-columns:minmax(120px,210px) 1fr;gap:6px 16px;margin:0}
+.words dt{font-weight:600}.words dd{margin:0}
+@media (max-width:560px){.words{grid-template-columns:1fr}.words dd{margin-bottom:8px}}
+.tool{background:var(--panel);border:1px solid var(--sel);border-radius:10px;padding:12px 16px;margin:10px 0}
+.tool label{font-weight:600;font-size:14px;display:block;margin-bottom:4px}
+.tool input[type=text]{width:100%;max-width:520px;font:15px system-ui,sans-serif;padding:7px 10px;border:1px solid var(--border);
+border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool input[type=number]{width:72px;font:15px system-ui,sans-serif;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink)}
+.tool .out{margin-top:8px;font-size:15px}
+.tool .row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:6px 0}
+.tool .nw{white-space:nowrap}
+.tool button{font:14px system-ui,sans-serif;padding:3px 10px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--ink);cursor:pointer}
+.tool button:hover{border-color:var(--sel)}
+.foot{margin-top:32px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+.next{margin-top:28px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.next a{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel);text-decoration:none}
+.next a:hover{border-color:var(--sel)}
+</style>
+</head>
+<body>
+<main>
+<div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html">Overview</a><a href="sources.html" aria-current="page">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="report.html">4 · Report &amp; fit</a><a href="operate.html">Run &amp; change it</a></nav></div>
+<h1>1 · Where postings come from</h1>
+<p class="lede">Every posting comes from the employer's own career system: <b>129 employers</b>, 97 of them on Greenhouse, Lever or Ashby (35, 5 and 57) and 32 on Workday. These are the same public endpoints the employers' career pages use, so there are no keys and no logins, and none of the job sites whose terms forbid programs.</p>
+
+<h2>Two kinds of career systems</h2>
+<p>The difference that shapes everything downstream: Greenhouse, Lever and Ashby hand over an employer's <b>full list</b> of open jobs in one request. Workday only offers <b>search</b>, 20 results at a time and ranked by relevance, so there is no full list to compare against.</p>
+<div class="frame">
+<svg viewBox="0 0 1000 276" role="img" aria-label="Two paths: a job-board API returns the full list in one request; Workday is searched with AI keywords, new postings are read one by one, and a missing posting's own page is checked before it is closed">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="h" x="10" y="26">Greenhouse · Lever · Ashby · 97 employers</text>
+  <rect class="ext" x="10" y="36" width="210" height="84" rx="9"/>
+  <text class="t" x="115" y="62" text-anchor="middle">Job-board API</text>
+  <text class="s" x="115" y="82" text-anchor="middle">one request</text>
+  <text class="s" x="115" y="100" text-anchor="middle">per employer</text>
+  <rect class="comp" x="262" y="36" width="210" height="84" rx="9"/>
+  <text class="t" x="367" y="62" text-anchor="middle">The full list</text>
+  <text class="s" x="367" y="82" text-anchor="middle">every open posting, with</text>
+  <text class="s" x="367" y="100" text-anchor="middle">its text and often its pay</text>
+  <a href="poll.html#titles"><rect class="comp" x="514" y="36" width="210" height="84" rx="9"/>
+  <text class="t" x="619" y="62" text-anchor="middle">Keep role + market</text>
+  <text class="s" x="619" y="82" text-anchor="middle">title and location</text>
+  <text class="s" x="619" y="100" text-anchor="middle">filters (step 2)</text></a>
+  <a href="poll.html#track"><rect class="comp" x="766" y="36" width="224" height="84" rx="9"/>
+  <text class="t" x="878" y="62" text-anchor="middle">Not in the list?</text>
+  <text class="s" x="878" y="82" text-anchor="middle">missing for 36 hours</text>
+  <text class="s" x="878" y="100" text-anchor="middle">→ closed</text></a>
+  <path class="a" d="M220 78 H258" marker-end="url(#arr)"/>
+  <path class="a" d="M472 78 H510" marker-end="url(#arr)"/>
+  <path class="a" d="M724 78 H762" marker-end="url(#arr)"/>
+
+  <text class="h" x="10" y="168">Workday · 32 employers</text>
+  <rect class="ext" x="10" y="178" width="210" height="84" rx="9"/>
+  <text class="t" x="115" y="204" text-anchor="middle">Career-site search</text>
+  <text class="s" x="115" y="224" text-anchor="middle">7 AI keywords</text>
+  <text class="s" x="115" y="242" text-anchor="middle">20 results a page</text>
+  <rect class="comp" x="262" y="178" width="210" height="84" rx="9"/>
+  <text class="t" x="367" y="204" text-anchor="middle">AI titles in results</text>
+  <text class="s" x="367" y="224" text-anchor="middle">ranked by relevance,</text>
+  <text class="s" x="367" y="242" text-anchor="middle">no full list</text>
+  <a href="poll.html#workday"><rect class="comp" x="514" y="178" width="210" height="84" rx="9"/>
+  <text class="t" x="619" y="204" text-anchor="middle">New? Read it once</text>
+  <text class="s" x="619" y="224" text-anchor="middle">one request per posting,</text>
+  <text class="s" x="619" y="242" text-anchor="middle">then role + market</text></a>
+  <a href="poll.html#workday"><rect class="comp" x="766" y="178" width="224" height="84" rx="9"/>
+  <text class="t" x="878" y="204" text-anchor="middle">Missing 36 hours?</text>
+  <text class="s" x="878" y="224" text-anchor="middle">ask the posting's own page:</text>
+  <text class="s" x="878" y="242" text-anchor="middle">gone → closed</text></a>
+  <path class="a" d="M220 220 H258" marker-end="url(#arr)"/>
+  <path class="a" d="M472 220 H510" marker-end="url(#arr)"/>
+  <path class="a" d="M724 220 H762" marker-end="url(#arr)"/>
+</svg>
+</div>
+
+<div class="tablewrap"><table>
+<thead><tr><th style="width:22%"></th><th>Greenhouse · Lever · Ashby</th><th>Workday</th></tr></thead>
+<tbody>
+<tr><td>Who uses it</td><td>AI labs, AI startups and many tech companies</td><td>Banks, insurers, pharma, consultancies and big tech (NVIDIA, Salesforce, Adobe, Intel…)</td></tr>
+<tr><td>One request returns</td><td>Every open posting at the employer, with its full text</td><td>20 search results: title, place and a link, no text</td></tr>
+<tr><td>Getting the text</td><td>Already in the list</td><td>One more request per posting, done once</td></tr>
+<tr><td>Knowing a job closed</td><td>It's missing from the list for 36 hours</td><td>It's missing from the results for 36 hours <i>and</i> its own page says it's gone</td></tr>
+<tr><td>Salary</td><td>Often a structured field (Greenhouse pay ranges, Lever salary range, Ashby compensation)</td><td>Only in the text, where the model reads it (US pay-transparency laws make it common)</td></tr>
+<tr><td>Endpoint</td><td><code>boards-api.greenhouse.io/v1/boards/{board}/jobs</code><br><code>api.lever.co/v0/postings/{board}</code><br><code>api.ashbyhq.com/posting-api/job-board/{board}</code></td><td><code>POST {tenant}.wdN.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs</code><br><code>GET …/{site}/job/{path}</code> for one posting</td></tr>
+<tr><td>Daily time</td><td>About 80 seconds for all 97 (some lists are over 10 MB)</td><td>About 4 minutes for all 32, 4 sites at a time</td></tr>
+<tr><td>Documented?</td><td>Yes, public APIs published for job boards</td><td>No: it's what the career page itself calls. robots.txt allows it and lists the career sites</td></tr>
+</tbody></table></div>
+
+<h2>Which employers, and why these</h2>
+<p>The list lives in <code>config/companies.yaml</code>. It was built by hand from groups of employers that hire AI engineers and FDEs in your markets, then checked automatically:</p>
+<div class="steps">
+<div class="step"><b>Frontier labs and model companies</b><span>Anthropic, OpenAI, Cohere, xAI… They hire research, applied AI and FDE roles.</span></div>
+<div class="step"><b>AI applications and agents</b><span>Sierra, Decagon, Harvey, Glean, Cursor… The main FDE employers.</span></div>
+<div class="step"><b>Tooling, data and evals</b><span>LangChain, Scale, Databricks, Arize… Tools AI engineers use, and their solutions roles.</span></div>
+<div class="step"><b>Inference and compute</b><span>Together, Baseten, Modal, Cerebras, CoreWeave… Serving and infrastructure roles.</span></div>
+<div class="step"><b>Tech companies building AI features</b><span>Stripe, Datadog, Cloudflare, Snowflake… Only AI-titled roles count here.</span></div>
+<div class="step"><b>Enterprises on Workday</b><span>NVIDIA, Salesforce, Capital One, TD, Barclays, Roche… Big employers of GenAI engineers outside the startup world.</span></div>
+</div>
+
+<h3>“AI company” or not: why it matters</h3>
+<p>Each employer is marked <code>ai_native</code> (an AI company) or not. At an AI company, a “Solutions Architect”, “Research Engineer”, “Data Scientist” or “Member of Technical Staff” is almost always an AI role, so these titles count. At a bank or a database company the same titles usually aren't, so they count only when the title itself names AI or ML (“Solutions Architect, GenAI”). 77 of the 129 employers are marked as AI companies, NVIDIA among them.</p>
+
+<h2 id="probe">How a new employer is found: probing</h2>
+<p>You rarely know which system an employer uses. The probe command tries them for you and prints a line ready to paste into <code>config/companies.yaml</code>:</p>
+<ul>
+<li><b><code>ainews jobs-probe anthropic</code></b> tries the name on Greenhouse, Lever, Lever's EU instance and Ashby, and reports which answer and how many postings each has.</li>
+<li><b><code>ainews jobs-probe --workday nvidia</code></b> tries the 9 Workday data centres (wd1, wd3, wd5, wd12, wd10, wd103, wd101, wd105, wd108). On each it reads <code>robots.txt</code>, which lists the career sites crawlers may use (<code>Allow: /NVIDIAExternalCareerSite/</code>). It skips sites named like internships, students, early careers, alumni or private postings, then asks each remaining site how many postings it has.</li>
+</ul>
+<pre><code>$ ainews jobs-probe --workday nvidia rbc
+  - {id: nvidia, name: nvidia, ats: workday, board: "nvidia.wd5/NVIDIAExternalCareerSite", ai_native: false}   # 2000 open
+# rbc: no Workday career site that robots.txt allows</code></pre>
+<p>Then you choose: give the employer a proper name, set <code>ai_native</code>, and when an employer has several sites keep the main one. On 13 Oct 2026 the probe tried 70 Workday tenants, and these choices were made:</p>
+<ul>
+<li><b>Sibling sites that repeat each other were dropped:</b> Sun Life's and Julius Baer's second sites list the same postings.</li>
+<li><b>Different sites that don't overlap were both kept:</b> PwC US and Genentech (on Roche's tenant) are separate from their parents.</li>
+<li><b>Low-yield sites were dropped:</b> PwC's global site has no country filter, and only 1 in 60 of its AI postings was in your markets.</li>
+<li><b>RBC is out:</b> its robots.txt disallows its main site (<code>Disallow: /RBCGLOBAL1/</code>) and allows only early-talent roles.</li>
+<li><b>Not on Workday, or no site that robots.txt allows:</b> Citi, Dell, AMD, Qualcomm, EY, KPMG, Deloitte, Scotiabank, Telus, Shopify, HSBC, NatWest, BP, Vodafone, Sky, BT, UBS, Nestlé, Zurich, Swiss Re, ABB, and the UAE employers tried (G42, ADNOC, e&amp;, Emirates NBD, FAB, Mubadala, Careem). The tenant called <code>lloyds</code> turned out to be Lloyd's of London, not Lloyds Bank.</li>
+</ul>
+
+<h2 id="polite">Staying polite and allowed</h2>
+<div class="callout">
+<ul>
+<li><b>We say who we are.</b> Every request carries a User-Agent naming the bot and this project.</li>
+<li><b>One request a second per site.</b> Each host gets at least a second between requests. The 32 Workday sites run 4 at a time, but each on its own host, so no single site sees more than one request a second.</li>
+<li><b>Back off on trouble.</b> A “too many requests” (429) or server error is retried after a pause that doubles each time. A board that still fails is recorded and skipped for the day, and it closes nothing.</li>
+<li><b>robots.txt decides.</b> A Workday site that robots.txt doesn't allow is never searched; the run records it as an error instead.</li>
+<li><b>Small and steady.</b> A daily Workday run is usually 10–70 search requests per site, plus one request per new posting, at most 60.</li>
+</ul>
+</div>
+
+<h2 id="gaps">What isn't covered yet</h2>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:30%">Gap</th><th>Why</th><th style="width:30%">Plan</th></tr></thead>
+<tbody>
+<tr><td>LinkedIn, Indeed, jobs.ch, Bayt, Naukrigulf</td><td>Their terms forbid automated access, so they are never visited</td><td>Read your own job-alert emails from them (a Gmail label)</td></tr>
+<tr><td>Employers on SuccessFactors, Oracle Recruiting or SmartRecruiters (Swiss Re, JPMorgan, ServiceNow…)</td><td>Each system needs its own collector</td><td>Next systems to add</td></tr>
+<tr><td>Local UAE employers</td><td>None found on Workday. UAE roles come from global employers for now (Salesforce has FDE roles in Dubai)</td><td>SerpApi Google Jobs and alert emails</td></tr>
+<tr><td>Employers that don't use any of these systems</td><td>Their own custom career sites</td><td>SerpApi Google Jobs twice a week</td></tr>
+<tr><td>Anduril</td><td>2,500 postings, almost all defence hardware: a large daily download for a few AI roles</td><td>Disabled in the config</td></tr>
+</tbody></table></div>
+
+<h2 id="employers">All 129 employers</h2>
+<p class="muted">Generated from <code>config/companies.yaml</code>. Each link opens that employer's public job page.</p>
+<div class="tablewrap"><table><thead><tr><th>Employer</th><th>Career system (opens their job page)</th><th>Counts as</th></tr></thead><tbody><tr class="group"><td colspan="3">Frontier labs and model companies · 14</td></tr><tr><td>Anthropic</td><td><a href="https://job-boards.greenhouse.io/anthropic" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>OpenAI</td><td><a href="https://jobs.ashbyhq.com/openai" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>xAI</td><td><a href="https://job-boards.greenhouse.io/xai" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Cohere</td><td><a href="https://jobs.ashbyhq.com/cohere" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Thinking Machines Lab</td><td><a href="https://jobs.ashbyhq.com/thinkingmachines" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Reflection AI</td><td><a href="https://jobs.ashbyhq.com/reflectionai" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Isomorphic Labs</td><td><a href="https://job-boards.greenhouse.io/isomorphiclabs" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Physical Intelligence</td><td><a href="https://jobs.ashbyhq.com/physicalintelligence" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Figure</td><td><a href="https://job-boards.greenhouse.io/figureai" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Wayve</td><td><a href="https://jobs.ashbyhq.com/wayve" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Waabi</td><td><a href="https://jobs.lever.co/waabi" target="_blank" rel="noopener">Lever</a></td><td>AI company</td></tr><tr><td>Helsing</td><td><a href="https://jobs.ashbyhq.com/helsing" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Aleph Alpha</td><td><a href="https://jobs.ashbyhq.com/alephalpha" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Character.AI</td><td><a href="https://jobs.ashbyhq.com/character" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr class="group"><td colspan="3">AI applications and agents (many hire FDEs and applied AI engineers) · 35</td></tr><tr><td>Palantir</td><td><a href="https://jobs.lever.co/palantir" target="_blank" rel="noopener">Lever</a></td><td>AI company</td></tr><tr><td>Sierra</td><td><a href="https://jobs.ashbyhq.com/sierra" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Decagon</td><td><a href="https://jobs.ashbyhq.com/decagon" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Harvey</td><td><a href="https://jobs.ashbyhq.com/harvey" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Legora</td><td><a href="https://jobs.ashbyhq.com/legora" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Glean</td><td><a href="https://job-boards.greenhouse.io/gleanwork" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Perplexity</td><td><a href="https://jobs.ashbyhq.com/perplexity" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Cursor</td><td><a href="https://jobs.ashbyhq.com/cursor" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Cognition</td><td><a href="https://jobs.ashbyhq.com/cognition" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Factory</td><td><a href="https://jobs.ashbyhq.com/factory" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Replit</td><td><a href="https://jobs.ashbyhq.com/replit" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Lovable</td><td><a href="https://jobs.ashbyhq.com/lovable" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Writer</td><td><a href="https://jobs.ashbyhq.com/writer" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Cresta</td><td><a href="https://job-boards.greenhouse.io/cresta" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Abridge</td><td><a href="https://jobs.ashbyhq.com/abridge" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Ambience Healthcare</td><td><a href="https://jobs.ashbyhq.com/ambiencehealthcare" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>ElevenLabs</td><td><a href="https://jobs.ashbyhq.com/elevenlabs" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Synthesia</td><td><a href="https://jobs.ashbyhq.com/synthesia" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Deepgram</td><td><a href="https://jobs.ashbyhq.com/deepgram" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>AssemblyAI</td><td><a href="https://job-boards.greenhouse.io/assemblyai" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Speechmatics</td><td><a href="https://job-boards.greenhouse.io/speechmatics" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Suno</td><td><a href="https://jobs.ashbyhq.com/suno" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Luma AI</td><td><a href="https://jobs.ashbyhq.com/lumaai" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Midjourney</td><td><a href="https://jobs.ashbyhq.com/midjourney" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Pika</td><td><a href="https://jobs.ashbyhq.com/pika" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Photoroom</td><td><a href="https://jobs.ashbyhq.com/photoroom" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Hume AI</td><td><a href="https://job-boards.greenhouse.io/humeai" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Articul8</td><td><a href="https://jobs.ashbyhq.com/articul8" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Typeface</td><td><a href="https://job-boards.greenhouse.io/typeface" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Dust</td><td><a href="https://jobs.ashbyhq.com/dust" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Faculty</td><td><a href="https://jobs.ashbyhq.com/faculty" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Quantexa</td><td><a href="https://jobs.ashbyhq.com/quantexa" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Tractable</td><td><a href="https://jobs.ashbyhq.com/tractable" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Shield AI</td><td><a href="https://jobs.lever.co/shieldai" target="_blank" rel="noopener">Lever</a></td><td>AI company</td></tr><tr><td>Observe.AI</td><td><a href="https://job-boards.greenhouse.io/observeai" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr class="group"><td colspan="3">Tooling, data and evals for AI engineering · 18</td></tr><tr><td>LangChain</td><td><a href="https://jobs.ashbyhq.com/langchain" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>LlamaIndex</td><td><a href="https://jobs.ashbyhq.com/llamaindex" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Pinecone</td><td><a href="https://jobs.ashbyhq.com/pinecone" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Weaviate</td><td><a href="https://jobs.ashbyhq.com/weaviate" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Zilliz</td><td><a href="https://jobs.lever.co/zilliz" target="_blank" rel="noopener">Lever</a></td><td>AI company</td></tr><tr><td>Unstructured</td><td><a href="https://jobs.ashbyhq.com/unstructured" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Braintrust</td><td><a href="https://jobs.ashbyhq.com/braintrust" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Arize AI</td><td><a href="https://job-boards.greenhouse.io/arizeai" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Snorkel AI</td><td><a href="https://job-boards.greenhouse.io/snorkelai" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Scale AI</td><td><a href="https://job-boards.greenhouse.io/scaleai" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Labelbox</td><td><a href="https://job-boards.greenhouse.io/labelbox" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Mercor</td><td><a href="https://jobs.ashbyhq.com/mercor" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Turing</td><td><a href="https://job-boards.greenhouse.io/turing" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Invisible Technologies</td><td><a href="https://job-boards.greenhouse.io/invisible" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Databricks</td><td><a href="https://job-boards.greenhouse.io/databricks" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Dataiku</td><td><a href="https://job-boards.greenhouse.io/dataiku" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>n8n</td><td><a href="https://jobs.ashbyhq.com/n8n" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Unify</td><td><a href="https://jobs.ashbyhq.com/unify" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr class="group"><td colspan="3">Inference and compute · 9</td></tr><tr><td>Together AI</td><td><a href="https://job-boards.greenhouse.io/togetherai" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Baseten</td><td><a href="https://jobs.ashbyhq.com/baseten" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Modal</td><td><a href="https://jobs.ashbyhq.com/modal" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>Cerebras</td><td><a href="https://jobs.ashbyhq.com/cerebras" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>SambaNova</td><td><a href="https://job-boards.greenhouse.io/sambanovasystems" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Graphcore</td><td><a href="https://job-boards.greenhouse.io/graphcore" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Lambda</td><td><a href="https://jobs.ashbyhq.com/lambda" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr><td>CoreWeave</td><td><a href="https://job-boards.greenhouse.io/coreweave" target="_blank" rel="noopener">Greenhouse</a></td><td>AI company</td></tr><tr><td>Crusoe</td><td><a href="https://jobs.ashbyhq.com/crusoe" target="_blank" rel="noopener">Ashby</a></td><td>AI company</td></tr><tr class="group"><td colspan="3">Tech companies building AI features (only AI-titled roles count) · 21</td></tr><tr><td>Stripe</td><td><a href="https://job-boards.greenhouse.io/stripe" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Datadog</td><td><a href="https://job-boards.greenhouse.io/datadog" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>MongoDB</td><td><a href="https://job-boards.greenhouse.io/mongodb" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Elastic</td><td><a href="https://job-boards.greenhouse.io/elastic" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Cloudflare</td><td><a href="https://job-boards.greenhouse.io/cloudflare" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Snowflake</td><td><a href="https://jobs.ashbyhq.com/snowflake" target="_blank" rel="noopener">Ashby</a></td><td>tech company</td></tr><tr><td>Figma</td><td><a href="https://job-boards.greenhouse.io/figma" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Notion</td><td><a href="https://jobs.ashbyhq.com/notion" target="_blank" rel="noopener">Ashby</a></td><td>tech company</td></tr><tr><td>Intercom</td><td><a href="https://job-boards.greenhouse.io/intercom" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Gong</td><td><a href="https://job-boards.greenhouse.io/gongio" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Clay</td><td><a href="https://jobs.ashbyhq.com/claylabs" target="_blank" rel="noopener">Ashby</a></td><td>tech company</td></tr><tr><td>Ramp</td><td><a href="https://jobs.ashbyhq.com/ramp" target="_blank" rel="noopener">Ashby</a></td><td>tech company</td></tr><tr><td>Vercel</td><td><a href="https://job-boards.greenhouse.io/vercel" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Supabase</td><td><a href="https://jobs.ashbyhq.com/supabase" target="_blank" rel="noopener">Ashby</a></td><td>tech company</td></tr><tr><td>Temporal</td><td><a href="https://jobs.ashbyhq.com/temporal" target="_blank" rel="noopener">Ashby</a></td><td>tech company</td></tr><tr><td>Pigment</td><td><a href="https://jobs.lever.co/pigment" target="_blank" rel="noopener">Lever</a></td><td>tech company</td></tr><tr><td>Monzo</td><td><a href="https://job-boards.greenhouse.io/monzo" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Wealthsimple</td><td><a href="https://jobs.ashbyhq.com/wealthsimple" target="_blank" rel="noopener">Ashby</a></td><td>tech company</td></tr><tr><td>1Password</td><td><a href="https://jobs.ashbyhq.com/1password" target="_blank" rel="noopener">Ashby</a></td><td>tech company</td></tr><tr><td>Proton</td><td><a href="https://job-boards.greenhouse.io/proton" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr><td>Scandit</td><td><a href="https://job-boards.greenhouse.io/scandit" target="_blank" rel="noopener">Greenhouse</a></td><td>tech company</td></tr><tr class="group"><td colspan="3">Workday · US · 16</td></tr><tr><td>NVIDIA</td><td><a href="https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite" target="_blank" rel="noopener">Workday</a></td><td>AI company</td></tr><tr><td>Salesforce</td><td><a href="https://salesforce.wd12.myworkdayjobs.com/External_Career_Site" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Workday</td><td><a href="https://workday.wd5.myworkdayjobs.com/Workday" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Adobe</td><td><a href="https://adobe.wd5.myworkdayjobs.com/external_experienced" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Intel</td><td><a href="https://intel.wd1.myworkdayjobs.com/External" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Autodesk</td><td><a href="https://autodesk.wd1.myworkdayjobs.com/Ext" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>HP</td><td><a href="https://hp.wd5.myworkdayjobs.com/ExternalCareerSite" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>PayPal</td><td><a href="https://paypal.wd1.myworkdayjobs.com/jobs" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Visa</td><td><a href="https://visa.wd5.myworkdayjobs.com/Visa" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Mastercard</td><td><a href="https://mastercard.wd1.myworkdayjobs.com/CorporateCareers" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Capital One</td><td><a href="https://capitalone.wd12.myworkdayjobs.com/Capital_One" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Wells Fargo</td><td><a href="https://wf.wd1.myworkdayjobs.com/WellsFargoJobs" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>BlackRock</td><td><a href="https://blackrock.wd1.myworkdayjobs.com/BlackRock_Professional" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Accenture</td><td><a href="https://accenture.wd103.myworkdayjobs.com/AccentureCareers" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>PwC US</td><td><a href="https://pwc.wd3.myworkdayjobs.com/US_Experienced_Careers" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Genentech</td><td><a href="https://roche.wd3.myworkdayjobs.com/ROG-A2O-GENE" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr class="group"><td colspan="3">Workday · Canada · 6</td></tr><tr><td>TD Bank</td><td><a href="https://td.wd3.myworkdayjobs.com/TD_Bank_Careers" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>BMO</td><td><a href="https://bmo.wd3.myworkdayjobs.com/External" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>CIBC</td><td><a href="https://cibc.wd3.myworkdayjobs.com/search" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Manulife</td><td><a href="https://manulife.wd3.myworkdayjobs.com/MFCJH_Jobs" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Sun Life</td><td><a href="https://sunlife.wd3.myworkdayjobs.com/Experienced-Jobs" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Thomson Reuters</td><td><a href="https://thomsonreuters.wd5.myworkdayjobs.com/External_Career_Site" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr class="group"><td colspan="3">Workday · UK · 5</td></tr><tr><td>Barclays</td><td><a href="https://barclays.wd3.myworkdayjobs.com/External_Career_Site_Barclays" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>LSEG</td><td><a href="https://lseg.wd3.myworkdayjobs.com/Careers" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>AstraZeneca</td><td><a href="https://astrazeneca.wd3.myworkdayjobs.com/Careers" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>GSK</td><td><a href="https://gsk.wd5.myworkdayjobs.com/GSKCareers" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Unilever</td><td><a href="https://unilever.wd3.myworkdayjobs.com/Unilever_Experienced_Professionals" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr class="group"><td colspan="3">Workday · Switzerland · 5</td></tr><tr><td>Roche</td><td><a href="https://roche.wd3.myworkdayjobs.com/roche-ext" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Novartis</td><td><a href="https://novartis.wd3.myworkdayjobs.com/Novartis_Careers" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Julius Baer</td><td><a href="https://juliusbaer.wd3.myworkdayjobs.com/External" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Logitech</td><td><a href="https://logitech.wd5.myworkdayjobs.com/Logitech" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr><tr><td>Swisscom</td><td><a href="https://swisscom.wd103.myworkdayjobs.com/SwisscomExternalCareers" target="_blank" rel="noopener">Workday</a></td><td>enterprise</td></tr></tbody></table></div>
+
+<div class="next"><a href="index.html">← Overview</a><a href="poll.html">2 · Filter &amp; track →</a></div>
+<p class="foot"><a href="#top">↑ Top</a><a href="../architecture-diagram.html">Architecture diagram</a><a href="../sources/job-boards.html">Job-board source list</a></p>
+</main>
+</body>
+</html>
