@@ -121,10 +121,10 @@ def cmd_check(args, settings) -> None:
         schema = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"],
                   "additionalProperties": False}
         # Same thinking levels as production (judge: low, editor: medium), so a run won't fail on them later.
-        for model, effort in ((settings.model_judge, "low"), (settings.model_editor, "medium")):
+        for role, model, effort in (("judge", settings.model_judge, "low"), ("editor", settings.model_editor, "medium")):
             out = llm.json(model=model, system="Reply with ok=true.", user="ping", schema=schema,
                            max_tokens=2000, effort=effort, purpose="check")
-            print(f"vertex {model}: ok={out.get('ok')}")
+            print(f"vertex {role} {model} (thinking {effort}): ok={out.get('ok')}")
         print(f"vertex check cost: ${llm.total_cost:.4f}")
     except Exception as exc:
         ok = False
