@@ -14,7 +14,7 @@ A personal daily brief for ML / GenAI / LLM engineers and Forward Deployed Engin
 - 47 sources across six layers, defined in [config/sources.yaml](config/sources.yaml), from business and policy down to kernels.
 - Collectors: RSS/Atom, GitHub releases, a CHANGELOG diff, HF Daily Papers, Hacker News, and an OpenRouter model and price diff.
 - Dedup by canonical URL and MinHash, then a heat score.
-- Gemini 3.1 Flash-Lite judges stories against your profile, and Gemini 3.8 Flash writes the brief, both through Vertex AI (Claude is an optional provider). Numbers the sources don't support are dropped before anything is published.
+- Gemini 3.1 Flash-Lite judges stories against your profile and writes the brief, through Vertex AI (Claude is an optional provider). Numbers the sources don't support are dropped before anything is published.
 - Output goes to a local Markdown file and, optionally, the Telegram channel.
 
 Next is Phase 2: embedding dedup, aggregator link votes, feedback buttons, citations, and deployment to Cloud Run.

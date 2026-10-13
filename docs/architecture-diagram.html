@@ -158,9 +158,9 @@
       <text class="t" x="423" y="284" text-anchor="middle">4 · Score</text>
       <text class="s" x="423" y="302" text-anchor="middle">Flash-Lite vs profile</text>
       <text class="s" x="423" y="317" text-anchor="middle">relevance · novelty · layer</text></a>
-    <a class="blk" href="#card-a5" data-id="a5"><title>5 · Write brief (Gemini 3.8 Flash): Writes the brief from the top stories, given source excerpts as cited documents, plus a career section built from ② data.</title><rect class="llm" x="527" y="262" width="166" height="64" rx="8"/>
+    <a class="blk" href="#card-a5" data-id="a5"><title>5 · Write brief (Flash-Lite): Writes the brief from the top stories, given source excerpts as cited documents, plus a career section built from ② data.</title><rect class="llm" x="527" y="262" width="166" height="64" rx="8"/>
       <text class="t" x="610" y="284" text-anchor="middle">5 · Write brief</text>
-      <text class="s" x="610" y="302" text-anchor="middle">3.8 Flash + citations</text>
+      <text class="s" x="610" y="302" text-anchor="middle">Flash-Lite + citations</text>
       <text class="s" x="610" y="317" text-anchor="middle">5 layers, broad → deep</text></a>
     <a class="blk" href="#card-a6" data-id="a6"><title>6 · Verify &amp; publish: Removes sentences without a citation, checks every number and version against its source, and resolves links. Then posts to the channel with feedback buttons and stores the message IDs.</title><rect class="comp" x="714" y="262" width="166" height="64" rx="8"/>
       <text class="t" x="797" y="284" text-anchor="middle">6 · Verify &amp; publish</text>
@@ -198,9 +198,9 @@
       <text class="t" x="423" y="492" text-anchor="middle">W1 · Trends &amp; fit</text>
       <text class="s" x="423" y="510" text-anchor="middle">topic bursts, skill shifts</text>
       <text class="s" x="423" y="525" text-anchor="middle">vs your profile</text></a>
-    <a class="blk" href="#card-c2" data-id="c2"><title>W2 · Write reports (Gemini 3.8 Flash): Writes the 'State of the field' summary and the market-fit report, with concrete suggestions on what to learn or build.</title><rect class="llm" x="527" y="470" width="166" height="64" rx="8"/>
+    <a class="blk" href="#card-c2" data-id="c2"><title>W2 · Write reports (Flash-Lite): Writes the 'State of the field' summary and the market-fit report, with concrete suggestions on what to learn or build.</title><rect class="llm" x="527" y="470" width="166" height="64" rx="8"/>
       <text class="t" x="610" y="492" text-anchor="middle">W2 · Write reports</text>
-      <text class="s" x="610" y="510" text-anchor="middle">Gemini 3.8 Flash</text>
+      <text class="s" x="610" y="510" text-anchor="middle">Gemini Flash-Lite</text>
       <text class="s" x="610" y="525" text-anchor="middle">field · market fit</text></a>
     <a class="blk" href="#card-c3" data-id="c3"><title>W3 · Publish: Posts the reports to the channel. Suggested profile updates go to your private chat for approval.</title><rect class="comp" x="714" y="470" width="166" height="64" rx="8"/>
       <text class="t" x="797" y="492" text-anchor="middle">W3 · Publish</text>
@@ -229,16 +229,16 @@
     <a class="blk" href="#card-platform" data-id="platform"><title>Platform services: Secret Manager for the bot token and keys, Artifact Registry for the image, Cloud Tasks for async bot work, Logging, and a $5 budget alert.</title><rect class="comp" x="320" y="660" width="580" height="36" rx="8"/>
       <text class="s" x="610" y="683" text-anchor="middle">Secret Manager · Artifact Registry · Cloud Tasks · Logging · Budget alert ($5)</text></a>
 
-    <a class="blk" href="#card-vertex" data-id="vertex"><title>Vertex AI: Gemini 3.1 Flash-Lite for scoring, extraction and parsing bot edits; Gemini 3.8 Flash for writing (Gemini 3.1 Pro if more quality is needed); gemini-embedding-2; speech for voice notes and an optional audio brief.</title><rect class="llm" x="320" y="715" width="580" height="120" rx="10"/>
+    <a class="blk" href="#card-vertex" data-id="vertex"><title>Vertex AI: Gemini 3.1 Flash-Lite for scoring, extraction and parsing bot edits; the same Flash-Lite for writing (3.5 Flash-Lite or 3.8 Flash if more quality is needed); gemini-embedding-2; speech for voice notes and an optional audio brief.</title><rect class="llm" x="320" y="715" width="580" height="120" rx="10"/>
       <text class="h" x="336" y="735">Vertex AI · global endpoint · all LLM steps (purple)</text>
       <rect class="comp" x="336" y="747" width="135" height="70" rx="7"/>
       <text class="t" x="403" y="771" text-anchor="middle">3.1 Flash-Lite</text>
       <text class="s" x="403" y="789" text-anchor="middle">scoring · extraction</text>
       <text class="s" x="403" y="804" text-anchor="middle">bot edit parsing</text>
       <rect class="comp" x="478" y="747" width="135" height="70" rx="7"/>
-      <text class="t" x="545" y="771" text-anchor="middle">3.8 Flash</text>
+      <text class="t" x="545" y="771" text-anchor="middle">3.1 Flash-Lite</text>
       <text class="s" x="545" y="789" text-anchor="middle">brief &amp; reports</text>
-      <text class="s" x="545" y="804" text-anchor="middle">(3.1 Pro option)</text>
+      <text class="s" x="545" y="804" text-anchor="middle">(3.8 Flash option)</text>
       <rect class="comp" x="620" y="747" width="135" height="70" rx="7"/>
       <text class="t" x="687" y="771" text-anchor="middle">Embeddings</text>
       <text class="s" x="687" y="789" text-anchor="middle">gemini-embedding-2</text>
@@ -331,7 +331,7 @@
     <div class="card" id="card-a2"><b>2 · Dedup</b><p><span class="lbl">What:</span> Three passes: canonical URL, then MinHash near-duplicate text, then embedding similarity against the last 72 hours.</p><p><span class="lbl">Why:</span> The same launch arrives 5–10 times. Each pass is cheap enough to run before the next, so the LLM never sees a duplicate.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
     <div class="card" id="card-a3"><b>3 · Cluster &amp; heat</b><p><span class="lbl">What:</span> Adds each item to an existing story or starts a new one. Heat counts the distinct sources covering a story, weighted by their authority, and decays over 24 hours.</p><p><span class="lbl">Why:</span> Stable story IDs let follow-ups attach to yesterday&#x27;s story. Heat measures importance regardless of your profile.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
     <div class="card" id="card-a4"><b>4 · Score (Flash-Lite)</b><p><span class="lbl">What:</span> Rules first cut the field to 150–300 stories. Flash-Lite then scores each for relevance, novelty and actionability, and assigns a layer from big picture down to low-level. Your profile sits in a cached prompt.</p><p><span class="lbl">Why:</span> A cheap model for bulk judgement. A quota per layer keeps the brief broad, not limited to your own role.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
-    <div class="card" id="card-a5"><b>5 · Write brief (Gemini 3.8 Flash)</b><p><span class="lbl">What:</span> Writes the brief from the top stories, given source excerpts as cited documents, plus a career section built from ② data.</p><p><span class="lbl">Why:</span> Writing the summary is where quality matters most, and it&#x27;s one call a day, so the strongest model is affordable.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-a5"><b>5 · Write brief (Flash-Lite)</b><p><span class="lbl">What:</span> Writes the brief from the top stories, given source excerpts as cited documents, plus a career section built from ② data.</p><p><span class="lbl">Why:</span> Writing the summary is where quality matters most, and it&#x27;s one call a day, so the strongest model is affordable.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
     <div class="card" id="card-a6"><b>6 · Verify &amp; publish</b><p><span class="lbl">What:</span> Removes sentences without a citation, checks every number and version against its source, and resolves links. Then posts to the channel with feedback buttons and stores the message IDs.</p><p><span class="lbl">Why:</span> Summaries have to be trustworthy. The stored message IDs connect each button click to its story.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
   </div>
   <h3>② Jobs</h3>
@@ -343,7 +343,7 @@
   <h3>③ Weekly</h3>
   <div class="grid">
     <div class="card" id="card-c1"><b>W1 · Trends &amp; fit</b><p><span class="lbl">What:</span> Finds topic bursts against 7- and 28-day baselines and measures skill demand and its week-over-week change. Compares that with your profile to get coverage, missing skills and rising skills.</p><p><span class="lbl">Why:</span> Answers &#x27;am I keeping up?&#x27; with data rather than a feeling.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
-    <div class="card" id="card-c2"><b>W2 · Write reports (Gemini 3.8 Flash)</b><p><span class="lbl">What:</span> Writes the &#x27;State of the field&#x27; summary and the market-fit report, with concrete suggestions on what to learn or build.</p><p><span class="lbl">Why:</span> A week is long enough for trends to show and daily noise to average out.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-c2"><b>W2 · Write reports (Flash-Lite)</b><p><span class="lbl">What:</span> Writes the &#x27;State of the field&#x27; summary and the market-fit report, with concrete suggestions on what to learn or build.</p><p><span class="lbl">Why:</span> A week is long enough for trends to show and daily noise to average out.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
     <div class="card" id="card-c3"><b>W3 · Publish</b><p><span class="lbl">What:</span> Posts the reports to the channel. Suggested profile updates go to your private chat for approval.</p><p><span class="lbl">Why:</span> You stay in control of what your profile says.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
   </div>
   <h3>Storage &amp; platform</h3>
@@ -352,7 +352,7 @@
     <div class="card" id="card-fs"><b>Firestore</b><p><span class="lbl">What:</span> Stores feedback clicks, your versioned profile (skills, projects, portfolio, targets), and bot state such as edits waiting for approval.</p><p><span class="lbl">Why:</span> The bot is stateless and can run several copies at once, and Firestore handles small simultaneous writes on the free tier. Every run merges this data into SQLite.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
     <div class="card" id="card-bot"><b>tg-bot (Cloud Run service)</b><p><span class="lbl">What:</span> Receives Telegram updates by webhook: button clicks, commands and profile edits. It acknowledges straight away and hands slow work to Cloud Tasks: transcribing voice notes, fetching repos and PDFs, and the Flash-Lite call that drafts a profile change.</p><p><span class="lbl">Why:</span> Scales to zero, so it costs about $0, yet buttons respond instantly. Polling Telegram instead would need an always-on instance at about $12/mo.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
     <div class="card" id="card-platform"><b>Platform services</b><p><span class="lbl">What:</span> Secret Manager for the bot token and keys, Artifact Registry for the image, Cloud Tasks for async bot work, Logging, and a $5 budget alert.</p><p><span class="lbl">Why:</span> Keeps secrets out of the public repo, adds a cost guardrail, and needs no servers.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
-    <div class="card" id="card-vertex"><b>Vertex AI</b><p><span class="lbl">What:</span> Gemini 3.1 Flash-Lite for scoring, extraction and parsing bot edits; Gemini 3.8 Flash for writing (Gemini 3.1 Pro if more quality is needed); gemini-embedding-2; speech for voice notes and an optional audio brief.</p><p><span class="lbl">Why:</span> One billing account and IAM authentication, with no API keys. Google&#x27;s own models need no access request, and the global endpoint is about 10% cheaper than regional ones. Claude stays available as an optional provider.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-vertex"><b>Vertex AI</b><p><span class="lbl">What:</span> Gemini 3.1 Flash-Lite for scoring, extraction and parsing bot edits; the same Flash-Lite for writing (3.5 Flash-Lite or 3.8 Flash if more quality is needed); gemini-embedding-2; speech for voice notes and an optional audio brief.</p><p><span class="lbl">Why:</span> One billing account and IAM authentication, with no API keys. Google&#x27;s own models need no access request, and the global endpoint is about 10% cheaper than regional ones. Claude stays available as an optional provider.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
   </div>
   <h3>Delivery &amp; control</h3>
   <div class="grid">

@@ -52,7 +52,7 @@ If the token ever leaks, send `/revoke` to BotFather, pick the bot, and put the 
    ```bash
    gcloud services enable aiplatform.googleapis.com --project=ai-news-XXXX
    ```
-2. **Models.** The defaults are Google's own models, which need no access request: **Gemini 3.1 Flash-Lite** judges stories and **Gemini 3.8 Flash** writes the brief. Both are already available once the Vertex AI API is enabled; you can see them under Vertex AI → Model Garden. Claude can be switched on later with `LLM_PROVIDER=anthropic`, but Anthropic models need an access request in Model Garden first.
+2. **Models.** The defaults are Google's own models, which need no access request: **Gemini 3.1 Flash-Lite**, the cheapest current model, both judges stories and writes the brief. If the brief's writing falls short, set `MODEL_EDITOR` to `gemini-3.5-flash-lite` or `gemini-3.8-flash`. Both are already available once the Vertex AI API is enabled; you can see them under Vertex AI → Model Garden. Claude can be switched on later with `LLM_PROVIDER=anthropic`, but Anthropic models need an access request in Model Garden first.
 3. **Local credentials.** Sign in with your **personal** Google account:
    ```bash
    gcloud auth application-default login
@@ -83,7 +83,7 @@ Layers 1 and 2 are already in the code. Layers 3–5 are set up in GCP by you.
 .venv/bin/ainews budget
 ```
 
-**Layer 3, quotas.** Cloud console → IAM & Admin → **Quotas & system limits**. Filter by service *Vertex AI API* and type the model name (for example `gemini-3.8-flash`). For the requests-per-minute and tokens-per-minute rows of the `global` region, choose **Edit quota** and lower them. A sensible start for both models: 10 requests and 100k input tokens per minute. A brief needs far less than that. Quota decreases are normally applied straight away.
+**Layer 3, quotas.** Cloud console → IAM & Admin → **Quotas & system limits**. Filter by service *Vertex AI API* and type the model name (`gemini-3.1-flash-lite`). For the requests-per-minute and tokens-per-minute rows of the `global` region, choose **Edit quota** and lower them. A sensible start: 10 requests and 100k input tokens per minute. A brief needs far less than that. Quota decreases are normally applied straight away.
 
 **Layers 4 and 5, budget and kill switch.** Read [scripts/gcp_guardrails.sh](../scripts/gcp_guardrails.sh) first. It changes billing settings.
 
@@ -104,7 +104,7 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
 - After deployment it will use a dedicated service account with only the *Vertex AI User* role.
 - `.env` is gitignored. On Cloud Run the Telegram token will live in Secret Manager.
 
-**Expected cost once on:** roughly $0.05–0.10 per brief. The judge (Flash-Lite, $0.25 / $1.50 per 1M tokens) costs a few cents; the editor (3.8 Flash, $0.75 / $3.75 until 31 Dec 2026, then $1.50 / $7.50) costs a few more. With two briefs a day that's about $3–6 a month, and roughly double that from January 2027. Prices are from the Vertex AI pricing page, checked 2026-10-12.
+**Expected cost once on:** about $0.03–0.05 per brief, all on Gemini 3.1 Flash-Lite ($0.25 / $1.50 per 1M tokens). With two briefs a day that's about $2–3 a month. Prices are from the Vertex AI pricing page, checked 2026-10-12.
 
 ## 4. Turning the button on
 
