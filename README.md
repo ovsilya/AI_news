@@ -32,6 +32,8 @@ gcloud auth application-default login     # personal Google account; the app use
 # set AINEWS_LLM_ENABLED=true in .env once the guardrails are in place (docs/setup.md §3)
 .venv/bin/ainews run                      # collect, judge, write → out/brief-<date>-am.md
 .venv/bin/ainews run --send               # same, and post to the Telegram channel
+.venv/bin/ainews send                     # post the latest brief (after reading it in out/)
+.venv/bin/ainews run --redo               # rebuild the latest brief; judge scores are reused, so it's cheap
 ```
 
 Without any credentials, `ainews run --no-llm` builds an unranked digest by heat, with no model calls and no cost. Other commands: `ainews collect`, `ainews brief`, `ainews health` (source health report), `ainews sources`, `ainews budget` (switch state, spend and caps), `ainews tg-chats` and `ainews tg-test` (Telegram setup). Tests: `.venv/bin/pytest`.

@@ -70,7 +70,7 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
         cost = llm.total_cost if llm is not None else 0.0
         title = f"AI Brief · {date_label}" + (" · evening update" if edition == "pm" else "")
         footer = (f"{len(shown)} stories from {stats['candidates']} candidates · "
-                  f"{sum(1 for _ in sources)} sources · run cost ${cost:.2f}")
+                  f"{sum(1 for _ in sources)} sources · run cost ${cost:.3f}")
         by_id = {s.id: s for s in chosen}
         markdown = to_markdown(brief, by_id, names, title, footer)
         telegram = to_telegram(brief, by_id, names, title, footer)
@@ -87,6 +87,17 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
     except Exception as exc:
         finish_run(conn, run_id, f"error: {exc}"[:300], stats)
         raise
+
+
+def drop_latest_brief(conn: sqlite3.Connection) -> int | None:
+    """Forget the most recent brief so its stories can be picked again (to redo a brief).
+    Judge scores are kept, so a redo mostly pays for the editor only."""
+    row = conn.execute("SELECT id FROM briefs ORDER BY id DESC LIMIT 1").fetchone()
+    if row is None:
+        return None
+    conn.execute("DELETE FROM briefs WHERE id = ?", (row["id"],))
+    conn.commit()
+    return row["id"]
 
 
 def mark_sent(conn: sqlite3.Connection, brief_id: int, message_ids: list[int]) -> None:

@@ -304,6 +304,8 @@ Items are then clustered into stories by assigning each to the nearest existing 
 
 Claude Opus 5.5 gets the top ~30–40 stories, each with its source excerpts as `document` blocks with **Citations enabled**. It writes the brief in a fixed template (§4). Every claim must carry a citation.
 
+*Implemented (v0.7, 2026-10-12):* the brief teaches as well as informs, because the reader is still learning these topics. Each item has a plain-words **summary**, a **"What is it?"** explanation of the idea behind it, and a **"Comment from a pro"** on why it matters to a GenAI engineer or FDE. Brand-new products and features are described only from the excerpt, never guessed. In Telegram the two notes sit in a blockquote that stays collapsed until tapped, so the brief is quick to scan.
+
 **Verify** runs after the editor:
 - Drop any sentence without a citation.
 - Every number, model name and version string must appear in the cited source.

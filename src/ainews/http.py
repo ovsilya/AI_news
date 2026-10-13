@@ -15,7 +15,10 @@ from .db import now
 log = logging.getLogger(__name__)
 
 # Minimum seconds between two requests to the same host.
-HOST_SPACING = {"export.arxiv.org": 3.0, "rss.arxiv.org": 3.0, "www.reddit.com": 10.0, "github.com": 0.5}
+HOST_SPACING = {"export.arxiv.org": 3.0, "rss.arxiv.org": 3.0, "www.reddit.com": 30.0, "github.com": 0.5}
+# Strict rate limiters: (seconds to wait after a 429 without Retry-After, max retries). Quick retries
+# only extend a Reddit block, so wait a full minute and try once more.
+SLOW_429 = {"www.reddit.com": (60.0, 1)}
 # Hosts that return intermittent 404s for valid URLs (YouTube channel feeds): retry those too.
 RETRY_404_HOSTS = {"www.youtube.com"}
 DEFAULT_SPACING = 1.0
@@ -62,20 +65,20 @@ class Fetcher:
                 hdrs["If-Modified-Since"] = row["last_modified"]
 
         host = urlsplit(url).netloc
-        delay = 2.0
-        for attempt in range(self.retries + 1):
+        delay, retries = SLOW_429.get(host, (2.0, self.retries))
+        for attempt in range(retries + 1):
             self._space(host)
             try:
                 r = self.client.get(url, headers=hdrs, params=params)
             except httpx.TransportError as exc:
-                if attempt == self.retries:
+                if attempt == retries:
                     raise
                 log.info("retrying %s after %s", url, exc)
                 self.sleep(delay)
                 delay *= 2
                 continue
             if r.status_code == 429 or r.status_code >= 500 or (r.status_code == 404 and host in RETRY_404_HOSTS):
-                if attempt == self.retries:
+                if attempt == retries:
                     r.raise_for_status()
                 retry_after = r.headers.get("Retry-After", "")
                 self.sleep(float(retry_after) if retry_after.isdigit() else delay)

@@ -119,9 +119,10 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
    ```bash
    .venv/bin/ainews budget
    ```
-6. When it looks right, post to the channel:
+6. When it looks right, post that same brief to the channel:
    ```bash
-   .venv/bin/ainews run --send
+   .venv/bin/ainews send
    ```
+   To rebuild the latest brief instead (for example after editing `prompts/editor.md`), run `ainews run --redo`. Its stories become available again and the judge's scores are reused, so only the editor is paid for again.
 
 **To switch off again,** set `AINEWS_LLM_ENABLED=false`. It takes effect on the next run.

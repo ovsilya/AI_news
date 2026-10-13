@@ -1,4 +1,4 @@
-"""Command line: `ainews collect | brief | run | health | sources | check | budget | tg-chats | tg-test`."""
+"""Command line: `ainews collect | brief | run | send | health | sources | check | budget | tg-chats | tg-test`."""
 from __future__ import annotations
 
 import argparse
@@ -41,10 +41,13 @@ def cmd_collect(args, settings) -> dict:
 
 
 def cmd_brief(args, settings) -> None:
-    from .pipeline.brief import build_brief, mark_sent
+    from .pipeline.brief import build_brief, drop_latest_brief, mark_sent
 
     conn = db.connect(settings.db_path)
     sources = load_sources(settings.sources_path)
+    if args.redo:
+        dropped = drop_latest_brief(conn)
+        print(f"redo: replacing brief #{dropped}" if dropped else "redo: no earlier brief to replace")
     llm = None
     if not args.no_llm:
         from .llm import LLMDisabled, make_llm
@@ -175,6 +178,24 @@ def cmd_tg_chats(args, settings) -> None:
         print(f"{c['id']:>16}  {c.get('type', ''):<10} {c.get('title') or c.get('username') or ''}")
 
 
+def cmd_send(args, settings) -> None:
+    """Post the latest stored brief, e.g. after reading it in out/ first."""
+    import json
+
+    from .deliver.telegram import Telegram
+    from .pipeline.brief import mark_sent
+
+    conn = db.connect(settings.db_path)
+    row = conn.execute("SELECT id, telegram_html, telegram_message_ids FROM briefs ORDER BY id DESC LIMIT 1").fetchone()
+    if row is None:
+        sys.exit("ainews: no brief yet; run `ainews run` first")
+    if row["telegram_message_ids"] and not args.force:
+        sys.exit(f"ainews: brief #{row['id']} was already sent; use --force to send it again")
+    ids = Telegram(settings.telegram_bot_token, settings.telegram_chat_id).send_messages(json.loads(row["telegram_html"]))
+    mark_sent(conn, row["id"], ids)
+    print(f"sent brief #{row['id']} as {len(ids)} Telegram messages")
+
+
 def cmd_tg_test(args, settings) -> None:
     from .deliver.telegram import Telegram
 
@@ -195,6 +216,10 @@ def main(argv: list[str] | None = None) -> None:
         b.add_argument("--edition", choices=["am", "pm"], default="am")
         b.add_argument("--no-llm", action="store_true", help="rank by heat only; no Vertex calls, no cost")
         b.add_argument("--send", action="store_true", help="post to the Telegram channel (default: local file only)")
+        b.add_argument("--redo", action="store_true",
+                       help="replace the latest brief: its stories can be used again (judge scores are reused)")
+    sn = sub.add_parser("send", help="post the latest stored brief to Telegram")
+    sn.add_argument("--force", action="store_true", help="send even if it was already sent")
     sub.add_parser("health", help="source health report")
     sub.add_parser("sources", help="list the source registry")
     sub.add_parser("check", help="verify Vertex AI and Telegram configuration (works even when the switch is off)")
@@ -219,7 +244,7 @@ def main(argv: list[str] | None = None) -> None:
 def _dispatch(args, settings) -> None:
     {"collect": cmd_collect, "brief": cmd_brief, "run": cmd_run, "health": cmd_health,
      "sources": cmd_sources, "check": cmd_check, "budget": cmd_budget, "tg-chats": cmd_tg_chats,
-     "tg-test": cmd_tg_test}[args.cmd](args, settings)
+     "tg-test": cmd_tg_test, "send": cmd_send}[args.cmd](args, settings)
 
 
 if __name__ == "__main__":

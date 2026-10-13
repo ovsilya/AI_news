@@ -1,7 +1,7 @@
 """Checks on the editor's output before anything is published.
 
 - every item must cite stories that were actually given to the editor;
-- every number in a title or summary must appear in the cited stories' source text,
+- every number in a title, summary, explainer or pro comment must appear in the cited stories' source text,
   otherwise the sentence is dropped (the title falls back to the source headline).
 Sentence-level citations via the Citations API come in Phase 2.
 """
@@ -12,6 +12,7 @@ import re
 from .editor import SECTION_ORDER, source_text
 from .rank import Story
 
+TEXT_FIELDS = ("summary", "explainer", "pro_take")   # every sentence in these is number-checked
 NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
 SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
@@ -54,14 +55,17 @@ def verify(brief: dict, stories: list[Story]) -> tuple[dict, list[str]]:
             if _unsupported(title, src):
                 warnings.append(f"title {title!r} has unsupported numbers; using source headline")
                 title = by_id[ids[0]].title
-            kept = []
-            for sentence in SENTENCE.split(it.get("summary", "").strip()):
-                bad = _unsupported(sentence, src)
-                if bad:
-                    warnings.append(f"dropped sentence with unsupported {sorted(bad)}: {sentence[:80]!r}")
-                else:
-                    kept.append(sentence)
-            items.append({**it, "story_ids": ids, "title": title, "summary": " ".join(kept)})
+            checked = {}
+            for field in TEXT_FIELDS:
+                kept = []
+                for sentence in SENTENCE.split((it.get(field) or "").strip()):
+                    bad = _unsupported(sentence, src)
+                    if bad:
+                        warnings.append(f"{field}: dropped sentence with unsupported {sorted(bad)}: {sentence[:80]!r}")
+                    else:
+                        kept.append(sentence)
+                checked[field] = " ".join(kept)
+            items.append({**it, **checked, "story_ids": ids, "title": title})
         if items:
             sections.append({"key": sec["key"], "items": items})
     sections.sort(key=lambda s: SECTION_ORDER.index(s["key"]))

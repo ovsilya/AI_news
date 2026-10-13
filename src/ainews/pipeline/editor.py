@@ -1,4 +1,4 @@
-"""Editor (Claude Opus): writes the brief as structured JSON. Links are added by us from story_ids,
+"""Editor: writes the brief as structured JSON, in a teaching style. Links are added by us from story_ids,
 so the model never produces a URL."""
 from __future__ import annotations
 
@@ -26,10 +26,11 @@ SCHEMA = {
                             "properties": {
                                 "story_ids": {"type": "array", "items": {"type": "integer"}},
                                 "title": {"type": "string"},
-                                "summary": {"type": "string"},
-                                "why_it_matters": {"type": "string"},
+                                "summary": {"type": "string"},      # what happened
+                                "explainer": {"type": "string"},    # "What is it?": the idea, in plain words
+                                "pro_take": {"type": "string"},     # "Comment from a pro": why it matters to the reader
                             },
-                            "required": ["story_ids", "title", "summary", "why_it_matters"],
+                            "required": ["story_ids", "title", "summary", "explainer", "pro_take"],
                             "additionalProperties": False,
                         },
                     },
@@ -85,7 +86,7 @@ def brief_without_llm(stories: list[Story]) -> dict:
         sections.setdefault(s.section or "community", []).append({
             "story_ids": [s.id], "title": s.title,
             "summary": (summary[:280] + "…") if len(summary) > 280 else summary,
-            "why_it_matters": "",
+            "explainer": "", "pro_take": "",
         })
     return {
         "headline": "Unranked digest (no LLM): the hottest stories by source count and engagement.",
