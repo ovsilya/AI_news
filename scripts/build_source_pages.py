@@ -79,9 +79,12 @@ RULES = [
     ("Read the article, not just the headline",
      "Many feeds only send a headline or a one-line teaser, which is too little to explain a story. For the stories "
      "that make it into the brief, the collector opens the article page once, checks robots.txt first, and keeps only "
-     "the main text for the writer to read. It never gets around a paywall: a paywalled page simply gives a teaser.",
+     "the main text for the writer to read. It never gets around a paywall: a paywalled page simply gives a teaser. "
+     "Each story in the brief then says how much the writer had: the full article, a paper abstract, an excerpt, "
+     "or only the headline, so you know when to open the link yourself.",
      "For each chosen story with under 800 characters of text: one GET of the article URL (robots.txt honoured), main "
-     "text extracted with trafilatura, cached for 30 days. Google News links can't be opened directly and are skipped."),
+     "text extracted with trafilatura, cached for 30 days. Google News links can't be opened directly and are skipped. "
+     "Coverage flag: 600+ characters of body text is a full article; under 60 beyond the headline is headline only."),
     ("Keep only what's on topic",
      "Some search feeds are broad: a search for Reuters articles about AI also returns elections and oil prices. These "
      "feeds get a keyword filter, so only headlines about AI (or, for the jobs search, about work and jobs) are kept.",
