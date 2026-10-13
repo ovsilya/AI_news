@@ -203,6 +203,16 @@ def main(argv: list[str] | None = None) -> None:
                         format="%(levelname)s %(name)s: %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
     settings = Settings.from_env()
+    from .deliver.telegram import TelegramError
+    from .llm import LLMError
+
+    try:
+        _dispatch(args, settings)
+    except (TelegramError, LLMError) as exc:  # configuration problems: one clear line, no traceback
+        sys.exit(f"ainews: {exc}")
+
+
+def _dispatch(args, settings) -> None:
     {"collect": cmd_collect, "brief": cmd_brief, "run": cmd_run, "health": cmd_health,
      "sources": cmd_sources, "check": cmd_check, "budget": cmd_budget, "tg-chats": cmd_tg_chats,
      "tg-test": cmd_tg_test}[args.cmd](args, settings)
