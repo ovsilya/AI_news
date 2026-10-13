@@ -62,7 +62,9 @@ def cmd_brief(args, settings) -> None:
     print(f"brief #{result['brief_id']}: {result['stats']}")
     print(f"wrote {path}")
     if result["warnings"]:
-        print(f"{len(result['warnings'])} verification warnings (see log with -v)")
+        print(f"{len(result['warnings'])} verification warning(s):")
+        for w in result["warnings"]:
+            print(f"  - {w}")
 
     if args.send:
         from .deliver.telegram import Telegram

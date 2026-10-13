@@ -12,6 +12,7 @@ from ainews.collectors.rss import parse_feed
 from ainews.config import Settings
 from ainews.pipeline.dedup import minhash, similarity
 from ainews.pipeline.normalize import canonical_url
+from ainews.pipeline.verify import _unsupported
 from ainews.registry import load_sources
 
 
@@ -103,3 +104,9 @@ def test_minhash_similarity():
 
 def test_rawitem_defaults():
     assert RawItem(url="u", title="t").engagement == {}
+
+
+def test_verify_ignores_number_formatting_but_not_new_numbers():
+    src = "price per 1M tokens changed: input $0.3 -> $0.045, output $13.5; 1,000 calls"
+    assert not _unsupported("Input fell from $0.30 to $0.045 and output to $13.50 over 1000 calls.", src)
+    assert _unsupported("That is an 85% cut.", src) == {"85"}

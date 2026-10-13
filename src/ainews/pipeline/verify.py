@@ -16,8 +16,14 @@ NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
 SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
 
+def _norm(n: str) -> str:
+    """'1,000' -> '1000', '0.30' -> '0.3', '2.0' -> '2', so formatting differences don't count as new numbers."""
+    n = n.replace(",", "")
+    return n.rstrip("0").rstrip(".") if "." in n else n
+
+
 def _numbers(text: str) -> set[str]:
-    return {n.replace(",", "") for n in NUMBER.findall(text)}
+    return {_norm(n) for n in NUMBER.findall(text)}
 
 
 def _unsupported(text: str, source: str) -> set[str]:
