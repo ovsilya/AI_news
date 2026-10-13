@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # GCP guardrails for the AI_news project. Review before running; it changes billing settings.
 #
-#   scripts/gcp_guardrails.sh PROJECT_ID BILLING_ACCOUNT_ID [MONTHLY_USD] [--with-kill-switch]
+#   scripts/gcp_guardrails.sh PROJECT_ID BILLING_ACCOUNT_ID [MONTHLY_AMOUNT] [--with-kill-switch]
+#
+# MONTHLY_AMOUNT is in the billing account's own currency (budgets must use it): e.g. 14 for a CAD
+# account is about US$10.
 #
 # 1. Creates a monthly budget scoped to this project, with email alerts to billing admins at
 #    25 / 50 / 90 / 100 % of actual spend and at 100 % of forecasted spend.
@@ -21,12 +24,14 @@ TOPIC=billing-guard
 
 gcloud config set project "$PROJECT_ID" >/dev/null
 gcloud services enable billingbudgets.googleapis.com cloudbilling.googleapis.com
+CURRENCY=$(gcloud billing accounts describe "$BILLING_ACCOUNT" --format="value(currencyCode)")
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="value(projectNumber)")
 
 BUDGET_ARGS=(
   --billing-account="$BILLING_ACCOUNT"
   --display-name="AI_news monthly cap"
-  --budget-amount="${AMOUNT}USD"
-  --filter-projects="projects/$PROJECT_ID"
+  --budget-amount="${AMOUNT}${CURRENCY}"
+  --filter-projects="projects/$PROJECT_NUMBER"
   --threshold-rule=percent=0.25
   --threshold-rule=percent=0.5
   --threshold-rule=percent=0.9
@@ -54,4 +59,4 @@ if [[ "$KILL_SWITCH" == "--with-kill-switch" ]]; then
 fi
 
 gcloud billing budgets create "${BUDGET_ARGS[@]}"
-echo "Budget of \$$AMOUNT/month created for $PROJECT_ID${KILL_SWITCH:+ (kill switch on)}."
+echo "Budget of $AMOUNT $CURRENCY/month created for $PROJECT_ID${KILL_SWITCH:+ (kill switch on)}."

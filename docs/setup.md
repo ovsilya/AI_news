@@ -75,7 +75,7 @@ Layers 1 and 2 are already in the code. Layer 3 needs nothing from you while you
 | 1 | **The button**: `AINEWS_LLM_ENABLED=false` (the default) | Every model call, except the deliberate `ainews check` | Immediately | code ✓ |
 | 2 | **App caps**: $0.30 per run, $0.75 per day, $10 per month; at most 120 stories judged; editor output capped at 16k tokens | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI | Before each call | code ✓ |
 | 3 | **Vertex AI quotas**: none to lower for Gemini (see below) | — | — | — |
-| 4 | **Budget alerts**: $10/month, emails at 25/50/90/100% and at 100% forecast | Nothing by itself; it tells you | Hours of delay | script |
+| 4 | **Budget alerts**: about US$10/month (in your billing currency), emails at 25/50/90/100% and at 100% forecast | Nothing by itself; it tells you | Hours of delay | script |
 | 5 | **Kill switch** (optional): unlinks billing when actual spend passes the budget | Everything paid in the project | Hours of delay | script |
 
 **Check spend and caps at any time:**
@@ -85,7 +85,7 @@ Layers 1 and 2 are already in the code. Layer 3 needs nothing from you while you
 
 **Layer 3, quotas.** Gemini on Vertex AI has no per-project limit you can lower. It runs on Google's shared capacity (*Standard PayGo*): your organisation gets a guaranteed share of throughput based on its last 30 days of spend, and anything above that is served when spare capacity exists. A 429 error means Google is busy, not that you hit a limit. So the only real-time cap is layer 2, inside the app. Calls made outside the app, for example with leaked credentials, are stopped only by keeping the credentials safe and by the alerts in layers 4 and 5. Claude models on Vertex do have per-model quotas (IAM & Admin → **Quotas & system limits**), so lower those if you switch to `LLM_PROVIDER=anthropic`.
 
-**Layers 4 and 5, budget and kill switch.** Read [scripts/gcp_guardrails.sh](../scripts/gcp_guardrails.sh) first. It changes billing settings.
+**Layers 4 and 5, budget and kill switch.** Read [scripts/gcp_guardrails.sh](../scripts/gcp_guardrails.sh) first. It changes billing settings. The amount is in your billing account's currency, because Google only accepts budgets in it: for a CAD account use about 14 for US$10. Check the currency with `gcloud billing accounts describe BILLING_ACCOUNT_ID --format="value(currencyCode)"`.
 
 Budget alerts only:
 ```bash
