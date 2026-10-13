@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example AI blog</title>
+    <item>
+      <title>vLLM 0.12 adds speculative decoding for Claude-style models</title>
+      <link>https://www.example.com/blog/vllm-0-12/?utm_source=rss&amp;utm_medium=feed</link>
+      <description>&lt;p&gt;The release improves &lt;b&gt;throughput&lt;/b&gt; by 1.8x on H100.&lt;/p&gt;</description>
+      <pubDate>Mon, 12 Oct 2026 08:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Our office dog turns five</title>
+      <link>https://www.example.com/blog/dog</link>
+      <description>Cake was had.</description>
+      <pubDate>Mon, 12 Oct 2026 09:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>An item with no link</title>
+    </item>
+  </channel>
+</rss>

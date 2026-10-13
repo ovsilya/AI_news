@@ -19,7 +19,7 @@
     {
      "name": "OpenAI developer changelog",
      "url": "https://developers.openai.com/rss.xml",
-     "how": "RSS",
+     "how": "RSS ⚠️ feed stale since 2026-05-05; page diff planned",
      "methods": [
       "rss"
      ]
@@ -133,7 +133,7 @@
     {
      "name": "Vertex AI release notes",
      "url": "https://docs.cloud.google.com/feeds/vertex-ai-release-notes.xml",
-     "how": "RSS",
+     "how": "RSS ⚠️ feed stale since 2026-03-16; page diff planned",
      "methods": [
       "rss"
      ]
@@ -814,7 +814,7 @@
     },
     {
      "name": "SuccessFactors career sites",
-     "url": "https://www.swissre.com/careers.html",
+     "url": "https://careers.swissre.com/sitemap.xml",
      "how": "Sitemap.xml + job pages (Swiss Re, Zurich Insurance, Scotiabank)",
      "methods": [
       "sitemap"

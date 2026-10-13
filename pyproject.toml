@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ainews"
+version = "0.1.0"
+description = "Daily AI-industry brief for ML/GenAI engineers, delivered to Telegram"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic[vertex]>=1.13,<2",
+    "httpx>=0.28,<1",
+    "feedparser>=6.0,<7",
+    "pyyaml>=6.0,<7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+ainews = "ainews.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -10,3 +10,9 @@ node_modules/
 
 # Personal data: profile, skills inventory, gap analyses (never commit)
 private/
+
+# Local runtime state and generated briefs
+data/
+out/
+*.egg-info/
+.pytest_cache/

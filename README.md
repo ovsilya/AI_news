@@ -10,4 +10,27 @@ A personal daily brief for ML / GenAI / LLM engineers and Forward Deployed Engin
 
 ## Status
 
-Design phase — see the roadmap in the architecture doc.
+**Phase 1 (MVP), running locally; not deployed yet.**
+- 47 sources across six layers, defined in [config/sources.yaml](config/sources.yaml), from business and policy down to kernels.
+- Collectors: RSS/Atom, GitHub releases, a CHANGELOG diff, HF Daily Papers, Hacker News, and an OpenRouter model and price diff.
+- Dedup by canonical URL and MinHash, then a heat score.
+- Claude Haiku 5.5 judges stories against your profile, and Claude Opus 5.5 writes the brief, both through Vertex AI. Numbers the sources don't support are dropped before anything is published.
+- Output goes to a local Markdown file and, optionally, the Telegram channel.
+
+Next is Phase 2: embedding dedup, aggregator link votes, feedback buttons, citations, and deployment to Cloud Run.
+
+## Quickstart
+
+```bash
+python3.13 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+cp .env.example .env                      # fill in GCP_PROJECT_ID and the Telegram values
+cp config/profile.example.md private/profile.md   # your profile; private/ is gitignored
+gcloud auth application-default login     # personal Google account; the app uses these credentials for Vertex AI
+.venv/bin/ainews check                    # one tiny call per model (< $0.01) + Telegram getMe
+.venv/bin/ainews run                      # collect, judge, write → out/brief-<date>-am.md
+.venv/bin/ainews run --send               # same, and post to the Telegram channel
+```
+
+Without any credentials, `ainews run --no-llm` builds an unranked digest by heat, with no model calls and no cost. Other commands: `ainews collect`, `ainews brief`, `ainews health` (source health report), `ainews sources`. Tests: `.venv/bin/pytest`.
+
+Runtime state lives in `data/ainews.sqlite`, and briefs are written to `out/`. Both folders are gitignored.

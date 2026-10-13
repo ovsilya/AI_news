@@ -1,0 +1,110 @@
+# Source registry: the sources the pipeline actually collects (Phase 1).
+# The full planned catalogue, with reasons per source, is in docs/sources/ (sources.json).
+#
+# Fields
+#   id            stable key (used in the database; don't rename)
+#   kind          rss | github_releases | changelog | hf_papers | hn | openrouter
+#   layer         big_picture | models | tools | research | systems | community
+#   weight        authority prior, 0.3–1.5 (used in the heat score)
+#   role          primary (original reporting) | proxy (search feed standing in for a missing one)
+#   expect_every  days; the health check flags a source with nothing new for 3x this long
+#   keywords      optional: keep only items whose title or summary contains one of these (case-insensitive)
+#   enabled       default true
+
+ai_keywords: &ai [" AI", "AI ", "A.I.", "artificial intelligence", "LLM", "GPT", "Claude", "Gemini", "OpenAI",
+  "Anthropic", "machine learning", "neural", "model", "agent", "inference", "GPU", "Nvidia", "data center", "chip"]
+
+sources:
+  # --- Vendors -------------------------------------------------------------------
+  - {id: openai-news, name: OpenAI News, kind: rss, url: "https://openai.com/news/rss.xml", layer: models, weight: 1.4, expect_every: 3}
+  - {id: openai-dev, name: OpenAI developer changelog, kind: rss, url: "https://developers.openai.com/rss.xml", layer: tools, weight: 1.3, expect_every: 7,
+     enabled: false}  # feed stale since 2026-05-05; page diff planned (Phase 4)
+  - {id: anthropic-news, name: Anthropic News, kind: rss, url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml", layer: models, weight: 1.4, expect_every: 7}
+  - {id: deepmind, name: Google DeepMind blog, kind: rss, url: "https://deepmind.google/blog/rss.xml", layer: models, weight: 1.3, expect_every: 7}
+  - {id: google-dev, name: Google Developers Blog, kind: rss, url: "https://developers.googleblog.com/rss/", layer: tools, weight: 1.0, expect_every: 7,
+     keywords: ["Gemini", "AI", "agent", "model", "Vertex", "Gemma"]}
+  - {id: mistral, name: Mistral news, kind: rss, url: "https://mistral.ai/news/rss", layer: models, weight: 1.1, expect_every: 14}
+  - {id: hf-blog, name: Hugging Face blog, kind: rss, url: "https://huggingface.co/blog/feed.xml", layer: tools, weight: 1.0, expect_every: 7}
+  - {id: aws-whats-new, name: "AWS What's New", kind: rss, url: "https://aws.amazon.com/about-aws/whats-new/recent/feed/", layer: tools, weight: 0.9, expect_every: 2,
+     keywords: ["Bedrock", "SageMaker", "Amazon Q", "Nova", "Trainium", "Inferentia", "AgentCore"]}
+  - {id: azure-updates, name: Azure updates, kind: rss, url: "https://www.microsoft.com/releasecommunications/api/v2/azure/rss", layer: tools, weight: 0.9, expect_every: 3,
+     keywords: ["AI Foundry", "OpenAI", "Azure AI", "Copilot", "model"]}
+  - {id: vertex-notes, name: Vertex AI release notes, kind: rss, url: "https://docs.cloud.google.com/feeds/vertex-ai-release-notes.xml", layer: tools, weight: 1.0, expect_every: 7,
+     enabled: false}  # feed stale since 2026-03-16 (the generative-AI variant since 2026-05-26); page diff planned
+
+  # --- Newsletters (original writing; link-vote aggregators come in Phase 2) ----------
+  - {id: latent-space, name: Latent Space / AINews, kind: rss, url: "https://www.latent.space/feed", layer: community, weight: 1.2, expect_every: 2}
+  - {id: simonw, name: Simon Willison, kind: rss, url: "https://simonwillison.net/atom/everything/", layer: tools, weight: 1.2, expect_every: 2}
+  - {id: interconnects, name: Interconnects, kind: rss, url: "https://www.interconnects.ai/feed", layer: research, weight: 1.1, expect_every: 7}
+  - {id: import-ai, name: Import AI, kind: rss, url: "https://importai.substack.com/feed", layer: research, weight: 1.0, expect_every: 10}
+
+  # --- Research --------------------------------------------------------------------
+  - {id: hf-papers, name: HF Daily Papers, kind: hf_papers, url: "https://huggingface.co/api/daily_papers", layer: research, weight: 1.0, expect_every: 2,
+     min_upvotes: 15}
+  - {id: arxiv, name: arXiv cs.CL + cs.LG + cs.AI, kind: rss, url: "https://rss.arxiv.org/rss/cs.CL+cs.LG+cs.AI", layer: research, weight: 0.4, expect_every: 2,
+     enabled: false}  # hundreds a day; enable once embedding dedup and a paper prefilter exist (Phase 2)
+
+  # --- Models & code ----------------------------------------------------------------
+  - {id: openrouter, name: OpenRouter models, kind: openrouter, url: "https://openrouter.ai/api/v1/models", layer: models, weight: 1.0, expect_every: 3}
+  - {id: claude-code, name: Claude Code changelog, kind: changelog, url: "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md", layer: tools, weight: 1.0, expect_every: 7,
+     repo_url: "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"}
+  - id: gh-releases
+    name: GitHub releases
+    kind: github_releases
+    layer: tools
+    weight: 1.0
+    expect_every: 7
+    repos: [vllm-project/vllm, sgl-project/sglang, ggml-org/llama.cpp, ollama/ollama, huggingface/transformers,
+            langchain-ai/langgraph, pydantic/pydantic-ai, anthropics/anthropic-sdk-python, openai/openai-python,
+            modelcontextprotocol/python-sdk, BerriAI/litellm, stanfordnlp/dspy, google/adk-python, langfuse/langfuse]
+  - id: gh-kernels
+    name: Kernel and serving releases
+    kind: github_releases
+    layer: systems
+    weight: 1.0
+    expect_every: 14
+    repos: [triton-lang/triton, Dao-AILab/flash-attention, NVIDIA/cutlass, NVIDIA/TensorRT-LLM, unslothai/unsloth, flashinfer-ai/flashinfer]
+
+  # --- Community ----------------------------------------------------------------------
+  - {id: hn, name: Hacker News, kind: hn, url: "https://hn.algolia.com/api/v1/search_by_date", layer: community, weight: 0.9, expect_every: 1,
+     min_points: 100, keywords: *ai}
+  - {id: r-localllama, name: r/LocalLLaMA, kind: rss, url: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day", layer: community, weight: 0.7, expect_every: 1}
+  - {id: r-ml, name: r/MachineLearning, kind: rss, url: "https://www.reddit.com/r/MachineLearning/top/.rss?t=day", layer: community, weight: 0.7, expect_every: 1}
+
+  # --- Big picture: business ---------------------------------------------------------
+  - {id: the-information, name: The Information, kind: rss, url: "https://www.theinformation.com/feed", layer: big_picture, weight: 1.2, expect_every: 1, keywords: *ai}
+  - {id: bloomberg-tech, name: Bloomberg Technology, kind: rss, url: "https://feeds.bloomberg.com/technology/news.rss", layer: big_picture, weight: 1.2, expect_every: 1, keywords: *ai}
+  - {id: reuters-ai, name: Reuters AI (via Google News), kind: rss, role: proxy, layer: big_picture, weight: 1.2, expect_every: 1,
+     url: "https://news.google.com/rss/search?q=site:reuters.com+%22artificial+intelligence%22+when:7d&hl=en-US&gl=US&ceid=US:en"}
+  - {id: techcrunch-ai, name: TechCrunch AI, kind: rss, url: "https://techcrunch.com/category/artificial-intelligence/feed/", layer: big_picture, weight: 1.0, expect_every: 1}
+  - {id: crunchbase-ai, name: Crunchbase News AI, kind: rss, url: "https://news.crunchbase.com/sections/ai/feed/", layer: big_picture, weight: 1.0, expect_every: 3}
+  - {id: techmeme, name: Techmeme, kind: rss, url: "https://www.techmeme.com/feed.xml", layer: big_picture, weight: 1.1, expect_every: 1, keywords: *ai}
+  - {id: semafor, name: Semafor, kind: rss, url: "https://www.semafor.com/rss.xml", layer: big_picture, weight: 0.9, expect_every: 2, keywords: *ai}
+
+  # --- Big picture: policy (US, CA, UK, CH, UAE, EU) ------------------------------------
+  - {id: fed-register, name: US Federal Register (AI), kind: rss, layer: big_picture, weight: 1.0, expect_every: 3,
+     url: "https://www.federalregister.gov/api/v1/documents.rss?conditions%5Bterm%5D=%22artificial+intelligence%22&order=newest"}
+  - {id: statescoop, name: StateScoop, kind: rss, url: "https://statescoop.com/feed/", layer: big_picture, weight: 0.8, expect_every: 3, keywords: *ai}
+  - {id: uk-aisi, name: UK AI Security Institute, kind: rss, url: "https://www.gov.uk/government/organisations/ai-security-institute.atom", layer: big_picture, weight: 1.1, expect_every: 14}
+  - {id: canada-ised, name: Canada ISED news, kind: rss, layer: big_picture, weight: 0.9, expect_every: 7, keywords: *ai,
+     url: "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentofindustry&sort=publishedDate&orderBy=desc&pick=50&format=atom&atomtitle=ISED"}
+  - {id: swiss-admin, name: Swiss federal news service, kind: rss, url: "https://www.newsd.admin.ch/newsd/feeds/rss?lang=en&org-nr=1&kind=M", layer: big_picture, weight: 0.8, expect_every: 7,
+     keywords: ["artificial intelligence", " AI", "AI ", "digital", "algorithm"]}
+  - {id: uae-ai, name: UAE AI (via Google News), kind: rss, role: proxy, layer: big_picture, weight: 0.9, expect_every: 2,
+     url: "https://news.google.com/rss/search?q=(MBZUAI+OR+G42+OR+%22UAE+AI%22+OR+Stargate+UAE)+when:7d&hl=en-AE&gl=AE&ceid=AE:en"}
+  - {id: eu-ai-act, name: EU AI Act Newsletter, kind: rss, url: "https://artificialintelligenceact.substack.com/feed", layer: big_picture, weight: 1.0, expect_every: 14}
+  - {id: transformer, name: Transformer, kind: rss, url: "https://www.transformernews.ai/feed", layer: big_picture, weight: 1.0, expect_every: 7}
+  - {id: metr, name: METR, kind: rss, url: "https://metr.org/feed.xml", layer: research, weight: 1.0, expect_every: 30}
+
+  # --- Low-level systems: compute and ML systems ----------------------------------------
+  - {id: semianalysis, name: SemiAnalysis, kind: rss, url: "https://newsletter.semianalysis.com/feed", layer: systems, weight: 1.3, expect_every: 7}
+  - {id: chips-cheese, name: Chips and Cheese, kind: rss, url: "https://chipsandcheese.com/feed/", layer: systems, weight: 1.1, expect_every: 14}
+  - {id: nvidia-tech, name: NVIDIA Technical Blog, kind: rss, url: "https://developer.nvidia.com/blog/feed/", layer: systems, weight: 1.0, expect_every: 3}
+  - {id: amd-rocm, name: AMD ROCm Blogs, kind: rss, url: "https://rocm.blogs.amd.com/blog/atom.xml", layer: systems, weight: 0.9, expect_every: 14}
+  - {id: next-platform, name: The Next Platform, kind: rss, url: "https://www.nextplatform.com/feed/", layer: systems, weight: 0.9, expect_every: 3}
+  - {id: pytorch-blog, name: PyTorch Blog, kind: rss, url: "https://pytorch.org/blog/feed/", layer: systems, weight: 1.0, expect_every: 14}
+  - {id: vllm-blog, name: vLLM Blog, kind: rss, url: "https://vllm.ai/blog/rss.xml", layer: systems, weight: 1.1, expect_every: 30}
+  - {id: thinking-machines, name: Thinking Machines, kind: rss, url: "https://thinkingmachines.ai/blog/index.xml", layer: research, weight: 1.2, expect_every: 45}
+  - {id: raschka, name: Sebastian Raschka, kind: rss, url: "https://magazine.sebastianraschka.com/feed", layer: research, weight: 1.0, expect_every: 30}
+  - {id: lei-mao, name: Lei Mao, kind: rss, url: "https://leimao.github.io/feed.xml", layer: systems, weight: 0.9, expect_every: 30}
+  - {id: gpu-mode, name: GPU MODE (YouTube), kind: rss, url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCJgIbYl6C5no72a0NUAPcTA", layer: systems, weight: 0.8, expect_every: 30}
