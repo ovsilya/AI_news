@@ -314,7 +314,9 @@ A separate **Trends & future of work** section (3–4 items) covers where AI is 
 
 **Article text.** Feeds often carry only a headline or teaser, so the editor would have nothing to explain. RSS items keep the longer of summary and full content (up to 4,000 characters). Before the editor runs, each chosen story with under 800 characters of text gets one article page fetched (polite fetcher, robots.txt honoured, main text extracted by trafilatura, cached in `article_text`). Paywalled pages give a teaser; Google News links can't be opened, so those stories keep their headline.
 
-**Telegram.** A contents message, then one message per item (section and position, title, what happened, the two notes as quoted blocks with bullet points, links). Only the first message notifies.
+**Telegram.** As few messages as possible, because every message shows up on the phone (only the first one makes a sound). The first message opens with the title, headline and a numbered contents list; whole items follow, packed up to Telegram's 4,096-character limit: section heading, title, date and coverage flag, what happened, the two notes as quoted blocks with bullet points, links. A typical 14-item brief is 8 messages. `ainews tg-clean` deletes the channel's earlier posts and keeps the latest brief (Telegram lets a bot delete its own posts only within 48 hours).
+
+**Date and coverage flag.** Under each title: when the story was published (the earliest feed date of its sources, or when we first saw it if the feed has no date) and how much of it the editor read: 📄 full article (600+ characters of body text), 📄 paper abstract, 📝 excerpt only (a teaser or paywall preview), or 📌 headline only (for example Google News results). The headline-only check ignores text that just repeats the headline.
 
 **Verify** runs after the editor:
 - Drop any sentence without a citation.

@@ -1,4 +1,4 @@
-"""Telegram Bot API: post the brief to the channel (sendMessage, HTML parse mode)."""
+"""Telegram Bot API: post the brief to the channel (sendMessage, HTML parse mode) and clean up old posts."""
 from __future__ import annotations
 
 import time
@@ -50,3 +50,17 @@ class Telegram:
             ids.append(result["message_id"])
             self.sleep(1.0)  # stay well under the per-chat limit
         return ids
+
+    def delete_messages(self, message_ids: list[int]) -> dict[str, list[int]]:
+        """Delete messages one by one; returns their ids as {"deleted", "missing", "refused"}.
+
+        In a channel the bot may delete only the posts it sent itself, and only within 48 hours."""
+        out = {"deleted": [], "missing": [], "refused": []}
+        for mid in message_ids:
+            try:
+                self.call("deleteMessage", {"chat_id": self.chat_id, "message_id": mid})
+                out["deleted"].append(mid)
+            except TelegramError as exc:
+                out["missing" if "not found" in str(exc) else "refused"].append(mid)
+            self.sleep(0.2)
+        return out

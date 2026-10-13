@@ -1,4 +1,4 @@
-"""Command line: `ainews collect | brief | run | send | health | sources | check | budget | tg-chats | tg-test`."""
+"""Command line: `ainews collect | brief | run | send | health | sources | check | budget | tg-chats | tg-test | tg-clean`."""
 from __future__ import annotations
 
 import argparse
@@ -205,6 +205,39 @@ def cmd_send(args, settings) -> None:
     print(f"sent brief #{row['id']} as {len(ids)} Telegram messages")
 
 
+def cmd_tg_clean(args, settings) -> None:
+    """Delete the channel's earlier posts (test runs, old tries), keeping the latest sent brief."""
+    import json
+
+    from .deliver.telegram import Telegram
+
+    conn = db.connect(settings.db_path)
+    row = conn.execute("SELECT id, telegram_message_ids FROM briefs WHERE telegram_message_ids IS NOT NULL"
+                       " ORDER BY id DESC LIMIT 1").fetchone()
+    if row is None or not json.loads(row["telegram_message_ids"]):
+        sys.exit("ainews: no sent brief to keep; nothing deleted")
+    first = min(json.loads(row["telegram_message_ids"]))
+    if first <= 1:
+        print("nothing older than the latest brief")
+        return
+    # Channel message ids count up from 1, so everything below the latest brief's first message is older.
+    if not args.yes:
+        prompt = (f"Delete channel messages 1-{first - 1} and keep brief #{row['id']} (messages {first}+)?"
+                  " This can't be undone. [y/N] ")
+        try:
+            answer = input(prompt)
+        except EOFError:
+            answer = ""
+        if answer.strip().lower() not in ("y", "yes"):
+            sys.exit("cancelled; nothing deleted")
+    result = Telegram(settings.telegram_bot_token, settings.telegram_chat_id).delete_messages(list(range(1, first)))
+    print(f"deleted {len(result['deleted'])} messages ({len(result['missing'])} ids were already gone)")
+    if result["refused"]:
+        print(f"{len(result['refused'])} could not be deleted (ids {', '.join(map(str, result['refused']))}):"
+              " the channel's own service messages, posts you wrote yourself, or posts older than 48 hours."
+              " Remove any you don't want by hand in Telegram.")
+
+
 def cmd_tg_test(args, settings) -> None:
     from .deliver.telegram import Telegram
 
@@ -235,6 +268,8 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("budget", help="show the model switch, spend so far and the caps")
     sub.add_parser("tg-chats", help="list chats the bot has seen (to find TELEGRAM_CHAT_ID)")
     sub.add_parser("tg-test", help="send a test message to TELEGRAM_CHAT_ID")
+    tc = sub.add_parser("tg-clean", help="delete the channel's earlier posts, keeping only the latest sent brief")
+    tc.add_argument("--yes", action="store_true", help="don't ask for confirmation")
 
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING,
@@ -253,7 +288,7 @@ def main(argv: list[str] | None = None) -> None:
 def _dispatch(args, settings) -> None:
     {"collect": cmd_collect, "brief": cmd_brief, "run": cmd_run, "health": cmd_health,
      "sources": cmd_sources, "check": cmd_check, "budget": cmd_budget, "tg-chats": cmd_tg_chats,
-     "tg-test": cmd_tg_test, "send": cmd_send}[args.cmd](args, settings)
+     "tg-test": cmd_tg_test, "tg-clean": cmd_tg_clean, "send": cmd_send}[args.cmd](args, settings)
 
 
 if __name__ == "__main__":

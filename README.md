@@ -36,6 +36,6 @@ gcloud auth application-default login     # personal Google account; the app use
 .venv/bin/ainews run --redo               # rebuild the latest brief; judge scores are reused, so it's cheap
 ```
 
-Without any credentials, `ainews run --no-llm` builds an unranked digest by heat, with no model calls and no cost. Other commands: `ainews collect`, `ainews brief`, `ainews health` (source health report), `ainews sources`, `ainews budget` (switch state, spend and caps), `ainews tg-chats` and `ainews tg-test` (Telegram setup). Tests: `.venv/bin/pytest`.
+Without any credentials, `ainews run --no-llm` builds an unranked digest by heat, with no model calls and no cost. Other commands: `ainews collect`, `ainews brief`, `ainews health` (source health report), `ainews sources`, `ainews budget` (switch state, spend and caps), `ainews tg-chats` and `ainews tg-test` (Telegram setup), `ainews tg-clean` (delete the channel's earlier posts, keeping the latest sent brief). Tests: `.venv/bin/pytest`.
 
 Runtime state lives in `data/ainews.sqlite`, and briefs are written to `out/`. Both folders are gitignored.

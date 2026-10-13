@@ -4,10 +4,12 @@ Feeds often carry only a headline or a short teaser. For each chosen story whose
 we fetch one article page with the polite fetcher, honour robots.txt, and keep the main text
 (extracted by trafilatura), cached in article_text so a redo doesn't fetch again. Paywalled pages
 give only a teaser. Google News links can't be opened directly, so those stories keep their headline.
+coverage() tells the reader how much of each story the editor actually saw.
 """
 from __future__ import annotations
 
 import logging
+import re
 import sqlite3
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
@@ -77,6 +79,29 @@ def _article(conn: sqlite3.Connection, fetcher, robots: Robots, url: str) -> str
     conn.execute("INSERT OR REPLACE INTO article_text VALUES (?, ?, ?, ?)", (url, text, status, now()))
     conn.commit()
     return text
+
+
+ARTICLE_CHARS = 600    # this much body text counts as the full article (paywall teasers are shorter)
+HEADLINE_CHARS = 60    # less than this beyond the headline: we only had the headline
+PAPER_URLS = ("arxiv.org/abs/", "huggingface.co/papers/")
+COVERAGE_RANK = {"article": 3, "abstract": 2, "excerpt": 1, "headline": 0}
+
+
+def _beyond_title(text: str, title: str) -> int:
+    """Characters of text that aren't the headline repeated (Google News summaries repeat it)."""
+    seen = set(re.findall(r"\w+", title.lower()))
+    return sum(len(w) + 1 for w in re.findall(r"\w+", text.lower()) if w not in seen)
+
+
+def coverage(s: Story) -> str:
+    """What the editor had to work from: "article", "abstract" (papers), "excerpt" or "headline"."""
+    body, paper = 0, False
+    for it in s.items:
+        paper = paper or any(p in it["url"] for p in PAPER_URLS)
+        body = max(body, len(it.get("full_text") or ""), _beyond_title(it.get("summary") or "", it["title"]))
+    if body >= ARTICLE_CHARS:
+        return "abstract" if paper else "article"
+    return "excerpt" if body >= HEADLINE_CHARS else "headline"
 
 
 def enrich(conn: sqlite3.Connection, fetcher, stories: list[Story], excerpt_len) -> dict:

@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from ainews.collectors import RawItem
-from ainews.deliver.render import TELEGRAM_LIMIT, to_telegram
+from ainews.deliver.render import TELEGRAM_LIMIT, to_telegram, visible_len
 from ainews.deliver.telegram import Telegram, TelegramError
 from ainews.http import Fetcher
 from ainews.pipeline.brief import build_brief, drop_latest_brief
@@ -91,13 +91,17 @@ def test_brief_with_fake_llm_verifies_and_renders(conn, settings):
     # Links come from the stored items, including the HN discussion.
     assert "https://vendor.ai/blog/model-x" in md and "news.ycombinator.com/item?id=9" in md
     assert len(result["warnings"]) == 5
-    # Telegram: a contents message, then one message per item.
+    # Telegram: as few messages as possible; this small brief fits in one, contents first.
     tg = result["telegram"]
-    assert len(tg) == 3 and "1. Model X ships with 1M context" in tg[0] and "2. Startup Y raises a big round" in tg[0]
-    assert "<b>1. Model X ships with 1M context</b>" in tg[1] and "1 of 2" in tg[1]
-    assert "<blockquote>💡 <b>What is it?</b>" in tg[1] and "🎓 <b>Comment from a pro</b>" in tg[1]
-    assert "• <b>How it works:</b>" in tg[1] and "📰 <b>What happened</b>" in tg[1]
-    assert "<b>2. Startup Y raises a big round</b>" in tg[2] and "<blockquote>" not in tg[2]
+    assert len(tg) == 1
+    m = tg[0]
+    assert m.index("\n1. Model X ships with 1M context") < m.index("<b>1. Model X ships with 1M context</b>")
+    assert "<b>2. Startup Y raises a big round</b>" in m and "footer" not in m and "run cost" in m
+    assert "<blockquote>💡 <b>What is it?</b>" in m and "🎓 <b>Comment from a pro</b>" in m
+    assert "• <b>How it works:</b>" in m and "📰 <b>What happened</b>" in m
+    # Each item says when it appeared (no feed date here, so when we first saw it) and how much the editor read.
+    assert m.count("🗓 first seen") == 2 and m.count("📌 Headline only") == 2
+    assert result["stats"]["coverage"] == {"headline": 2}
     # Shown stories are not repeated in the next brief.
     again = build_brief(conn, settings, SOURCES, llm=FakeLLM(), now_dt=NOW)
     assert again["stats"]["candidates"] == 0
@@ -109,22 +113,74 @@ def test_brief_with_fake_llm_verifies_and_renders(conn, settings):
     assert redo["stats"]["candidates"] == 2 and redo_llm.calls == ["editor"]
 
 
-def test_telegram_messages_respect_the_limit():
+def _brief(n_items, pro_words):
     from ainews.pipeline.rank import Story
 
     stories = {i: Story(i, f"Story {i}", "tools", 1.0, "", items=[
-        {"source_id": "blog", "url": f"https://e.com/{i}", "discussion_url": None}]) for i in range(60)}
+        {"source_id": "blog", "url": f"https://e.com/{i}", "discussion_url": None, "title": f"Story {i}",
+         "summary": "", "published_at": "2026-10-12T00:00:00+00:00"}]) for i in range(n_items)}
     brief = {"headline": "h", "sections": [{"key": "tools", "items": [
-        {"story_ids": [i], "title": f"Title {i}", "summary": "word " * 60,
-         "explainer": {"intro": "idea " * 30, "points": ["How it works: " + "step " * 40] * 3},
-         "pro_take": {"intro": "because", "points": ["Learn: " + "this " * 900]}}  # far over the limit
-        for i in range(12)]}]}
+        {"story_ids": [i], "title": f"Title {i}", "summary": "word " * 120,
+         "explainer": {"intro": "idea " * 40, "points": ["How it works: " + "step " * 60] * 3},
+         "pro_take": {"intro": "because", "points": ["Learn: " + "this " * pro_words]}}
+        for i in range(n_items)]}]}
+    return brief, stories
+
+
+def test_telegram_packs_whole_items_into_few_messages():
+    brief, stories = _brief(10, 20)
     messages = to_telegram(brief, stories, {"blog": "Blog"}, "AI Brief", "footer")
-    assert all(len(m) <= TELEGRAM_LIMIT for m in messages)
+    assert all(visible_len(m) <= TELEGRAM_LIMIT for m in messages)
+    assert len(messages) <= 6       # was 11: a contents message plus one per item
+    for i in range(10):             # every item whole: its title and its closing links in the same message
+        holder = [m for m in messages if f"<b>{i + 1}. Title {i}</b>" in m]
+        assert len(holder) == 1 and f'href="https://e.com/{i}"' in holder[0]
+    assert "footer" in messages[-1] and messages[0].startswith("📰 <b>AI Brief</b>")
+    # A date-only feed time (midnight UTC) keeps its calendar day in any time zone.
+    assert "🗓 Mon 12 Oct" in messages[1] or "🗓 Mon 12 Oct" in messages[0]
+
+
+def test_telegram_messages_respect_the_limit():
+    brief, stories = _brief(12, 900)   # pro_take far over the limit
+    messages = to_telegram(brief, stories, {"blog": "Blog"}, "AI Brief", "footer")
+    assert all(visible_len(m) <= TELEGRAM_LIMIT for m in messages)
     assert sum(f"<b>{i + 1}. Title {i}</b>" in m for m in messages for i in range(12)) == 12
-    assert "footer" in messages[-1] or any("footer" in m for m in messages)
+    assert "footer" in messages[-1] and "Title 3, continued" in "".join(messages)
     # Tags are never split across messages.
     assert all(m.count("<blockquote") == m.count("</blockquote>") for m in messages)
+
+
+def test_coverage_flag():
+    from ainews.pipeline.fulltext import coverage
+    from ainews.pipeline.rank import Story
+
+    def story(url="https://e.com/a", title="Kroger plans to cut 3,000 roles - Reuters", summary="", full_text=None):
+        it = {"source_id": "x", "url": url, "title": title, "summary": summary}
+        if full_text:
+            it["full_text"] = full_text
+        return Story(1, title, "trends", 1.0, "", items=[it])
+
+    assert coverage(story(summary="Kroger plans to cut 3,000 roles Reuters")) == "headline"   # Google News
+    assert coverage(story(summary="The grocer said on Monday that it will move work to AI tools. " * 3)) == "excerpt"
+    assert coverage(story(full_text="Body text. " * 100)) == "article"
+    assert coverage(story(full_text="A paywall teaser.")) == "headline"
+    assert coverage(story(url="https://arxiv.org/abs/2610.01234", summary="We propose a method. " * 40)) == "abstract"
+
+
+def test_telegram_delete_reports_what_was_removed():
+    def handler(request):
+        mid = json.loads(request.content)["message_id"]
+        if mid == 1:
+            return httpx.Response(400, json={"ok": False, "error_code": 400,
+                                             "description": "Bad Request: message can't be deleted"})
+        if mid == 2:
+            return httpx.Response(400, json={"ok": False, "error_code": 400,
+                                             "description": "Bad Request: message to delete not found"})
+        return httpx.Response(200, json={"ok": True, "result": True})
+
+    tg = Telegram("123:SECRET", "@channel", client=httpx.Client(transport=httpx.MockTransport(handler)),
+                  sleep=lambda s: None)
+    assert tg.delete_messages([1, 2, 3, 4]) == {"deleted": [3, 4], "missing": [2], "refused": [1]}
 
 
 def test_fetcher_conditional_get_and_retry(conn):

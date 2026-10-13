@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 from ..db import finish_run, now, start_run
@@ -11,7 +12,7 @@ from ..deliver.render import to_markdown, to_telegram
 from ..llm import BudgetExceeded
 from .dedup import assign_stories
 from .editor import brief_without_llm, source_text, write_brief
-from .fulltext import enrich
+from .fulltext import coverage, enrich
 from .rank import load_candidates, select, select_by_heat
 from .score import judge
 from .verify import verify
@@ -77,6 +78,7 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
         footer = (f"{len(shown)} stories from {stats['candidates']} candidates · "
                   f"{sum(1 for _ in sources)} sources · run cost ${cost:.3f}")
         by_id = {s.id: s for s in chosen}
+        stats["coverage"] = dict(Counter(coverage(by_id[i]) for i in shown))  # full article, excerpt, …
         markdown = to_markdown(brief, by_id, names, title, footer)
         telegram = to_telegram(brief, by_id, names, title, footer)
         brief_id = conn.execute(

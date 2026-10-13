@@ -73,7 +73,7 @@ Layers 1 and 2 are already in the code. Layer 3 needs nothing from you while you
 | # | Guardrail | What it stops | Acts | Where |
 |---|---|---|---|---|
 | 1 | **The button**: `AINEWS_LLM_ENABLED=false` (the default) | Every model call, except the deliberate `ainews check` | Immediately | code ✓ |
-| 2 | **App caps**: $0.30 per run, $0.75 per day, $10 per month; at most 120 stories judged; editor output capped at 24k tokens | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI | Before each call | code ✓ |
+| 2 | **App caps**: $0.30 per run, $0.75 per day, $10 per month; at most 120 stories judged; editor output capped at 32k tokens | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI | Before each call | code ✓ |
 | 3 | **Vertex AI quotas**: none to lower for Gemini (see below) | — | — | — |
 | 4 | **Budget alerts**: about US$10/month (in your billing currency), emails at 25/50/90/100% and at 100% forecast | Nothing by itself; it tells you | Hours of delay | script |
 | 5 | **Kill switch** (optional): unlinks billing when actual spend passes the budget | Everything paid in the project | Hours of delay | script |
@@ -124,5 +124,10 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
    .venv/bin/ainews send
    ```
    To rebuild the latest brief instead (for example after editing `prompts/editor.md`), run `ainews run --redo`. Its stories become available again and the judge's scores are reused, so only the editor is paid for again.
+7. To clear test posts out of the channel, keeping only the latest sent brief:
+   ```bash
+   .venv/bin/ainews tg-clean
+   ```
+   It asks before deleting. Telegram lets a bot delete its own posts only within 48 hours; it lists anything it couldn't remove (service messages, posts you wrote yourself, older posts), so you can delete those by hand.
 
 **To switch off again,** set `AINEWS_LLM_ENABLED=false`. It takes effect on the next run.
