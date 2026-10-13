@@ -28,6 +28,11 @@ Work through the sections in order. Model calls stay **off** until the last step
    ```
    The channel should receive "AI_news test".
 
+**`tg-chats` says "No chats seen yet":** the bot only receives messages posted *after* it became an admin.
+- Check that the bot is listed under the channel's Administrators, then post a new message and rerun.
+- If Telegram won't let you add the bot, temporarily send `/setjoingroups` → **Enable** to BotFather, add the bot, then disable it again.
+- Another way to get the ID: open the channel in Telegram Web (web.telegram.org/a). The address bar ends with the chat ID (`#-100…`).
+
 If the token ever leaks, send `/revoke` to BotFather, pick the bot, and put the new token in `.env`.
 
 *Later (Phase 2):* the bot gets a webhook for the 👍/👎 buttons and profile edits. After that `tg-chats` stops working, which is expected: Telegram delivers updates either to a webhook or to `getUpdates`, never both.
