@@ -47,6 +47,7 @@ class Settings:
     max_usd_per_month: float = 10.0
     max_judge_stories: int = 120
     max_jobs_extract: int = 200    # postings read by the model per jobs run
+    state_bucket: str = ""         # in the cloud: the bucket holding the database and private files (cloud.py)
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -80,6 +81,7 @@ class Settings:
             max_usd_per_month=float(env("AINEWS_MAX_USD_PER_MONTH", "10")),
             max_judge_stories=int(env("AINEWS_MAX_JUDGE_STORIES", "120")),
             max_jobs_extract=int(env("AINEWS_MAX_JOBS_EXTRACT", "200")),
+            state_bucket=env("AINEWS_STATE_BUCKET", ""),
         )
 
     def profile_text(self) -> str:

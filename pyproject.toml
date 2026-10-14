@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 claude = ["anthropic[vertex]>=1.13,<2"]   # only for LLM_PROVIDER=anthropic
+cloud = ["google-cloud-storage>=2.18,<4"]   # the deployed jobs, and `ainews state`
 dev = ["pytest>=8"]
 
 [project.scripts]

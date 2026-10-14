@@ -1,5 +1,5 @@
-"""Command line: `ainews collect | brief | run | send | jobs | jobs-probe | weekly | health | sources | check | budget |
-tg-chats | tg-test | tg-clean`."""
+"""Command line: `ainews collect | brief | run | send | jobs | jobs-probe | openings | weekly | health | sources | check |
+budget | tg-chats | tg-test | tg-clean | state`."""
 from __future__ import annotations
 
 import argparse
@@ -210,6 +210,8 @@ def cmd_jobs(args, settings) -> None:
             print(f"extracted {ex['extracted']} postings ({ex['failed']} failed), {left} still to read;"
                   f" cost ${llm.total_cost:.4f}" + (f"; stopped: {ex['budget_stop']}" if ex.get("budget_stop") else ""))
     db.finish_run(conn, run_id, "ok", stats)
+    if args.send_openings:   # the deployed daily run: the day's openings go out once the new postings are read
+        cmd_openings(argparse.Namespace(send=True, redo=False, tier=[]), settings)
 
 
 def cmd_jobs_probe(args, settings) -> None:
@@ -415,6 +417,32 @@ def cmd_tg_clean(args, settings) -> None:
               " Remove any you don't want by hand in Telegram.")
 
 
+def cmd_state(args, settings) -> None:
+    """The cloud copy of the database and private files (see cloud.py): pull it to look at, or push yours."""
+    from .cloud import bucket_for, copy_db, current_generation, pull, push, push_private
+
+    name = args.bucket or settings.state_bucket or f"{settings.gcp_project_id}-ainews-state"
+    bucket = bucket_for(settings, name)
+    if args.action == "pull":
+        if settings.db_path.exists():
+            keep = settings.db_path.with_name(f"ainews.local-{datetime.now():%Y%m%d-%H%M%S}.sqlite")
+            copy_db(settings.db_path, keep)   # with its WAL, which the pull removes
+            print(f"kept your local database as {keep.name}")
+        generation = pull(settings, bucket, private=args.private)
+        print(f"pulled gs://{name}/ainews.sqlite (generation {generation})" if generation
+              else f"gs://{name} holds no database yet")
+        return
+    if args.private:
+        print(f"pushed private files: {', '.join(push_private(settings, bucket)) or 'none found'}")
+    if not settings.db_path.exists():
+        sys.exit(f"ainews: no local database at {settings.db_path}")
+    held = current_generation(bucket)
+    if held and not args.force:
+        sys.exit(f"ainews: gs://{name} already holds a database, newer runs may be in it; pull it, or push with"
+                 " --force to replace it (the bucket keeps the replaced version for 30 days)")
+    print(f"pushed the database to gs://{name} (generation {push(settings, bucket, held)})")
+
+
 def cmd_tg_test(args, settings) -> None:
     from .deliver.telegram import Telegram
 
@@ -446,6 +474,8 @@ def main(argv: list[str] | None = None) -> None:
     j.add_argument("--only", help="comma-separated company ids")
     j.add_argument("--no-llm", action="store_true", help="poll and diff only; no model calls")
     j.add_argument("--max-extract", type=int, help="postings the model reads this run (default 200)")
+    j.add_argument("--send-openings", action="store_true",
+                   help="then build the day's openings and post them (what the deployed daily run does)")
     op = sub.add_parser("openings", help="this week's new postings that fit you best (local file; --send to post)")
     op.add_argument("--send", action="store_true", help="post to the Telegram channel; each posting is sent once")
     op.add_argument("--redo", action="store_true",
@@ -468,6 +498,11 @@ def main(argv: list[str] | None = None) -> None:
     tc = sub.add_parser("tg-clean", help="delete the channel's earlier and replaced posts, keeping the latest brief,"
                                          " jobs report and openings")
     tc.add_argument("--yes", action="store_true", help="don't ask for confirmation")
+    st = sub.add_parser("state", help="the cloud copy of the database: pull it here, or push yours (first deploy)")
+    st.add_argument("action", choices=["pull", "push"])
+    st.add_argument("--private", action="store_true", help="also your private files (profile, skills, openings)")
+    st.add_argument("--force", action="store_true", help="push: replace the cloud database")
+    st.add_argument("--bucket", help="default: AINEWS_STATE_BUCKET, else <project>-ainews-state")
 
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING,
@@ -477,17 +512,30 @@ def main(argv: list[str] | None = None) -> None:
     from .deliver.telegram import TelegramError
     from .llm import LLMError
 
+    synced = bool(settings.state_bucket) and args.cmd not in NO_STATE
+    if synced:   # deployed: the database lives in the bucket between runs
+        from .cloud import bucket_for, pull, push
+
+        bucket = bucket_for(settings)
+        generation = pull(settings, bucket)
     try:
         _dispatch(args, settings)
     except (TelegramError, LLMError) as exc:  # configuration problems: one clear line, no traceback
         sys.exit(f"ainews: {exc}")
+    finally:
+        if synced:   # also after a failure: what was read and paid for so far is kept
+            push(settings, bucket, generation)
+
+
+NO_STATE = {"state", "jobs-probe", "sources", "tg-chats", "tg-test"}   # commands that never touch the database
 
 
 def _dispatch(args, settings) -> None:
     {"collect": cmd_collect, "brief": cmd_brief, "run": cmd_run, "health": cmd_health,
      "sources": cmd_sources, "check": cmd_check, "budget": cmd_budget, "tg-chats": cmd_tg_chats,
      "tg-test": cmd_tg_test, "tg-clean": cmd_tg_clean, "send": cmd_send, "jobs": cmd_jobs,
-     "jobs-probe": cmd_jobs_probe, "weekly": cmd_weekly, "openings": cmd_openings}[args.cmd](args, settings)
+     "jobs-probe": cmd_jobs_probe, "weekly": cmd_weekly, "openings": cmd_openings,
+     "state": cmd_state}[args.cmd](args, settings)
 
 
 if __name__ == "__main__":

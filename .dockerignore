@@ -1,0 +1,13 @@
+# What a docker build may copy: only these. Never private/, data/, out/, .env.
+*
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!src/
+!src/**
+!config/
+!config/**
+!prompts/
+!prompts/**
+src/**/__pycache__/
+src/*.egg-info/
