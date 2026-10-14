@@ -124,11 +124,11 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
    .venv/bin/ainews send
    ```
    To rebuild the latest brief instead (for example after editing `prompts/editor.md`), run `ainews run --redo`. Its stories become available again and the judge's scores are reused, so only the editor is paid for again.
-7. To clear test posts out of the channel, keeping only the latest sent brief:
+7. To clear test posts out of the channel, keeping only the latest sent brief, jobs report and openings:
    ```bash
    .venv/bin/ainews tg-clean
    ```
-   It asks before deleting. Telegram lets a bot delete its own posts only within 48 hours; it lists anything it couldn't remove (service messages, posts you wrote yourself, older posts), so you can delete those by hand.
+   It also removes posts that a newer version replaced, such as openings sent again with `ainews openings --redo`, and only posts it has a record of sending. It asks before deleting. Telegram lets a bot delete its own posts only within 48 hours; it lists anything it couldn't remove (service messages, posts you wrote yourself, older posts), so you can delete those by hand.
 
 **To switch off again,** set `AINEWS_LLM_ENABLED=false`. It takes effect on the next run.
 

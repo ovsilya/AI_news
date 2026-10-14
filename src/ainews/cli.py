@@ -367,29 +367,38 @@ def cmd_send(args, settings) -> None:
 
 def cmd_tg_clean(args, settings) -> None:
     """Delete the channel's earlier posts (test runs, old tries), keeping the latest sent brief, jobs report and
-    openings."""
+    openings: every message older than the oldest kept post, and any post we sent after it that a newer one
+    replaced (say, openings sent again with --redo)."""
     import json
 
     from .deliver.telegram import Telegram
 
     conn = db.connect(settings.db_path)
-    kept = []
+    kept, kept_ids, sent_ids = [], set(), set()
     for table, kind in (("briefs", None), ("reports", "jobs_weekly"), ("reports", "jobs_openings")):
         where = " AND kind = ?" if kind else ""
         row = conn.execute(f"SELECT telegram_message_ids FROM {table} WHERE telegram_message_ids IS NOT NULL{where}"
                            " ORDER BY id DESC LIMIT 1", (kind,) if kind else ()).fetchone()
         if row and json.loads(row["telegram_message_ids"]):
             kept.append(min(json.loads(row["telegram_message_ids"])))
+            kept_ids |= set(json.loads(row["telegram_message_ids"]))
     if not kept:
         sys.exit("ainews: no sent brief to keep; nothing deleted")
+    for table in ("briefs", "reports"):
+        for (ids,) in conn.execute(f"SELECT telegram_message_ids FROM {table} WHERE telegram_message_ids IS NOT NULL"):
+            sent_ids |= set(json.loads(ids))
     first = min(kept)
-    if first <= 1:
-        print("nothing older than the latest brief")
+    # Channel message ids count up from 1, so everything below the kept posts' first message is older. Above
+    # it, only posts we sent and have since replaced go: never a message we have no record of sending.
+    replaced = sorted(i for i in sent_ids - kept_ids if i >= first)
+    if first <= 1 and not replaced:
+        print("nothing older than the latest posts")
         return
-    # Channel message ids count up from 1, so everything below the kept posts' first message is older.
+    older = [f"1-{first - 1}"] if first > 1 else []
     if not args.yes:
-        prompt = (f"Delete channel messages 1-{first - 1} and keep the latest brief, jobs report and openings"
-                  f" (messages {first}+)?"
+        what = " and ".join(older + ([f"{', '.join(map(str, replaced))} (replaced by newer posts)"] if replaced else []))
+        prompt = (f"Delete channel messages {what}, and keep the latest brief, jobs report and openings"
+                  f" ({', '.join(str(i) for i in sorted(kept_ids))})?"
                   " This can't be undone. [y/N] ")
         try:
             answer = input(prompt)
@@ -397,7 +406,8 @@ def cmd_tg_clean(args, settings) -> None:
             answer = ""
         if answer.strip().lower() not in ("y", "yes"):
             sys.exit("cancelled; nothing deleted")
-    result = Telegram(settings.telegram_bot_token, settings.telegram_chat_id).delete_messages(list(range(1, first)))
+    result = Telegram(settings.telegram_bot_token, settings.telegram_chat_id).delete_messages(
+        list(range(1, first)) + replaced)
     print(f"deleted {len(result['deleted'])} messages ({len(result['missing'])} ids were already gone)")
     if result["refused"]:
         print(f"{len(result['refused'])} could not be deleted (ids {', '.join(map(str, result['refused']))}):"
@@ -455,7 +465,8 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("budget", help="show the model switch, spend so far and the caps")
     sub.add_parser("tg-chats", help="list chats the bot has seen (to find TELEGRAM_CHAT_ID)")
     sub.add_parser("tg-test", help="send a test message to TELEGRAM_CHAT_ID")
-    tc = sub.add_parser("tg-clean", help="delete the channel's earlier posts, keeping only the latest sent brief")
+    tc = sub.add_parser("tg-clean", help="delete the channel's earlier and replaced posts, keeping the latest brief,"
+                                         " jobs report and openings")
     tc.add_argument("--yes", action="store_true", help="don't ask for confirmation")
 
     args = p.parse_args(argv)

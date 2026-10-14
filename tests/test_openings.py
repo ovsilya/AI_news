@@ -195,3 +195,29 @@ def test_send_picks_the_right_kind_of_report(settings, monkeypatch):
     assert FakeTelegram.sent == [["weekly"], ["openings"]]
     with pytest.raises(SystemExit, match="already sent"):
         cli.cmd_send(Namespace(report=False, openings=True, force=False), settings)
+
+
+class FakeDeleter:
+    asked: list = []
+
+    def __init__(self, token, chat_id):
+        pass
+
+    def delete_messages(self, ids):
+        FakeDeleter.asked = ids
+        return {"deleted": ids, "missing": [], "refused": []}
+
+
+def test_tg_clean_also_removes_replaced_posts(settings, monkeypatch, capsys):
+    conn = db.connect(settings.db_path)
+    conn.execute("INSERT INTO briefs (created_at, edition, story_ids, markdown, telegram_html, telegram_message_ids)"
+                 " VALUES ('t', 'am', '[]', '', '[]', '[31, 32]')")
+    for ids in ("[39, 40]", "[41]"):   # openings, then the same openings sent again with --redo
+        conn.execute("INSERT INTO reports (created_at, kind, stats, markdown, telegram_html, telegram_message_ids)"
+                     " VALUES ('t', 'jobs_openings', '{}', '', '[]', ?)", (ids,))
+    conn.commit()
+    monkeypatch.setattr("ainews.deliver.telegram.Telegram", FakeDeleter)
+    monkeypatch.setattr("builtins.input", lambda prompt: print(prompt) or "y")
+    cli.cmd_tg_clean(Namespace(yes=False), settings)
+    assert FakeDeleter.asked == list(range(1, 31)) + [39, 40]                 # the brief and the newer openings stay
+    assert "1-30 and 39, 40 (replaced by newer posts)" in capsys.readouterr().out

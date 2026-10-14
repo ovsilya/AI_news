@@ -93,7 +93,7 @@
 <li><b>Building isn't sending.</b> <code>ainews openings</code> saves the message (and <code>out/openings-&lt;date&gt;.md</code>) without sending. Postings count as sent only once the message goes out with <code>--send</code> or <code>ainews send --openings</code>, so a preview never uses them up.</li>
 <li><b>The record:</b> the <code>job_alerts</code> table holds every posting sent, with its fit and the report it went out in.</li>
 <li><b>Unread postings:</b> when new postings in your roles still wait for the model, the heading says how many. They become candidates after the next <code>ainews jobs</code> run reads them, as long as they're still within {{openings_fresh_days}} days.</li>
-<li><b>Cleaning the channel:</b> <code>ainews tg-clean</code> keeps the latest openings, brief and jobs report.</li>
+<li><b>Cleaning the channel:</b> <code>ainews tg-clean</code> keeps the latest openings, brief and jobs report, and removes older posts and the earlier copy of openings sent again with <code>--redo</code>.</li>
 </ul>
 
 <h2 id="daily">The daily routine</h2>
