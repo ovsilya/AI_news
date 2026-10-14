@@ -23,6 +23,20 @@
 <tr><td><code>ainews budget</code></td><td>Shows model spending against the caps</td></tr>
 </tbody></table></div>
 
+<h2 id="cloud">In the cloud</h2>
+<p>Deployed on GCP (<a href="https://github.com/ovsilya/AI_news/blob/main/docs/setup.md#6-deploy-to-gcp-cloud-run-jobs-on-a-schedule">setup §6</a>), three Cloud Run jobs run on a schedule in your time zone: <code>ainews-jobs</code> at 05:00 (<code>ainews jobs --send-openings</code>), <code>ainews-brief</code> at 06:00, and <code>ainews-weekly</code> on Mondays at 07:00. Each run downloads the database from a private bucket, works on it, and uploads it again, so don't run the lanes on the laptop as well.</p>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:46%">Command</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>gcloud run jobs execute ainews-jobs --region us-west1 --wait</code></td><td>Runs the daily jobs lane now, openings included</td></tr>
+<tr><td><code>gcloud run jobs execute ainews-jobs --region us-west1 --args=openings,--redo,--send</code></td><td>Any <code>ainews</code> command, in the cloud, on the cloud database</td></tr>
+<tr><td><code>ainews state pull</code></td><td>Copies the cloud database to <code>data/</code> to look at; your local one is kept beside it</td></tr>
+<tr><td><code>ainews state push --private</code></td><td>Uploads your changed <code>private/</code> files (skills, openings preferences, profile)</td></tr>
+<tr><td><code>infra/deploy.sh release</code></td><td>Builds the image from the current code and updates the jobs</td></tr>
+<tr><td><code>infra/deploy.sh unschedule</code> / <code>schedule</code></td><td>Pauses or resumes the schedule</td></tr>
+</tbody></table></div>
+<p class="muted">Each run's output is in the console under Cloud Run → Jobs → the job → its executions → Logs.</p>
+
 <h2 id="settings">Settings</h2>
 <p>In <code>.env</code> (see <code>.env.example</code>); all are optional.</p>
 <div class="tablewrap"><table>

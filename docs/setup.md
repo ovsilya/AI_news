@@ -101,8 +101,8 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
 
 **Credentials.**
 - There is no Anthropic API key anywhere. The app signs in to Vertex AI with your Google login on this laptop.
-- After deployment it will use a dedicated service account with only the *Vertex AI User* role.
-- `.env` is gitignored. On Cloud Run the Telegram token will live in Secret Manager.
+- Deployed, the jobs use a dedicated service account (`ainews-run`) with only the *Vertex AI User* role and access to its own bucket and secret.
+- `.env` is gitignored. On Cloud Run the Telegram token lives in Secret Manager.
 
 **Expected cost once on:** about $0.03–0.05 per brief: the judge on Gemini 3.1 Flash-Lite ($0.25 / $1.50 per 1M tokens) costs about a cent for the new stories, and the editor on 3.5 Flash-Lite ($0.30 / $2.50) about two to three cents. With two briefs a day that's about $2–3 a month. A run after changing `prompts/judge.md` re-scores every candidate and costs about $0.05. Prices are from the Vertex AI pricing page, checked 2026-10-12.
 
@@ -153,3 +153,31 @@ Nothing to sign up for: the employers' job boards (Greenhouse, Lever, Ashby) are
    ```
    It writes `out/jobs-<date>.md` (about 1 cent for the notes). Read it, then post it with `ainews send --report`, or build and post in one go with `ainews weekly --send`. Rising and falling skills appear after two weeks of tracking.
 5. **Add an employer:** `ainews jobs-probe <slug> …` prints a ready-to-paste line for `config/companies.yaml` when the employer uses Greenhouse, Lever or Ashby; check the `tier` it guesses (`startup`; `established` for Workday) and change it to `top` or `established` when that fits better. For a Workday employer, `ainews jobs-probe --workday <tenant> …` (the first part of its `*.myworkdayjobs.com` address, e.g. `nvidia`) lists the career sites its robots.txt allows, with their open postings; keep the main one and drop the sites that repeat it.
+
+## 6. Deploy to GCP (Cloud Run jobs on a schedule)
+
+Deployed, everything runs on its own and posts to the channel: the jobs lane and the day's openings at 05:00, the brief at 06:00, and the weekly jobs report on Mondays at 07:00, in your time zone. [infra/deploy.sh](../infra/deploy.sh) does it in steps you can run again safely; it reads the project from `GCP_PROJECT_ID` and the time zone from `AINEWS_TZ` in `.env`.
+
+| Piece | What it is |
+|---|---|
+| **Cloud Run jobs** | `ainews-jobs` (`ainews jobs --send-openings`), `ainews-brief` (`ainews run --send`), `ainews-weekly` (`ainews weekly --send`): one image, one task each, no retries, so a failed run never posts twice |
+| **Cloud Scheduler** | `ainews-jobs-daily`, `ainews-brief-am`, `ainews-weekly-mon` start them (three triggers, within the free tier) |
+| **State bucket** | `gs://<project>-ainews-state`, private and versioned: the database and your private files between runs. Each run downloads them and uploads the database when it ends, only if no other run saved one in between; the 20 earlier copies are kept for up to 30 days |
+| **Secret Manager** | The bot token (`ainews-telegram-bot-token`) |
+| **Artifact Registry** | The image (`ainews` repository, the 3 newest kept), built by Cloud Build from an allowlist ([.gcloudignore](../.gcloudignore)): code and public config only, never `private/`, `data/` or `.env` |
+
+1. **Install the cloud extra** for `ainews state`: `.venv/bin/pip install -e ".[dev,cloud]"`. Add `AINEWS_TZ=Europe/London` (your zone) to `.env`.
+2. **Set up the project:** `infra/deploy.sh setup`. It enables the APIs and creates the image repository, the bucket, two service accounts and an empty secret, then prints the command that copies your bot token into the secret without showing it. Run that command yourself.
+3. **Upload the database and your private files:** `infra/deploy.sh state`. From now on the bucket's copy is the one the app uses: don't run `ainews jobs`, `run` or `weekly` on the laptop, or the two copies drift apart.
+4. **Build and create the jobs:** `infra/deploy.sh release` (about a minute). Run it again after every code change; the image is tagged with the commit.
+5. **Try it without posting:** `gcloud run jobs execute ainews-brief --region us-west1 --args=check --wait` runs `ainews check` in the cloud (under $0.01).
+6. **Turn on the schedule:** `infra/deploy.sh schedule`. `infra/deploy.sh unschedule` pauses it.
+
+**Day to day.**
+- **Run a lane now:** `gcloud run jobs execute ainews-jobs --region us-west1 --wait` (or `ainews-brief`, `ainews-weekly`). Any command works with `--args`, for example `--args=openings,--redo,--send` or `--args=budget`.
+- **Watch it:** Cloud Run → Jobs in the console lists every run with its logs, or `gcloud logging read 'resource.type="cloud_run_job"' --freshness 1d --format 'value(textPayload)'`.
+- **Look at the data:** `ainews state pull` copies the cloud database to `data/` (your local one is kept as `data/ainews.local-<time>.sqlite`); then `ainews budget` and the SQL in [Run & change it](jobs/operate.html#data) work on it.
+- **Changed your profile, skills or openings preferences?** `ainews state push --private` uploads them; the cloud database stays as it is.
+
+**Cost.** The jobs use about 10 minutes of one CPU a day, within or close to Cloud Run's free tier; the bucket, image and secret cost cents a month. Model calls are unchanged from running by hand, about $3–8 a month, and the app's own caps ($0.75 a day, $10 a month) still apply: they count the calls recorded in the database, which every run shares.
+

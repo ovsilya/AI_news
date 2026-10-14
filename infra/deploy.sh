@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Deploys AI_news to GCP: one image, four Cloud Run jobs, Cloud Scheduler triggers, and a private bucket
+# Deploys AI_news to GCP: one image, three Cloud Run jobs, Cloud Scheduler triggers, and a private bucket
 # that holds the database and your private files between runs (src/ainews/cloud.py).
 #
 #   infra/deploy.sh setup      APIs, image repository, state bucket, service accounts, the bot-token secret
 #   infra/deploy.sh state      upload data/ainews.sqlite and private/ (the first time; refuses to replace)
-#   infra/deploy.sh release    build the image and create or update the four jobs (after every code change)
+#   infra/deploy.sh release    build the image and create or update the three jobs (after every code change)
 #   infra/deploy.sh schedule   create or update the Scheduler triggers: from then on it posts on its own
 #   infra/deploy.sh unschedule pause all triggers (the jobs and data stay)
 #
@@ -28,18 +28,16 @@ SCHED_SA="ainews-scheduler@${PROJECT}.iam.gserviceaccount.com"
 SECRET="ainews-telegram-bot-token"
 G=(--project "$PROJECT" --quiet)
 
-# Lane jobs: name, command, timeout.
+# Lane jobs: name, command, timeout. An evening brief would be one more: run,--edition,pm,--send
 JOBS=(
   "ainews-jobs|jobs,--send-openings|45m"
   "ainews-brief|run,--send|30m"
-  "ainews-brief-pm|run,--edition,pm,--send|30m"
   "ainews-weekly|weekly,--send|20m"
 )
 # Triggers: name, job, cron, in TZ_NAME.
 SCHEDULES=(
   "ainews-jobs-daily|ainews-jobs|0 5 * * *"
   "ainews-brief-am|ainews-brief|0 6 * * *"
-  "ainews-brief-pm|ainews-brief-pm|0 18 * * *"
   "ainews-weekly-mon|ainews-weekly|0 7 * * 1"
 )
 

@@ -13,7 +13,7 @@ Browse the HTML docs online: **[ovsilya.github.io/AI_news](https://ovsilya.githu
 
 ## Status
 
-**Phase 1 (MVP) and the first part of Phase 3 (jobs), running locally; not deployed yet.**
+**Phase 1 (MVP) and the first part of Phase 3 (jobs), deployed on GCP** (since 2026-10-14): Cloud Run jobs started by Cloud Scheduler post the openings at 05:00, the brief at 06:00 and the weekly jobs report on Mondays ([setup §6](docs/setup.md#6-deploy-to-gcp-cloud-run-jobs-on-a-schedule)).
 - 54 news sources across seven layers, defined in [config/sources.yaml](config/sources.yaml), from business and policy down to kernels.
 - Collectors: RSS/Atom, GitHub releases, a CHANGELOG diff, HF Daily Papers, Hacker News, and an OpenRouter model and price diff.
 - Dedup by canonical URL and MinHash, then a heat score.
@@ -21,7 +21,7 @@ Browse the HTML docs online: **[ovsilya.github.io/AI_news](https://ovsilya.githu
 - Output goes to a local Markdown file and, optionally, the Telegram channel.
 - **Jobs lane:** polls the public job boards (Greenhouse, Lever, Ashby) of 97 employers, mostly AI companies, and searches the Workday career sites of 32 banks, insurers, pharma and big-tech employers (NVIDIA, Salesforce, Capital One, TD, Barclays, Roche…) for AI roles; all 129 are listed in [config/companies.yaml](config/companies.yaml). It keeps postings in the target roles (FDE and applied AI, solutions, LLM/GenAI, AI and ML engineering) and markets (US, CA, UK, CH, UAE, remote), tracks new and closed ones, and has Gemini 3.1 Flash-Lite read each posting into skills, seniority, remote policy and pay. Every day, the new postings that fit your skills and level best go to Telegram, ranked in code and sent once each (`ainews openings`), with places shared between established companies, startups and top-tier names so the list isn't all frontier labs. A weekly jobs report shows the skills employers ask for, pay, who is hiring, and how your skills (`private/skills.yaml`) cover the demand.
 
-Next: SerpApi Google Jobs and job-alert emails for the jobs lane (employers off the job-board systems, and better CH and UAE coverage); then Phase 2: embedding dedup, aggregator link votes, feedback buttons, citations, and deployment to Cloud Run.
+Next: SerpApi Google Jobs and job-alert emails for the jobs lane (employers off the job-board systems, and better CH and UAE coverage); then Phase 2: embedding dedup, aggregator link votes, feedback buttons, citations.
 
 ## Quickstart
 
@@ -44,4 +44,4 @@ gcloud auth application-default login     # personal Google account; the app use
 
 Without any credentials, `ainews run --no-llm` builds an unranked digest by heat, with no model calls and no cost. Other commands: `ainews collect`, `ainews brief`, `ainews health` (source health report), `ainews sources`, `ainews budget` (switch state, spend and caps), `ainews tg-chats` and `ainews tg-test` (Telegram setup), `ainews tg-clean` (delete the channel's earlier and replaced posts, keeping the latest sent brief, jobs report and openings), `ainews send --report` (post the latest jobs report), `ainews jobs-probe <slug>…` (find which job board an employer uses). Tests: `.venv/bin/pytest`.
 
-Runtime state lives in `data/ainews.sqlite`, and briefs are written to `out/`. Both folders are gitignored.
+Runtime state lives in `data/ainews.sqlite`, and briefs are written to `out/`. Both folders are gitignored. Deployed, the database lives in a private Cloud Storage bucket between runs; `ainews state pull` copies it here. Deploy with [infra/deploy.sh](infra/deploy.sh) (`setup`, `state`, `release`, `schedule`).
