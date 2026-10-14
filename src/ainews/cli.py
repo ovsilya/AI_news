@@ -213,7 +213,7 @@ def cmd_jobs(args, settings) -> None:
 
 
 def cmd_jobs_probe(args, settings) -> None:
-    """Find which job board an employer uses: prints a companies.yaml line for each hit."""
+    """Find which job board an employer uses: prints a companies.yaml line for each hit, with a tier to check."""
     from .http import Fetcher
     from .jobs.boards import probe
 
@@ -230,7 +230,8 @@ def cmd_jobs_probe(args, settings) -> None:
                 for board, n in sites:
                     site = board.split("/", 1)[1]
                     cid = name if len(sites) == 1 else f"{name}-{site.lower()}"
-                    print(f'  - {{id: {cid}, name: {name}, ats: workday, board: "{board}", ai_native: false}}   # {n} open')
+                    print(f'  - {{id: {cid}, name: {name}, ats: workday, board: "{board}", ai_native: false,'
+                          f' tier: established}}   # {n} open; check the tier')
         finally:
             fetcher.close()
         return
@@ -241,7 +242,8 @@ def cmd_jobs_probe(args, settings) -> None:
                 print(f"# {slug}: no Greenhouse, Lever or Ashby board")
             for ats, n in hits:
                 region = ", region: eu" if ats == "lever-eu" else ""
-                print(f"  - {{id: {slug}, name: {slug}, ats: {ats.split('-')[0]}, board: {slug}{region}}}   # {n} open")
+                print(f"  - {{id: {slug}, name: {slug}, ats: {ats.split('-')[0]}, board: {slug}{region}, tier: startup}}"
+                      f"   # {n} open; check the tier")
     finally:
         fetcher.close()
 
@@ -279,10 +281,17 @@ def cmd_weekly(args, settings) -> None:
 
 def cmd_openings(args, settings) -> None:
     """Lane ②: this week's new postings that fit you best (local file; --send posts them, each once)."""
-    from .jobs.openings import build_openings, mark_sent
+    from .jobs.boards import TIERS
+    from .jobs.openings import TIER_LABELS, build_openings, mark_sent
 
+    per_tier = {}
+    for item in args.tier:
+        name, _, n = item.partition("=")
+        if name not in TIERS or not n.isdigit():
+            sys.exit(f"ainews: --tier wants GROUP=N, GROUP one of {', '.join(TIERS)} (e.g. --tier top=0), not {item!r}")
+        per_tier[name] = int(n)
     conn = db.connect(settings.db_path)
-    result = build_openings(conn, settings, top=args.top)
+    result = build_openings(conn, settings, per_tier=per_tier)
     wait = f"; {result['unread']} more new postings wait for the model to read them" if result["unread"] else ""
     if not result["report_id"]:
         print(f"no new openings above the fit bar: {result['considered']} new postings in your roles and markets{wait}")
@@ -293,7 +302,7 @@ def cmd_openings(args, settings) -> None:
     print(f"openings #{result['report_id']}: {len(result['picked'])} of {result['considered']} new postings{wait}"
           f" · wrote {path}")
     for g in result["picked"]:
-        print(f"  {g['fit']:>3}  {g['title']} · {g['company']}")
+        print(f"  {g['fit']:>3}  {TIER_LABELS[g['tier']]:<14} {g['title']} · {g['company']}")
     if not result["has_profile"]:
         print("  (no private/skills.yaml: ranked by seniority only)")
     if args.send:
@@ -426,7 +435,9 @@ def main(argv: list[str] | None = None) -> None:
     j.add_argument("--max-extract", type=int, help="postings the model reads this run (default 200)")
     op = sub.add_parser("openings", help="this week's new postings that fit you best (local file; --send to post)")
     op.add_argument("--send", action="store_true", help="post to the Telegram channel; each posting is sent once")
-    op.add_argument("--top", type=int, help="how many to show (default 8, or top in private/openings.yaml)")
+    op.add_argument("--tier", action="append", default=[], metavar="GROUP=N",
+                    help="places for one employer group this run, e.g. --tier top=0 --tier startup=5"
+                         " (groups: top, established, startup; defaults 2, 3, 3 or per_tier in private/openings.yaml)")
     jp = sub.add_parser("jobs-probe", help="check which job board (Greenhouse, Lever, Ashby, Workday) an employer uses")
     jp.add_argument("slugs", nargs="+", help="board slugs, or Workday tenants with --workday (e.g. nvidia or nvidia.wd5)")
     jp.add_argument("--workday", action="store_true", help="find the tenants' Workday career sites")

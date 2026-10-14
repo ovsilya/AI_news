@@ -17,6 +17,7 @@ from ..collectors import html_to_text
 
 LIST_ATS = ("greenhouse", "lever", "ashby")   # boards that return their full list of open postings
 ATS = LIST_ATS + ("workday",)
+TIERS = ("top", "established", "startup")   # how hard the employer is to get into; openings mix all three
 DESCRIPTION_CHARS = 12_000
 PERIODS = {"1 YEAR": "year", "1 MONTH": "month", "1 HOUR": "hour", "per-year-salary": "year",
            "per-month-salary": "month", "per-hour-wage": "hour"}
@@ -31,6 +32,7 @@ class Company:
     ai_native: bool = True   # an AI company: its solutions and research roles count as AI roles
     enabled: bool = True
     region: str = ""      # "eu" for Lever's EU instance
+    tier: str = ""        # one of TIERS; required in companies.yaml
 
 
 @dataclass
@@ -54,6 +56,8 @@ def load_companies(path: Path, include_disabled: bool = False) -> list[Company]:
         c = Company(**row)
         if c.ats not in ATS:
             raise ValueError(f"{c.id}: unknown ats {c.ats!r}")
+        if c.tier not in TIERS:
+            raise ValueError(f"{c.id}: tier must be one of {', '.join(TIERS)}, not {c.tier!r}")
         if c.id in seen:
             raise ValueError(f"duplicate company id {c.id}")
         seen.add(c.id)

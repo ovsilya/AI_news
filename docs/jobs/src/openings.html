@@ -1,8 +1,8 @@
 <h1>4 · Openings for you</h1>
-<p class="lede">Every day, <code>ainews openings</code> picks the week's new postings that fit you best and sends them to the Telegram channel, <b>each posting once</b>. It makes no model call: the ranking uses the form the model already filled in for each posting (step 3), your skills list, and your preferences. This is step J3 on the architecture diagram.</p>
+<p class="lede">Every day, <code>ainews openings</code> picks the week's new postings that fit you best, <b>shared between established companies, startups and top-tier names</b>, and sends them to the Telegram channel, <b>each posting once</b>. It makes no model call: the ranking uses the form the model already filled in for each posting (step 3), your skills list, and your preferences. This is step J3 on the architecture diagram.</p>
 
 <div class="frame">
-<svg viewBox="0 0 1000 140" role="img" aria-label="New postings the model has read pass your filters, get a fit score from skills and level, are grouped and capped, and the best go to Telegram, where they are marked as sent">
+<svg viewBox="0 0 1000 140" role="img" aria-label="New postings the model has read pass your filters, get a fit score from skills and level, share the day's places between three employer groups, and go to Telegram, where they are marked as sent">
   <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
   <rect class="store" x="2" y="20" width="172" height="100" rx="9"/>
   <text class="t" x="88" y="48" text-anchor="middle">New, read postings</text>
@@ -16,10 +16,10 @@
   <text class="t" x="500" y="48" text-anchor="middle">Fit, 0–100</text>
   <text class="s" x="500" y="70" text-anchor="middle">skills {{skill_points}} points</text>
   <text class="s" x="500" y="88" text-anchor="middle">level {{level_points}} points</text></a>
-  <a href="#pick"><rect class="comp" x="620" y="20" width="172" height="100" rx="9"/>
-  <text class="t" x="706" y="48" text-anchor="middle">Best {{openings_top}}</text>
-  <text class="s" x="706" y="70" text-anchor="middle">fit {{openings_min_fit}}+ · one per role</text>
-  <text class="s" x="706" y="88" text-anchor="middle">≤ {{per_employer}} per employer</text></a>
+  <a href="#groups"><rect class="comp" x="620" y="20" width="172" height="100" rx="9"/>
+  <text class="t" x="706" y="48" text-anchor="middle">{{openings_total}} places, 3 groups</text>
+  <text class="s" x="706" y="70" text-anchor="middle">{{places_established}} established · {{places_startup}} startups</text>
+  <text class="s" x="706" y="88" text-anchor="middle">{{places_top}} top tier · fit {{openings_min_fit}}+</text></a>
   <a href="#message"><rect class="ext" x="826" y="20" width="172" height="100" rx="9"/>
   <text class="t" x="912" y="48" text-anchor="middle">Telegram</text>
   <text class="s" x="912" y="70" text-anchor="middle">when you send it,</text>
@@ -51,16 +51,33 @@
 <p>An example with a <b>made-up</b> skills list (yours stays private). The posting is the Legora FDE role from <a href="extract.html#example">step 3</a>, a mid-level job; say your list has {{example_have}}, and you're learning {{example_learning}}:</p>
 {{openings_example}}
 
+<h2 id="groups">Three employer groups</h2>
+<p>Ranked by fit alone, most days would go to frontier labs and the best-known AI companies: their postings are written for exactly these skills, and they post a lot. Those are also the hardest offers to get. So every employer belongs to one of three groups, and each group has its own places in the day's list:</p>
+<div class="tablewrap"><table>
+<thead><tr><th style="width:18%">Group</th><th>Who</th><th style="width:14%" class="num">Employers</th><th style="width:14%" class="num">Places a day</th></tr></thead>
+<tbody>
+<tr><td>🏢 Established</td><td>Public companies, banks, insurers, pharma and consulting firms, and private companies past roughly 1,000 people: Salesforce, Capital One, TD, Roche, Datadog, Snowflake, CoreWeave…</td><td class="num">{{n_tier_established}}</td><td class="num">{{places_established}}</td></tr>
+<tr><td>🌱 Startups</td><td>Smaller private companies: Legora, Dust, Faculty, LangChain, Baseten, Supabase…</td><td class="num">{{n_tier_startup}}</td><td class="num">{{places_startup}}</td></tr>
+<tr><td>🏆 Top tier</td><td>Frontier labs, the most sought-after AI companies and big-tech brands: {{top_tier_names}}</td><td class="num">{{n_tier_top}}</td><td class="num">{{places_top}}</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>Places left empty move on.</b> When a group has fewer good matches than places, the best matches from the other groups take them, so a quiet day for one group doesn't shorten the list.</li>
+<li><b>Top tier never takes more than its {{places_top}}</b>, however many top-tier postings fit. A group set to 0 gets nothing, not even places left empty.</li>
+<li><b>The group is the employer's, set by hand</b> in <code>config/companies.yaml</code> (<code>tier: top</code>, <code>established</code> or <code>startup</code>). It's a judgment of how hard the employer is to get into, not a fact from the data: move an employer when its hiring bar feels different to you. Each employer's group is in the <a href="sources.html#employers">employer list</a>.</li>
+<li><b>Change the places</b> with <code>per_tier</code> in <code>private/openings.yaml</code>, or for one run with <code>--tier</code>: <code>ainews openings --tier top=0</code> leaves top tier out today.</li>
+</ul>
+
 <h2 id="pick">From candidates to the day's list</h2>
 <ol>
 <li><b>Best fit first</b>, newer first among equal fits.</li>
 <li><b>One entry per role.</b> The same title at the same employer in several cities is one entry, listing all its places; every posting in it counts as sent.</li>
-<li><b>At most {{per_employer}} per employer</b>, so one big employer can't fill the list.</li>
-<li><b>The best {{openings_top}} with a fit of at least {{openings_min_fit}}.</b> Change both with <code>top</code> and <code>min_fit</code>. On a quiet day the list is shorter, and on a day with nothing above the bar nothing is sent.</li>
+<li><b>At most {{per_employer}} per employer</b>, so one big employer can't fill a group.</li>
+<li><b>A fit of at least {{openings_min_fit}}</b> (<code>min_fit</code>), whatever the group.</li>
+<li><b>Each group fills its places</b> ({{per_tier_text}}), then <a href="#groups">empty places move on</a> to the best of the rest, never to top tier. On a quiet day the list is shorter, and on a day with nothing above the bar nothing is sent.</li>
 </ol>
 
 <h2 id="message">What arrives in Telegram</h2>
-<p>A heading with how many postings were considered, then one block per opening, packed into as few messages as fit, with one notification. The example above, rendered by the same code:</p>
+<p>A heading with how many postings were considered, then the openings under their group's heading (🏢 Established, 🌱 Startups, 🏆 Top tier, numbered straight through, best fit first in each), packed into as few messages as fit, with one notification. The example above, rendered by the same code:</p>
 <div class="tg">{{openings_preview}}</div>
 <ul>
 <li><b>📍</b> where (the first two places, and how many more), the work policy, the level, and “visa sponsorship” when the posting says it offers it.</li>
@@ -86,7 +103,7 @@
 <tr><td><code>ainews openings</code></td><td>Ranks the candidates, prints the list with each fit, and saves the message; nothing is sent</td></tr>
 <tr><td><code>ainews send --openings</code></td><td>Sends the message you just checked</td></tr>
 <tr><td><code>ainews openings --send</code></td><td>Builds and sends in one go</td></tr>
-<tr><td><code>ainews openings --top 12</code></td><td>A longer list this time</td></tr>
+<tr><td><code>ainews openings --tier top=0</code></td><td>No top-tier openings this time; <code>--tier startup=5</code> gives startups more places. The rest keep their places</td></tr>
 </tbody></table></div>
 <p class="muted">Free and instant: no model call, no network call except to Telegram. After deployment, the daily 05:00 jobs run will send the openings at the end.</p>
 

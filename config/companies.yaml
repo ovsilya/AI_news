@@ -5,118 +5,124 @@
 #   ai_native: an AI company; its solutions, research and "technical staff" roles count as AI roles.
 #              Set false for other tech companies: there only titles that name AI or ML count.
 #   region:    eu for Lever's EU instance
+#   tier:      how hard the employer is to get into; the daily openings mix all three
+#              top:         frontier labs, the most sought-after AI companies, big-tech brands
+#              established: public companies, banks, insurers, pharma, consulting, and private
+#                           companies past roughly 1,000 people
+#              startup:     smaller private companies
+#              A judgment call: move an employer when its hiring bar feels different to you.
 # Probed 2026-10-12 (Workday 2026-10-13). SuccessFactors, Oracle and the other enterprise boards
 # come in a later step; see docs/job-sources-markets.md.
 
 companies:
   # Frontier labs and model companies
-  - {id: anthropic, name: Anthropic, ats: greenhouse, board: anthropic}
-  - {id: openai, name: OpenAI, ats: ashby, board: openai}
-  - {id: xai, name: xAI, ats: greenhouse, board: xai}
-  - {id: cohere, name: Cohere, ats: ashby, board: cohere}
-  - {id: thinking-machines, name: Thinking Machines Lab, ats: ashby, board: thinkingmachines}
-  - {id: reflection, name: Reflection AI, ats: ashby, board: reflectionai}
-  - {id: isomorphic, name: Isomorphic Labs, ats: greenhouse, board: isomorphiclabs}
-  - {id: physical-intelligence, name: Physical Intelligence, ats: ashby, board: physicalintelligence}
-  - {id: figure, name: Figure, ats: greenhouse, board: figureai}
-  - {id: wayve, name: Wayve, ats: ashby, board: wayve}
-  - {id: waabi, name: Waabi, ats: lever, board: waabi}
-  - {id: helsing, name: Helsing, ats: ashby, board: helsing}
-  - {id: aleph-alpha, name: Aleph Alpha, ats: ashby, board: alephalpha}
-  - {id: character, name: Character.AI, ats: ashby, board: character}
+  - {id: anthropic, name: Anthropic, ats: greenhouse, board: anthropic, tier: top}
+  - {id: openai, name: OpenAI, ats: ashby, board: openai, tier: top}
+  - {id: xai, name: xAI, ats: greenhouse, board: xai, tier: top}
+  - {id: cohere, name: Cohere, ats: ashby, board: cohere, tier: top}
+  - {id: thinking-machines, name: Thinking Machines Lab, ats: ashby, board: thinkingmachines, tier: top}
+  - {id: reflection, name: Reflection AI, ats: ashby, board: reflectionai, tier: top}
+  - {id: isomorphic, name: Isomorphic Labs, ats: greenhouse, board: isomorphiclabs, tier: top}
+  - {id: physical-intelligence, name: Physical Intelligence, ats: ashby, board: physicalintelligence, tier: top}
+  - {id: figure, name: Figure, ats: greenhouse, board: figureai, tier: top}
+  - {id: wayve, name: Wayve, ats: ashby, board: wayve, tier: startup}
+  - {id: waabi, name: Waabi, ats: lever, board: waabi, tier: startup}
+  - {id: helsing, name: Helsing, ats: ashby, board: helsing, tier: startup}
+  - {id: aleph-alpha, name: Aleph Alpha, ats: ashby, board: alephalpha, tier: startup}
+  - {id: character, name: Character.AI, ats: ashby, board: character, tier: startup}
 
   # AI applications and agents (many hire FDEs and applied AI engineers)
-  - {id: palantir, name: Palantir, ats: lever, board: palantir}
-  - {id: sierra, name: Sierra, ats: ashby, board: sierra}
-  - {id: decagon, name: Decagon, ats: ashby, board: decagon}
-  - {id: harvey, name: Harvey, ats: ashby, board: harvey}
-  - {id: legora, name: Legora, ats: ashby, board: legora}
-  - {id: glean, name: Glean, ats: greenhouse, board: gleanwork}
-  - {id: perplexity, name: Perplexity, ats: ashby, board: perplexity}
-  - {id: cursor, name: Cursor, ats: ashby, board: cursor}
-  - {id: cognition, name: Cognition, ats: ashby, board: cognition}
-  - {id: factory, name: Factory, ats: ashby, board: factory}
-  - {id: replit, name: Replit, ats: ashby, board: replit}
-  - {id: lovable, name: Lovable, ats: ashby, board: lovable}
-  - {id: writer, name: Writer, ats: ashby, board: writer}
-  - {id: cresta, name: Cresta, ats: greenhouse, board: cresta}
-  - {id: abridge, name: Abridge, ats: ashby, board: abridge}
-  - {id: ambience, name: Ambience Healthcare, ats: ashby, board: ambiencehealthcare}
-  - {id: elevenlabs, name: ElevenLabs, ats: ashby, board: elevenlabs}
-  - {id: synthesia, name: Synthesia, ats: ashby, board: synthesia}
-  - {id: deepgram, name: Deepgram, ats: ashby, board: deepgram}
-  - {id: assemblyai, name: AssemblyAI, ats: greenhouse, board: assemblyai}
-  - {id: speechmatics, name: Speechmatics, ats: greenhouse, board: speechmatics}
-  - {id: suno, name: Suno, ats: ashby, board: suno}
-  - {id: luma, name: Luma AI, ats: ashby, board: lumaai}
-  - {id: midjourney, name: Midjourney, ats: ashby, board: midjourney}
-  - {id: pika, name: Pika, ats: ashby, board: pika}
-  - {id: photoroom, name: Photoroom, ats: ashby, board: photoroom}
-  - {id: hume, name: Hume AI, ats: greenhouse, board: humeai}
-  - {id: articul8, name: Articul8, ats: ashby, board: articul8}
-  - {id: typeface, name: Typeface, ats: greenhouse, board: typeface}
-  - {id: dust, name: Dust, ats: ashby, board: dust}
-  - {id: faculty, name: Faculty, ats: ashby, board: faculty}
-  - {id: quantexa, name: Quantexa, ats: ashby, board: quantexa}
-  - {id: tractable, name: Tractable, ats: ashby, board: tractable}
-  - {id: shield-ai, name: Shield AI, ats: lever, board: shieldai}
-  - {id: observeai, name: Observe.AI, ats: greenhouse, board: observeai}
+  - {id: palantir, name: Palantir, ats: lever, board: palantir, tier: top}
+  - {id: sierra, name: Sierra, ats: ashby, board: sierra, tier: top}
+  - {id: decagon, name: Decagon, ats: ashby, board: decagon, tier: startup}
+  - {id: harvey, name: Harvey, ats: ashby, board: harvey, tier: top}
+  - {id: legora, name: Legora, ats: ashby, board: legora, tier: startup}
+  - {id: glean, name: Glean, ats: greenhouse, board: gleanwork, tier: top}
+  - {id: perplexity, name: Perplexity, ats: ashby, board: perplexity, tier: top}
+  - {id: cursor, name: Cursor, ats: ashby, board: cursor, tier: top}
+  - {id: cognition, name: Cognition, ats: ashby, board: cognition, tier: top}
+  - {id: factory, name: Factory, ats: ashby, board: factory, tier: startup}
+  - {id: replit, name: Replit, ats: ashby, board: replit, tier: startup}
+  - {id: lovable, name: Lovable, ats: ashby, board: lovable, tier: startup}
+  - {id: writer, name: Writer, ats: ashby, board: writer, tier: startup}
+  - {id: cresta, name: Cresta, ats: greenhouse, board: cresta, tier: startup}
+  - {id: abridge, name: Abridge, ats: ashby, board: abridge, tier: startup}
+  - {id: ambience, name: Ambience Healthcare, ats: ashby, board: ambiencehealthcare, tier: startup}
+  - {id: elevenlabs, name: ElevenLabs, ats: ashby, board: elevenlabs, tier: top}
+  - {id: synthesia, name: Synthesia, ats: ashby, board: synthesia, tier: startup}
+  - {id: deepgram, name: Deepgram, ats: ashby, board: deepgram, tier: startup}
+  - {id: assemblyai, name: AssemblyAI, ats: greenhouse, board: assemblyai, tier: startup}
+  - {id: speechmatics, name: Speechmatics, ats: greenhouse, board: speechmatics, tier: startup}
+  - {id: suno, name: Suno, ats: ashby, board: suno, tier: startup}
+  - {id: luma, name: Luma AI, ats: ashby, board: lumaai, tier: startup}
+  - {id: midjourney, name: Midjourney, ats: ashby, board: midjourney, tier: top}
+  - {id: pika, name: Pika, ats: ashby, board: pika, tier: startup}
+  - {id: photoroom, name: Photoroom, ats: ashby, board: photoroom, tier: startup}
+  - {id: hume, name: Hume AI, ats: greenhouse, board: humeai, tier: startup}
+  - {id: articul8, name: Articul8, ats: ashby, board: articul8, tier: startup}
+  - {id: typeface, name: Typeface, ats: greenhouse, board: typeface, tier: startup}
+  - {id: dust, name: Dust, ats: ashby, board: dust, tier: startup}
+  - {id: faculty, name: Faculty, ats: ashby, board: faculty, tier: startup}
+  - {id: quantexa, name: Quantexa, ats: ashby, board: quantexa, tier: startup}
+  - {id: tractable, name: Tractable, ats: ashby, board: tractable, tier: startup}
+  - {id: shield-ai, name: Shield AI, ats: lever, board: shieldai, tier: established}
+  - {id: observeai, name: Observe.AI, ats: greenhouse, board: observeai, tier: startup}
 
   # Tooling, data and evals for AI engineering
-  - {id: langchain, name: LangChain, ats: ashby, board: langchain}
-  - {id: llamaindex, name: LlamaIndex, ats: ashby, board: llamaindex}
-  - {id: pinecone, name: Pinecone, ats: ashby, board: pinecone}
-  - {id: weaviate, name: Weaviate, ats: ashby, board: weaviate}
-  - {id: zilliz, name: Zilliz, ats: lever, board: zilliz}
-  - {id: unstructured, name: Unstructured, ats: ashby, board: unstructured}
-  - {id: braintrust, name: Braintrust, ats: ashby, board: braintrust}
-  - {id: arize, name: Arize AI, ats: greenhouse, board: arizeai}
-  - {id: snorkel, name: Snorkel AI, ats: greenhouse, board: snorkelai}
-  - {id: scale, name: Scale AI, ats: greenhouse, board: scaleai}
-  - {id: labelbox, name: Labelbox, ats: greenhouse, board: labelbox}
-  - {id: mercor, name: Mercor, ats: ashby, board: mercor}
-  - {id: turing, name: Turing, ats: greenhouse, board: turing}
-  - {id: invisible, name: Invisible Technologies, ats: greenhouse, board: invisible}
-  - {id: databricks, name: Databricks, ats: greenhouse, board: databricks}
-  - {id: dataiku, name: Dataiku, ats: greenhouse, board: dataiku}
-  - {id: n8n, name: n8n, ats: ashby, board: n8n}
-  - {id: unify, name: Unify, ats: ashby, board: unify}
+  - {id: langchain, name: LangChain, ats: ashby, board: langchain, tier: startup}
+  - {id: llamaindex, name: LlamaIndex, ats: ashby, board: llamaindex, tier: startup}
+  - {id: pinecone, name: Pinecone, ats: ashby, board: pinecone, tier: startup}
+  - {id: weaviate, name: Weaviate, ats: ashby, board: weaviate, tier: startup}
+  - {id: zilliz, name: Zilliz, ats: lever, board: zilliz, tier: startup}
+  - {id: unstructured, name: Unstructured, ats: ashby, board: unstructured, tier: startup}
+  - {id: braintrust, name: Braintrust, ats: ashby, board: braintrust, tier: startup}
+  - {id: arize, name: Arize AI, ats: greenhouse, board: arizeai, tier: startup}
+  - {id: snorkel, name: Snorkel AI, ats: greenhouse, board: snorkelai, tier: startup}
+  - {id: scale, name: Scale AI, ats: greenhouse, board: scaleai, tier: top}
+  - {id: labelbox, name: Labelbox, ats: greenhouse, board: labelbox, tier: startup}
+  - {id: mercor, name: Mercor, ats: ashby, board: mercor, tier: startup}
+  - {id: turing, name: Turing, ats: greenhouse, board: turing, tier: established}
+  - {id: invisible, name: Invisible Technologies, ats: greenhouse, board: invisible, tier: startup}
+  - {id: databricks, name: Databricks, ats: greenhouse, board: databricks, tier: top}
+  - {id: dataiku, name: Dataiku, ats: greenhouse, board: dataiku, tier: established}
+  - {id: n8n, name: n8n, ats: ashby, board: n8n, tier: startup}
+  - {id: unify, name: Unify, ats: ashby, board: unify, tier: startup}
 
   # Inference and compute
-  - {id: together, name: Together AI, ats: greenhouse, board: togetherai}
-  - {id: baseten, name: Baseten, ats: ashby, board: baseten}
-  - {id: modal, name: Modal, ats: ashby, board: modal}
-  - {id: cerebras, name: Cerebras, ats: ashby, board: cerebras}
-  - {id: sambanova, name: SambaNova, ats: greenhouse, board: sambanovasystems}
-  - {id: graphcore, name: Graphcore, ats: greenhouse, board: graphcore}
-  - {id: lambda, name: Lambda, ats: ashby, board: lambda}
-  - {id: coreweave, name: CoreWeave, ats: greenhouse, board: coreweave}
-  - {id: crusoe, name: Crusoe, ats: ashby, board: crusoe}
+  - {id: together, name: Together AI, ats: greenhouse, board: togetherai, tier: startup}
+  - {id: baseten, name: Baseten, ats: ashby, board: baseten, tier: startup}
+  - {id: modal, name: Modal, ats: ashby, board: modal, tier: startup}
+  - {id: cerebras, name: Cerebras, ats: ashby, board: cerebras, tier: startup}
+  - {id: sambanova, name: SambaNova, ats: greenhouse, board: sambanovasystems, tier: startup}
+  - {id: graphcore, name: Graphcore, ats: greenhouse, board: graphcore, tier: startup}
+  - {id: lambda, name: Lambda, ats: ashby, board: lambda, tier: startup}
+  - {id: coreweave, name: CoreWeave, ats: greenhouse, board: coreweave, tier: established}
+  - {id: crusoe, name: Crusoe, ats: ashby, board: crusoe, tier: startup}
 
   # Tech companies building AI features (only AI-titled roles count)
-  - {id: stripe, name: Stripe, ats: greenhouse, board: stripe, ai_native: false}
-  - {id: datadog, name: Datadog, ats: greenhouse, board: datadog, ai_native: false}
-  - {id: mongodb, name: MongoDB, ats: greenhouse, board: mongodb, ai_native: false}
-  - {id: elastic, name: Elastic, ats: greenhouse, board: elastic, ai_native: false}
-  - {id: cloudflare, name: Cloudflare, ats: greenhouse, board: cloudflare, ai_native: false}
-  - {id: snowflake, name: Snowflake, ats: ashby, board: snowflake, ai_native: false}
-  - {id: figma, name: Figma, ats: greenhouse, board: figma, ai_native: false}
-  - {id: notion, name: Notion, ats: ashby, board: notion, ai_native: false}
-  - {id: intercom, name: Intercom, ats: greenhouse, board: intercom, ai_native: false}
-  - {id: gong, name: Gong, ats: greenhouse, board: gongio, ai_native: false}
-  - {id: clay, name: Clay, ats: ashby, board: claylabs, ai_native: false}
-  - {id: ramp, name: Ramp, ats: ashby, board: ramp, ai_native: false}
-  - {id: vercel, name: Vercel, ats: greenhouse, board: vercel, ai_native: false}
-  - {id: supabase, name: Supabase, ats: ashby, board: supabase, ai_native: false}
-  - {id: temporal, name: Temporal, ats: ashby, board: temporal, ai_native: false}
-  - {id: pigment, name: Pigment, ats: lever, board: pigment, ai_native: false}
-  - {id: monzo, name: Monzo, ats: greenhouse, board: monzo, ai_native: false}
-  - {id: wealthsimple, name: Wealthsimple, ats: ashby, board: wealthsimple, ai_native: false}
-  - {id: 1password, name: 1Password, ats: ashby, board: 1password, ai_native: false}
-  - {id: proton, name: Proton, ats: greenhouse, board: proton, ai_native: false}
-  - {id: scandit, name: Scandit, ats: greenhouse, board: scandit, ai_native: false}
+  - {id: stripe, name: Stripe, ats: greenhouse, board: stripe, ai_native: false, tier: top}
+  - {id: datadog, name: Datadog, ats: greenhouse, board: datadog, ai_native: false, tier: established}
+  - {id: mongodb, name: MongoDB, ats: greenhouse, board: mongodb, ai_native: false, tier: established}
+  - {id: elastic, name: Elastic, ats: greenhouse, board: elastic, ai_native: false, tier: established}
+  - {id: cloudflare, name: Cloudflare, ats: greenhouse, board: cloudflare, ai_native: false, tier: established}
+  - {id: snowflake, name: Snowflake, ats: ashby, board: snowflake, ai_native: false, tier: established}
+  - {id: figma, name: Figma, ats: greenhouse, board: figma, ai_native: false, tier: top}
+  - {id: notion, name: Notion, ats: ashby, board: notion, ai_native: false, tier: established}
+  - {id: intercom, name: Intercom, ats: greenhouse, board: intercom, ai_native: false, tier: established}
+  - {id: gong, name: Gong, ats: greenhouse, board: gongio, ai_native: false, tier: established}
+  - {id: clay, name: Clay, ats: ashby, board: claylabs, ai_native: false, tier: startup}
+  - {id: ramp, name: Ramp, ats: ashby, board: ramp, ai_native: false, tier: established}
+  - {id: vercel, name: Vercel, ats: greenhouse, board: vercel, ai_native: false, tier: startup}
+  - {id: supabase, name: Supabase, ats: ashby, board: supabase, ai_native: false, tier: startup}
+  - {id: temporal, name: Temporal, ats: ashby, board: temporal, ai_native: false, tier: startup}
+  - {id: pigment, name: Pigment, ats: lever, board: pigment, ai_native: false, tier: startup}
+  - {id: monzo, name: Monzo, ats: greenhouse, board: monzo, ai_native: false, tier: established}
+  - {id: wealthsimple, name: Wealthsimple, ats: ashby, board: wealthsimple, ai_native: false, tier: established}
+  - {id: 1password, name: 1Password, ats: ashby, board: 1password, ai_native: false, tier: established}
+  - {id: proton, name: Proton, ats: greenhouse, board: proton, ai_native: false, tier: startup}
+  - {id: scandit, name: Scandit, ats: greenhouse, board: scandit, ai_native: false, tier: startup}
   # 2,500 postings, almost all defence hardware: a large daily download for a few AI roles.
-  - {id: anduril, name: Anduril, ats: greenhouse, board: andurilindustries, ai_native: false, enabled: false}
+  - {id: anduril, name: Anduril, ats: greenhouse, board: andurilindustries, ai_native: false, enabled: false, tier: top}
 
   # Workday career sites: banks, insurers, pharma and big tech. Searched for AI keywords within our
   # countries, not listed in full (see src/ainews/jobs/workday.py). Not on Workday, or robots.txt
@@ -125,38 +131,38 @@ companies:
   # employers tried (G42, ADNOC, e&, Emirates NBD, FAB, Mubadala, Careem). PwC's global site has no
   # country filter and 1 in 60 of its AI postings was in our markets, so only its US site is polled.
   # US
-  - {id: nvidia, name: NVIDIA, ats: workday, board: "nvidia.wd5/NVIDIAExternalCareerSite"}
-  - {id: salesforce, name: Salesforce, ats: workday, board: "salesforce.wd12/External_Career_Site", ai_native: false}
-  - {id: workday, name: Workday, ats: workday, board: "workday.wd5/Workday", ai_native: false}
-  - {id: adobe, name: Adobe, ats: workday, board: "adobe.wd5/external_experienced", ai_native: false}
-  - {id: intel, name: Intel, ats: workday, board: "intel.wd1/External", ai_native: false}
-  - {id: autodesk, name: Autodesk, ats: workday, board: "autodesk.wd1/Ext", ai_native: false}
-  - {id: hp, name: HP, ats: workday, board: "hp.wd5/ExternalCareerSite", ai_native: false}
-  - {id: paypal, name: PayPal, ats: workday, board: "paypal.wd1/jobs", ai_native: false}
-  - {id: visa, name: Visa, ats: workday, board: "visa.wd5/Visa", ai_native: false}
-  - {id: mastercard, name: Mastercard, ats: workday, board: "mastercard.wd1/CorporateCareers", ai_native: false}
-  - {id: capitalone, name: Capital One, ats: workday, board: "capitalone.wd12/Capital_One", ai_native: false}
-  - {id: wellsfargo, name: Wells Fargo, ats: workday, board: "wf.wd1/WellsFargoJobs", ai_native: false}
-  - {id: blackrock, name: BlackRock, ats: workday, board: "blackrock.wd1/BlackRock_Professional", ai_native: false}
-  - {id: accenture, name: Accenture, ats: workday, board: "accenture.wd103/AccentureCareers", ai_native: false}
-  - {id: pwc-us, name: PwC US, ats: workday, board: "pwc.wd3/US_Experienced_Careers", ai_native: false}
-  - {id: genentech, name: Genentech, ats: workday, board: "roche.wd3/ROG-A2O-GENE", ai_native: false}
+  - {id: nvidia, name: NVIDIA, ats: workday, board: "nvidia.wd5/NVIDIAExternalCareerSite", tier: top}
+  - {id: salesforce, name: Salesforce, ats: workday, board: "salesforce.wd12/External_Career_Site", ai_native: false, tier: established}
+  - {id: workday, name: Workday, ats: workday, board: "workday.wd5/Workday", ai_native: false, tier: established}
+  - {id: adobe, name: Adobe, ats: workday, board: "adobe.wd5/external_experienced", ai_native: false, tier: established}
+  - {id: intel, name: Intel, ats: workday, board: "intel.wd1/External", ai_native: false, tier: established}
+  - {id: autodesk, name: Autodesk, ats: workday, board: "autodesk.wd1/Ext", ai_native: false, tier: established}
+  - {id: hp, name: HP, ats: workday, board: "hp.wd5/ExternalCareerSite", ai_native: false, tier: established}
+  - {id: paypal, name: PayPal, ats: workday, board: "paypal.wd1/jobs", ai_native: false, tier: established}
+  - {id: visa, name: Visa, ats: workday, board: "visa.wd5/Visa", ai_native: false, tier: established}
+  - {id: mastercard, name: Mastercard, ats: workday, board: "mastercard.wd1/CorporateCareers", ai_native: false, tier: established}
+  - {id: capitalone, name: Capital One, ats: workday, board: "capitalone.wd12/Capital_One", ai_native: false, tier: established}
+  - {id: wellsfargo, name: Wells Fargo, ats: workday, board: "wf.wd1/WellsFargoJobs", ai_native: false, tier: established}
+  - {id: blackrock, name: BlackRock, ats: workday, board: "blackrock.wd1/BlackRock_Professional", ai_native: false, tier: established}
+  - {id: accenture, name: Accenture, ats: workday, board: "accenture.wd103/AccentureCareers", ai_native: false, tier: established}
+  - {id: pwc-us, name: PwC US, ats: workday, board: "pwc.wd3/US_Experienced_Careers", ai_native: false, tier: established}
+  - {id: genentech, name: Genentech, ats: workday, board: "roche.wd3/ROG-A2O-GENE", ai_native: false, tier: established}
   # Canada
-  - {id: td, name: TD Bank, ats: workday, board: "td.wd3/TD_Bank_Careers", ai_native: false}
-  - {id: bmo, name: BMO, ats: workday, board: "bmo.wd3/External", ai_native: false}
-  - {id: cibc, name: CIBC, ats: workday, board: "cibc.wd3/search", ai_native: false}
-  - {id: manulife, name: Manulife, ats: workday, board: "manulife.wd3/MFCJH_Jobs", ai_native: false}
-  - {id: sunlife, name: Sun Life, ats: workday, board: "sunlife.wd3/Experienced-Jobs", ai_native: false}
-  - {id: thomsonreuters, name: Thomson Reuters, ats: workday, board: "thomsonreuters.wd5/External_Career_Site", ai_native: false}
+  - {id: td, name: TD Bank, ats: workday, board: "td.wd3/TD_Bank_Careers", ai_native: false, tier: established}
+  - {id: bmo, name: BMO, ats: workday, board: "bmo.wd3/External", ai_native: false, tier: established}
+  - {id: cibc, name: CIBC, ats: workday, board: "cibc.wd3/search", ai_native: false, tier: established}
+  - {id: manulife, name: Manulife, ats: workday, board: "manulife.wd3/MFCJH_Jobs", ai_native: false, tier: established}
+  - {id: sunlife, name: Sun Life, ats: workday, board: "sunlife.wd3/Experienced-Jobs", ai_native: false, tier: established}
+  - {id: thomsonreuters, name: Thomson Reuters, ats: workday, board: "thomsonreuters.wd5/External_Career_Site", ai_native: false, tier: established}
   # UK
-  - {id: barclays, name: Barclays, ats: workday, board: "barclays.wd3/External_Career_Site_Barclays", ai_native: false}
-  - {id: lseg, name: LSEG, ats: workday, board: "lseg.wd3/Careers", ai_native: false}
-  - {id: astrazeneca, name: AstraZeneca, ats: workday, board: "astrazeneca.wd3/Careers", ai_native: false}
-  - {id: gsk, name: GSK, ats: workday, board: "gsk.wd5/GSKCareers", ai_native: false}
-  - {id: unilever, name: Unilever, ats: workday, board: "unilever.wd3/Unilever_Experienced_Professionals", ai_native: false}
+  - {id: barclays, name: Barclays, ats: workday, board: "barclays.wd3/External_Career_Site_Barclays", ai_native: false, tier: established}
+  - {id: lseg, name: LSEG, ats: workday, board: "lseg.wd3/Careers", ai_native: false, tier: established}
+  - {id: astrazeneca, name: AstraZeneca, ats: workday, board: "astrazeneca.wd3/Careers", ai_native: false, tier: established}
+  - {id: gsk, name: GSK, ats: workday, board: "gsk.wd5/GSKCareers", ai_native: false, tier: established}
+  - {id: unilever, name: Unilever, ats: workday, board: "unilever.wd3/Unilever_Experienced_Professionals", ai_native: false, tier: established}
   # Switzerland
-  - {id: roche, name: Roche, ats: workday, board: "roche.wd3/roche-ext", ai_native: false}
-  - {id: novartis, name: Novartis, ats: workday, board: "novartis.wd3/Novartis_Careers", ai_native: false}
-  - {id: juliusbaer, name: Julius Baer, ats: workday, board: "juliusbaer.wd3/External", ai_native: false}
-  - {id: logitech, name: Logitech, ats: workday, board: "logitech.wd5/Logitech", ai_native: false}
-  - {id: swisscom, name: Swisscom, ats: workday, board: "swisscom.wd103/SwisscomExternalCareers", ai_native: false}
+  - {id: roche, name: Roche, ats: workday, board: "roche.wd3/roche-ext", ai_native: false, tier: established}
+  - {id: novartis, name: Novartis, ats: workday, board: "novartis.wd3/Novartis_Careers", ai_native: false, tier: established}
+  - {id: juliusbaer, name: Julius Baer, ats: workday, board: "juliusbaer.wd3/External", ai_native: false, tier: established}
+  - {id: logitech, name: Logitech, ats: workday, board: "logitech.wd5/Logitech", ai_native: false, tier: established}
+  - {id: swisscom, name: Swisscom, ats: workday, board: "swisscom.wd103/SwisscomExternalCareers", ai_native: false, tier: established}

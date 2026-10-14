@@ -11,6 +11,13 @@ levels: [senior, staff, principal, lead]
 skip_levels: [intern, junior]
 # Your years of experience: postings asking for more than this + 3 are skipped. Leave empty to keep all.
 years:
-# How many openings per day, and the lowest fit (0-100) worth sending.
-top: 8
+# Places per day for each employer group (the tier of each employer in config/companies.yaml):
+# established companies, startups, and top tier (frontier labs, the most sought-after names).
+# Places a group can't fill go to the others, but top tier never takes more than its own.
+# Set a group to 0 to leave it out.
+per_tier:
+  established: 3
+  startup: 3
+  top: 2
+# The lowest fit (0-100) worth sending.
 min_fit: 50

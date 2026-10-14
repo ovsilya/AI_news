@@ -8,13 +8,17 @@
   preferred ones at half; a skill you have (private/skills.yaml) earns all of its weight, one you're
   learning half.
 - The same role posted in several cities is shown once, with all its places, and no employer takes more
-  than two of the day's places."""
+  than two of the day's places.
+- The day's places are shared between three employer groups (each employer's tier in companies.yaml):
+  established companies, startups and top tier, 3/3/2 by default. Places a group can't fill go to the
+  others, but top tier never gets more than its own, so the list isn't all frontier labs and big names."""
 from __future__ import annotations
 
 import html
 import json
 import re
 import sqlite3
+from itertools import groupby
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -22,7 +26,7 @@ import yaml
 
 from ..db import finish_run, now, start_run
 from ..deliver.render import DIVIDER, _day, _pack
-from .boards import load_companies
+from .boards import TIERS, Company, load_companies
 from .extract import Skills
 from .filters import FAMILIES, MARKETS
 from .stats import CURRENCY, TARGET, _renormalize, _when, load_fit_profile
@@ -33,7 +37,10 @@ LEVEL_SHARE = {"unknown": 0.6, "mid": 0.4, "manager": 0.3}   # of the level poin
 OTHER_LEVEL_SHARE = 0.3
 EXTRA_YEARS = 3          # a posting may ask for this many years more than you have
 DEFAULTS = {"families": list(TARGET), "markets": list(MARKETS), "levels": ["senior", "staff", "principal", "lead"],
-            "skip_levels": ["intern", "junior"], "years": None, "top": 8, "min_fit": 50}
+            "skip_levels": ["intern", "junior"], "years": None,
+            "per_tier": {"established": 3, "startup": 3, "top": 2}, "min_fit": 50}
+TIER_LABELS = {"established": "🏢 Established", "startup": "🌱 Startups", "top": "🏆 Top tier"}
+NO_SPILL = "top"         # the one group that never takes the places another group leaves empty
 SHOW_SKILLS = 8
 FOOTER = ("Fit = your skills against the posting's (required in full, preferred at half), plus seniority."
           " Each posting is sent once.")
@@ -49,6 +56,10 @@ def load_prefs(path: Path) -> dict:
         unknown = [v for v in prefs[key] if v not in known]
         if unknown:
             raise ValueError(f"{path.name}: unknown {key} {unknown}; use {list(known)}")
+    prefs["per_tier"] = {**DEFAULTS["per_tier"], **(raw.get("per_tier") or {})}
+    bad = {k: v for k, v in prefs["per_tier"].items() if k not in TIERS or not isinstance(v, int) or v < 0}
+    if bad:
+        raise ValueError(f"{path.name}: per_tier wants a whole number of places for {', '.join(TIERS)}, not {bad}")
     return prefs
 
 
@@ -80,10 +91,10 @@ def _wanted(row, data: dict, prefs: dict, since: datetime) -> bool:
     return not (years is not None and (data.get("years_min") or 0) > years + EXTRA_YEARS)
 
 
-def pick_openings(conn: sqlite3.Connection, skills: Skills, profile: dict | None, prefs: dict, names: dict[str, str],
-                  *, now_dt: datetime | None = None) -> dict:
-    """{"picked": best groups first, "considered": postings that passed the filters, "unread": new postings
-    in your role families the model hasn't read yet}."""
+def pick_openings(conn: sqlite3.Connection, skills: Skills, profile: dict | None, prefs: dict,
+                  employers: dict[str, Company], *, now_dt: datetime | None = None) -> dict:
+    """{"picked": by employer group, best fit first in each, "considered": postings that passed the filters,
+    "unread": new postings in your role families the model hasn't read yet}."""
     now_dt = now_dt or datetime.now(timezone.utc)
     since = now_dt - FRESH
     rows = conn.execute(
@@ -91,6 +102,8 @@ def pick_openings(conn: sqlite3.Connection, skills: Skills, profile: dict | None
         " LEFT JOIN job_alerts a ON a.posting_id = p.id WHERE p.closed_at IS NULL AND a.posting_id IS NULL").fetchall()
     scored = []
     for r in rows:
+        if r["company"] not in employers:   # taken off the list: no longer polled, so it may have closed
+            continue
         data = _renormalize(json.loads(r["data"]), skills)
         if _wanted(r, data, prefs, since):
             scored.append((fit_score(data, profile, prefs), _when(r), r, data))
@@ -105,25 +118,48 @@ def pick_openings(conn: sqlite3.Connection, skills: Skills, profile: dict | None
             g["ids"].append(r["id"])
             g["places"] += [p for p in places if p not in g["places"]]
             continue
-        groups[key] = {"ids": [r["id"]], "fit": fit, "posted": when.isoformat(), "company": names.get(r["company"], r["company"]),
-                       "title": " ".join(r["title"].split()), "url": r["url"], "places": places, "family": data["role_family"],
+        employer = employers[r["company"]]
+        groups[key] = {"ids": [r["id"]], "fit": fit, "posted": when.isoformat(), "company": employer.name,
+                       "tier": employer.tier, "title": " ".join(r["title"].split()), "url": r["url"], "places": places,
+                       "family": data["role_family"],
                        **_skills_for(data, profile),
                        **{k: data.get(k) for k in ("seniority", "remote_policy", "visa_sponsorship", "salary", "summary")}}
-    picked, per_employer = [], {}
-    for g in groups.values():
-        if g["fit"] < prefs["min_fit"] or len(picked) == prefs["top"]:
-            break
-        if per_employer.get(g["company"], 0) < PER_EMPLOYER:
-            per_employer[g["company"]] = per_employer.get(g["company"], 0) + 1
-            picked.append(g)
-
     unread = conn.execute(
         "SELECT p.title_family, p.markets, p.posted_at, p.first_seen FROM job_postings p"
         " LEFT JOIN job_extractions e ON e.posting_id = p.id LEFT JOIN job_alerts a ON a.posting_id = p.id"
         " WHERE p.closed_at IS NULL AND e.posting_id IS NULL AND a.posting_id IS NULL").fetchall()
     waiting = sum(1 for r in unread if r["title_family"] in prefs["families"] and _when(r) >= since
                   and set(json.loads(r["markets"])) & set(prefs["markets"]))
-    return {"picked": picked, "considered": len(scored), "unread": waiting}
+    return {"picked": _share_out(list(groups.values()), prefs), "considered": len(scored), "unread": waiting}
+
+
+def _share_out(groups: list[dict], prefs: dict) -> list[dict]:
+    """Each employer group takes its places (per_tier) with its best fits. Places a group leaves empty go
+    to the best of the rest, except to top tier and to a group set to 0. Returned group by group."""
+    places = prefs["per_tier"]
+    chosen: dict[str, list[dict]] = {t: [] for t in places}
+    per_employer: dict[str, int] = {}
+    waiting = []
+
+    def take(g: dict) -> None:
+        chosen[g["tier"]].append(g)
+        per_employer[g["company"]] = per_employer.get(g["company"], 0) + 1
+
+    for g in groups:   # best fit first
+        if g["fit"] < prefs["min_fit"]:
+            break
+        if per_employer.get(g["company"], 0) == PER_EMPLOYER:
+            continue
+        if len(chosen[g["tier"]]) < places[g["tier"]]:
+            take(g)
+        elif g["tier"] != NO_SPILL and places[g["tier"]]:
+            waiting.append(g)
+    spare = sum(places.values()) - sum(map(len, chosen.values()))
+    for g in waiting:
+        if spare and per_employer.get(g["company"], 0) < PER_EMPLOYER:
+            take(g)
+            spare -= 1
+    return [g for t in places for g in chosen[t]]
 
 
 def _skills_for(data: dict, profile: dict | None) -> dict:
@@ -189,44 +225,51 @@ def title_for(day: datetime) -> str:
 
 
 def render(picked: list[dict], considered: int, unread: int, title: str, footer: str) -> tuple[str, list[str]]:
+    """picked comes group by group (established, startups, top tier); each group gets a heading."""
     e = html.escape
-    lead = (f"{len(picked)} best match{'es' * (len(picked) != 1)} from {considered} new posting{'s' * (considered != 1)}"
-            " in your roles and markets this week, best fit first.")
+    lead = (f"{len(picked)} match{'es' * (len(picked) != 1)} from {considered} new posting{'s' * (considered != 1)}"
+            " in your roles and markets this week, by employer group, best fit first.")
     wait = f"{unread} more new postings wait for the model to read them." if unread else ""
     md = [f"# {title}", "", lead] + ([wait] if wait else []) + [""]
     units = [f"💼 <b>{e(title)}</b>\n{e(lead)}" + (f"\n<i>{e(wait)}</i>" if wait else "")]
-    for i, g in enumerate(picked, 1):
-        posted = _day(datetime.fromisoformat(g["posted"]))
-        facts, pay = " · ".join(_facts(g)), _pay(g.get("salary"))
-        tail = f"{FAMILIES[g['family']]} · posted {posted} · fit {g['fit']}"
-        md += [f"## {i}. {g['title']} · {g['company']}", "", f"📍 {facts}"] + ([f"💰 {pay}"] if pay else [])
-        md += [f"_{g['summary']}_"] if g.get("summary") else []
-        md += [f"{label}: {text}" for label, text in _skill_lines(g)]
-        md += [f"🔗 [Open the posting]({g['url']}) · {tail}", ""]
-        unit = [f"{DIVIDER}", f"<b>{i}. {e(g['title'])}</b> · {e(g['company'])}", f"📍 {e(facts)}"]
-        unit += [f"💰 {e(pay)}"] if pay else []
-        unit += [f"<i>{e(g['summary'])}</i>"] if g.get("summary") else []
-        unit += [f"{label}: {e(text)}" for label, text in _skill_lines(g)]
-        unit.append(f'🔗 <a href="{e(g["url"], quote=True)}">Open the posting</a> · {e(tail)}')
-        units.append("\n".join(unit))
+    i = 0
+    for tier, in_tier in groupby(picked, key=lambda g: g["tier"]):
+        in_tier = list(in_tier)
+        md += [f"## {TIER_LABELS[tier]} · {len(in_tier)}", ""]
+        for first, g in enumerate(in_tier):
+            i += 1
+            posted = _day(datetime.fromisoformat(g["posted"]))
+            facts, pay = " · ".join(_facts(g)), _pay(g.get("salary"))
+            tail = f"{FAMILIES[g['family']]} · posted {posted} · fit {g['fit']}"
+            md += [f"### {i}. {g['title']} · {g['company']}", "", f"📍 {facts}"] + ([f"💰 {pay}"] if pay else [])
+            md += [f"_{g['summary']}_"] if g.get("summary") else []
+            md += [f"{label}: {text}" for label, text in _skill_lines(g)]
+            md += [f"🔗 [Open the posting]({g['url']}) · {tail}", ""]
+            unit = [f"{DIVIDER}\n<b>{e(TIER_LABELS[tier])} · {len(in_tier)}</b>\n"] if not first else []
+            unit += [f"<b>{i}. {e(g['title'])}</b> · {e(g['company'])}", f"📍 {e(facts)}"]
+            unit += [f"💰 {e(pay)}"] if pay else []
+            unit += [f"<i>{e(g['summary'])}</i>"] if g.get("summary") else []
+            unit += [f"{label}: {e(text)}" for label, text in _skill_lines(g)]
+            unit.append(f'🔗 <a href="{e(g["url"], quote=True)}">Open the posting</a> · {e(tail)}')
+            units.append("\n".join(unit))
     md += ["---", footer]
     units.append(f"{DIVIDER}\n<i>{e(footer)}</i>")
     return "\n".join(md), _pack(units)
 
 
-def build_openings(conn: sqlite3.Connection, settings, *, top: int | None = None,
+def build_openings(conn: sqlite3.Connection, settings, *, per_tier: dict[str, int] | None = None,
                    now_dt: datetime | None = None) -> dict:
-    """Ranks this week's unsent postings and stores the message (kind "jobs_openings"); nothing is sent here."""
+    """Ranks this week's unsent postings and stores the message (kind "jobs_openings"); nothing is sent here.
+    per_tier overrides some groups' places for this run (e.g. {"top": 0})."""
     now_dt = now_dt or datetime.now(timezone.utc)
     run_id = start_run(conn, "openings")
     try:
         skills = Skills(settings.skills_path)
         prefs = load_prefs(settings.openings_path)
-        if top:
-            prefs["top"] = top
+        prefs["per_tier"] = {**prefs["per_tier"], **(per_tier or {})}
         profile = load_fit_profile(settings.fit_path, skills)
-        names = {c.id: c.name for c in load_companies(settings.companies_path)}
-        found = pick_openings(conn, skills, profile, prefs, names, now_dt=now_dt)
+        employers = {c.id: c for c in load_companies(settings.companies_path)}
+        found = pick_openings(conn, skills, profile, prefs, employers, now_dt=now_dt)
         result = {"report_id": None, **found, "markdown": "", "telegram": [], "has_profile": profile is not None}
         if found["picked"]:
             local = now_dt.astimezone()
@@ -236,6 +279,7 @@ def build_openings(conn: sqlite3.Connection, settings, *, top: int | None = None
                                                             title, footer)
             stats = {"posting_ids": [i for g in found["picked"] for i in g["ids"]],
                      "fits": {str(i): g["fit"] for g in found["picked"] for i in g["ids"]},
+                     "tiers": {t: sum(g["tier"] == t for g in found["picked"]) for t in prefs["per_tier"]},
                      "considered": found["considered"], "unread": found["unread"]}
             result["report_id"] = conn.execute(
                 "INSERT INTO reports (created_at, kind, stats, markdown, telegram_html) VALUES (?, 'jobs_openings', ?, ?, ?)",

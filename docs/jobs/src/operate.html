@@ -13,7 +13,7 @@
 <tr><td><code>ainews jobs-probe --workday &lt;tenant&gt; …</code></td><td>Lists a Workday tenant's career sites that robots.txt allows, with their open postings</td></tr>
 <tr><td><code>ainews openings</code></td><td>Ranks the week's new, unsent postings by fit to you, prints them with their fit, and saves the message to <code>out/openings-&lt;date&gt;.md</code>; nothing is sent</td></tr>
 <tr><td><code>ainews openings --send</code></td><td>Builds the openings and posts them; each posting is sent once</td></tr>
-<tr><td><code>ainews openings --top 12</code></td><td>A longer list this time (the default is <code>top</code> in <code>private/openings.yaml</code>, else {{openings_top}})</td></tr>
+<tr><td><code>ainews openings --tier top=0</code></td><td>Changes one employer group's places for this run: <code>top</code>, <code>established</code> or <code>startup</code> (the defaults are <code>per_tier</code> in <code>private/openings.yaml</code>, else {{per_tier_text}})</td></tr>
 <tr><td><code>ainews send --openings</code></td><td>Posts the latest saved openings</td></tr>
 <tr><td><code>ainews weekly</code></td><td>Builds the weekly report (about 1 cent) and saves <code>out/jobs-&lt;date&gt;.md</code></td></tr>
 <tr><td><code>ainews weekly --no-llm</code></td><td>The report's tables only, without the notes, for free</td></tr>
@@ -32,7 +32,7 @@
 <tr><td><code>AINEWS_MAX_USD_PER_RUN</code> · <code>_DAY</code> · <code>_MONTH</code></td><td>0.30 · 0.75 · 10</td><td>Spending caps in US dollars, shared with the daily brief</td></tr>
 <tr><td><code>AINEWS_COMPANIES</code></td><td><code>config/companies.yaml</code></td><td>Another employer list, for example for a test</td></tr>
 <tr><td><code>AINEWS_FIT</code></td><td><code>private/skills.yaml</code></td><td>Your have and learning lists</td></tr>
-<tr><td><code>AINEWS_OPENINGS</code></td><td><code>private/openings.yaml</code></td><td>Which openings reach you: role families, markets, levels, years, how many, the fit bar</td></tr>
+<tr><td><code>AINEWS_OPENINGS</code></td><td><code>private/openings.yaml</code></td><td>Which openings reach you: role families, markets, levels, years, places per employer group, the fit bar</td></tr>
 <tr><td><code>AINEWS_DB</code></td><td><code>data/ainews.sqlite</code></td><td>The database, for example a copy to experiment on</td></tr>
 <tr><td><code>MODEL_JUDGE</code> · <code>MODEL_EDITOR</code></td><td>3.1 Flash-Lite · 3.5 Flash-Lite</td><td>The reading model and the notes model</td></tr>
 </tbody></table></div>
@@ -41,7 +41,7 @@
 <div class="tablewrap"><table>
 <thead><tr><th style="width:36%">File</th><th>What it controls</th><th style="width:22%">After editing</th></tr></thead>
 <tbody>
-<tr><td><code>config/companies.yaml</code></td><td>Which employers are polled, on which system, and whether each counts as an AI company</td><td>Next run</td></tr>
+<tr><td><code>config/companies.yaml</code></td><td>Which employers are polled, on which system, whether each counts as an AI company, and its group for the openings</td><td>Next run</td></tr>
 <tr><td><code>config/skills.yaml</code></td><td>Canonical skill names and aliases</td><td>The next report re-applies it to every stored form</td></tr>
 <tr><td><code>private/skills.yaml</code> (private)</td><td>Your <code>have</code> and <code>learning</code> lists for “Your fit” and the openings' fit</td><td>Next report or openings</td></tr>
 <tr><td><code>private/openings.yaml</code> (private)</td><td>Your preferences for the daily openings; start from <code>config/openings.example.yaml</code></td><td>Next openings</td></tr>
@@ -56,7 +56,7 @@
 <ol class="flow">
 <li><b>Find its system.</b> Open the employer's careers page and look at the address of a job: <code>job-boards.greenhouse.io/…</code>, <code>jobs.lever.co/…</code>, <code>jobs.ashbyhq.com/…</code> or <code>….myworkdayjobs.com/…</code>. Or simply try the probe.</li>
 <li><b>Probe it.</b> <code>ainews jobs-probe acme</code>, or <code>ainews jobs-probe --workday acme</code>, where the tenant is the first part of the Workday address. If the employer has several sites, keep the main one; sites that repeat it add nothing.</li>
-<li><b>Paste the line</b> into <code>config/companies.yaml</code> under the right group. Give it a readable <code>name</code>, and set <code>ai_native: false</code> unless it's an AI company.</li>
+<li><b>Paste the line</b> into <code>config/companies.yaml</code> under the right group. Give it a readable <code>name</code>, set <code>ai_native: false</code> unless it's an AI company, and check its <code>tier</code>: the probe guesses <code>startup</code> (Workday: <code>established</code>); change it to <code>top</code> or <code>established</code> when that fits better (<a href="openings.html#groups">the three groups</a>). An employer without a tier stops the run with an error.</li>
 <li><b>Try it:</b> <code>ainews jobs --no-llm --only acme</code>. The summary shows how many postings were listed and kept.</li>
 <li><b>Rebuild these pages</b> so the employer list is current: <code>.venv/bin/python scripts/build_job_pages.py</code>.</li>
 </ol>

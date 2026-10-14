@@ -204,13 +204,29 @@ def employers_table(companies) -> str:
         if g != last:
             n = sum(1 for x in companies if (f"Workday · {groups.get(x.id, '')}" if x.ats == "workday"
                                              else groups.get(x.id, "")) == g)
-            rows.append(f'<tr class="group"><td colspan="3">{e(g)} · {n}</td></tr>')
+            rows.append(f'<tr class="group"><td colspan="4">{e(g)} · {n}</td></tr>')
             last = g
         kind = "AI company" if c.ai_native else ("enterprise" if c.ats == "workday" else "tech company")
         rows.append(f'<tr><td>{e(c.name)}</td><td><a href="{e(board_link(c))}" target="_blank" rel="noopener">'
-                    f'{ats_name[c.ats]}{" (EU)" if c.region == "eu" else ""}</a></td><td>{kind}</td></tr>')
+                    f'{ats_name[c.ats]}{" (EU)" if c.region == "eu" else ""}</a></td><td>{kind}</td>'
+                    f'<td>{e(TIER_NAMES[c.tier])}</td></tr>')
     return ('<div class="tablewrap"><table><thead><tr><th>Employer</th><th>Career system (opens their job page)</th>'
-            '<th>Counts as</th></tr></thead><tbody>' + "".join(rows) + "</tbody></table></div>")
+            '<th>Counts as</th><th><a href="openings.html#groups">Group</a></th></tr></thead><tbody>' + "".join(rows) +
+            "</tbody></table></div>")
+
+
+TIER_NAMES = {t: label.split(" ", 1)[1] for t, label in openings.TIER_LABELS.items()}   # "Top tier", no emoji
+
+
+def per_tier_text(per_tier: dict[str, int]) -> str:
+    """{"established": 3, "startup": 3, "top": 2} -> "3 established, 3 startups and 2 top tier"."""
+    parts = [f"{n} {TIER_NAMES[t].lower()}" for t, n in per_tier.items()]
+    return ", ".join(parts[:-1]) + " and " + parts[-1]
+
+
+def tier_names(companies, tier: str) -> str:
+    names = [c.name for c in companies if c.tier == tier]
+    return ", ".join(names[:-1]) + " and " + names[-1]
 
 
 CATEGORY = {"languages": "Languages", "ml_frameworks": "ML frameworks", "llm_frameworks": "LLM frameworks",
@@ -371,7 +387,7 @@ def openings_example() -> str:
 def openings_preview() -> str:
     d, prof = EXAMPLE_POSTING, EXAMPLE_PROFILE
     g = {"ids": [1], "fit": openings.fit_score(d, prof, openings.DEFAULTS), "posted": "2026-10-12T09:00:00+00:00",
-         "company": "Legora", "title": "Junior/Mid-level Forward Deployed Engineer",
+         "company": "Legora", "tier": "startup", "title": "Junior/Mid-level Forward Deployed Engineer",
          "url": "https://jobs.ashbyhq.com/legora", "places": ["New York City, NY"], "family": d["role_family"],
          **openings._skills_for(d, prof),
          **{k: d.get(k) for k in ("seniority", "remote_policy", "visa_sponsorship", "salary", "summary")}}
@@ -383,10 +399,15 @@ def openings_defaults() -> str:
     notes = {"families": "role families to consider", "markets": "a posting needs at least one",
              "levels": "your level: full level points", "skip_levels": "never shown",
              "years": f"your years; postings asking more than this + {openings.EXTRA_YEARS} are skipped (empty: keep all)",
-             "top": "openings per day", "min_fit": "the lowest fit worth sending"}
+             "per_tier": "places per day for each employer group", "min_fit": "the lowest fit worth sending"}
     if set(notes) != set(openings.DEFAULTS):
         raise SystemExit(f"describe these openings settings: {sorted(set(openings.DEFAULTS) ^ set(notes))}")
-    rows = "".join(f"<tr><td><code>{k}</code></td><td>{e(', '.join(v) if isinstance(v, list) else str(v) if v is not None else 'empty')}</td>"
+    def shown(v) -> str:
+        if isinstance(v, dict):
+            return ", ".join(f"{k} {n}" for k, n in v.items())
+        return ", ".join(v) if isinstance(v, list) else str(v) if v is not None else "empty"
+
+    rows = "".join(f"<tr><td><code>{k}</code></td><td>{e(shown(v))}</td>"
                    f"<td>{e(notes[k])}</td></tr>" for k, v in openings.DEFAULTS.items())
     return ('<div class="tablewrap"><table><thead><tr><th style="width:18%">Key</th><th style="width:40%">Default</th>'
             '<th>Meaning</th></tr></thead><tbody>' + rows + "</tbody></table></div>")
@@ -435,7 +456,14 @@ def blocks() -> dict[str, str]:
         "min_tracking_days": str(stats.MIN_TRACKING.days), "min_skill": str(stats.MIN_SKILL),
         "min_salary": str(stats.MIN_SALARY),
         "targets": ", ".join(targets), "n_targets": str(len(targets)),
-        "openings_fresh_days": str(openings.FRESH.days), "openings_top": str(openings.DEFAULTS["top"]),
+        "openings_fresh_days": str(openings.FRESH.days),
+        "openings_total": str(sum(openings.DEFAULTS["per_tier"].values())),
+        "per_tier_text": per_tier_text(openings.DEFAULTS["per_tier"]),
+        "places_established": str(openings.DEFAULTS["per_tier"]["established"]),
+        "places_startup": str(openings.DEFAULTS["per_tier"]["startup"]),
+        "places_top": str(openings.DEFAULTS["per_tier"]["top"]),
+        **{f"n_tier_{t}": str(sum(c.tier == t for c in companies)) for t in openings.TIERS},
+        "top_tier_names": tier_names(companies, "top"),
         "openings_min_fit": str(openings.DEFAULTS["min_fit"]), "skill_points": str(openings.SKILL_POINTS),
         "level_points": str(openings.LEVEL_POINTS), "per_employer": str(openings.PER_EMPLOYER),
         "extra_years": str(openings.EXTRA_YEARS),

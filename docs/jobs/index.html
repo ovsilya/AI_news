@@ -120,7 +120,7 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <li><b>Go to the source, employer by employer.</b> Postings come from the own job systems of a fixed list of employers (97 on Greenhouse, Lever or Ashby, 32 on Workday), never from LinkedIn or Indeed, whose terms forbid programs. An employer that isn't on the list isn't seen; <a href="sources.html#by-company">searching by role</a> is planned.</li>
 <li><b>Keep only what's yours.</b> A title filter keeps your role families and a location filter keeps the US, Canada, UK, Switzerland, UAE and remote jobs.</li>
 <li><b>Read each posting once.</b> Gemini 3.1 Flash-Lite fills in the same form for every posting, and the form is read again only if the posting's text changes.</li>
-<li><b>Send what fits, once.</b> Every day the new postings that best fit your skills and level go to Telegram, ranked in code, and each posting is sent only once.</li>
+<li><b>Send what fits, once.</b> Every day the new postings that best fit your skills and level go to Telegram, ranked in code and shared between established companies, startups and top-tier names, and each posting is sent only once.</li>
 <li><b>Count in code, explain with the model.</b> Every number in the report is computed from the data. The model writes the commentary, and any sentence with a number that isn't in the data is removed.</li>
 </ol>
 </div>
@@ -231,6 +231,7 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <dt>Median</dt><dd>The middle value when numbers are sorted: half are above, half below. Used for pay so a few extreme salaries don't skew it.</dd>
 <dt>Confidence interval</dt><dd>The range a true share probably lies in, given how many postings we saw. Used to tell a real rise in demand from noise.</dd>
 <dt>Fit</dt><dd>For one opening: a score from 0 to 100, from how many of its skills you have and whether its level is yours.</dd>
+<dt>Employer group (tier)</dt><dd>Established, startup or top tier: how hard an employer is to get into, set by hand for each employer. The daily openings give each group its own places.</dd>
 <dt>Coverage</dt><dd>How much of the demand for the top skills your skills cover, weighted by how often each skill is asked for.</dd>
 </dl></div>
 

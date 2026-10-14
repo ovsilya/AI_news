@@ -8,8 +8,10 @@ import pytest
 from ainews import cli, db
 from ainews.config import ROOT
 from ainews.deliver.render import TELEGRAM_LIMIT, visible_len
+from ainews.jobs.boards import TIERS, Company, load_companies
 from ainews.jobs.extract import Skills
-from ainews.jobs.openings import DEFAULTS, _pay, _places, build_openings, fit_score, load_prefs, mark_sent, pick_openings
+from ainews.jobs.openings import (DEFAULTS, _pay, _places, _share_out, build_openings, fit_score, load_prefs, mark_sent,
+                                  pick_openings)
 
 SKILLS = Skills(ROOT / "config" / "skills.yaml")
 NOW = datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc)
@@ -61,15 +63,46 @@ def test_pick_filters_groups_and_caps_per_employer(conn):
     _seed(conn, "acme:unread", title="Applied AI Engineer", read=False)
     prefs = {**PREFS, "markets": ["US", "UK", "CA", "CH", "remote"]}
 
-    found = pick_openings(conn, SKILLS, PROFILE, prefs, {"acme": "Acme AI", "big": "BigCo"}, now_dt=NOW)
+    _seed(conn, "gone:1", company="gone", title="FDE at an employer taken off the list")
+    employers = {"acme": Company("acme", "Acme AI", "ashby", "acme", tier="startup"),
+                 "big": Company("big", "BigCo", "workday", "big.wd1/Jobs", tier="established")}
+
+    found = pick_openings(conn, SKILLS, PROFILE, prefs, employers, now_dt=NOW)
     picked = found["picked"]
-    assert picked[0]["ids"] == [best, london] and picked[0]["title"] == "Forward Deployed Engineer"
-    assert picked[0]["places"] == ["New York, NY", "London, UK"] and picked[0]["company"] == "Acme AI"
-    assert [g["company"] for g in picked].count("BigCo") == 2               # three postings, two places
+    assert [(g["company"], g["tier"]) for g in picked] == [("BigCo", "established")] * 2 + [("Acme AI", "startup")]
+    fde = picked[2]                                                        # three BigCo postings, two places
+    assert fde["ids"] == [best, london] and fde["title"] == "Forward Deployed Engineer"
+    assert fde["places"] == ["New York, NY", "London, UK"]
     assert all(g["fit"] >= prefs["min_fit"] for g in picked)
     assert "ML Engineer" not in [g["title"] for g in picked]                # fit 12, below the bar
     assert found["considered"] == 6 and found["unread"] == 1
-    assert picked[0]["have"] == ["Python", "RAG"] and picked[0]["missing"] == []
+    assert fde["have"] == ["Python", "RAG"] and fde["missing"] == []
+
+
+def _g(company, tier, fit):
+    return {"company": company, "tier": tier, "fit": fit}
+
+
+def test_places_are_shared_between_groups_and_top_tier_never_takes_more():
+    groups = sorted([_g(f"lab{i}", "top", 99 - i) for i in range(6)] + [_g(f"bank{i}", "established", 80 - i) for i in range(6)]
+                    + [_g("tiny", "startup", 60), _g("weak", "startup", 40)], key=lambda g: -g["fit"])
+    tiers = lambda picked: [(g["tier"], g["company"]) for g in picked]   # noqa: E731
+    # Top tier has the best fits but keeps its 2 places; startups fill 1 of 3 and established takes the rest.
+    assert tiers(_share_out(groups, PREFS)) == ([("established", f"bank{i}") for i in range(5)] + [("startup", "tiny")]
+                                                + [("top", "lab0"), ("top", "lab1")])
+    no_top = {**PREFS, "per_tier": {"established": 3, "startup": 3, "top": 0}}
+    assert "top" not in [g["tier"] for g in _share_out(groups, no_top)]
+    no_banks = {**PREFS, "per_tier": {"established": 0, "startup": 3, "top": 2}}   # 0 means none, even spare places
+    assert tiers(_share_out(groups, no_banks)) == [("startup", "tiny"), ("top", "lab0"), ("top", "lab1")]
+
+
+def test_every_employer_has_a_tier(tmp_path):
+    companies = load_companies(ROOT / "config" / "companies.yaml", include_disabled=True)
+    assert {c.tier for c in companies} == set(TIERS)
+    path = tmp_path / "companies.yaml"
+    path.write_text("companies:\n  - {id: acme, name: Acme, ats: ashby, board: acme}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="acme: tier"):
+        load_companies(path)
 
 
 def test_build_sends_once_and_fits_telegram(conn, settings, tmp_path):
@@ -78,20 +111,29 @@ def test_build_sends_once_and_fits_telegram(conn, settings, tmp_path):
               preferred=("MCP",), locations=("San Francisco, CA | New York City, NY", "San Francisco, California"))
     fit = tmp_path / "skills.yaml"
     fit.write_text("have: [Python]\nlearning: [MCP]\n", encoding="utf-8")
-    s = replace(settings, fit_path=fit, openings_path=tmp_path / "none.yaml")
+    companies = tmp_path / "companies.yaml"   # four employers in each group
+    companies.write_text("companies:\n" + "".join(
+        f"  - {{id: co{i}, name: Co {i}, ats: ashby, board: co{i}, tier: {TIERS[i // 4]}}}\n" for i in range(12)))
+    s = replace(settings, fit_path=fit, openings_path=tmp_path / "none.yaml", companies_path=companies)
     result = build_openings(conn, s, now_dt=NOW)
     assert len(result["picked"]) == 8 and result["considered"] == 12
+    assert [g["tier"] for g in result["picked"]] == ["established"] * 3 + ["startup"] * 3 + ["top"] * 2
     assert all(visible_len(m) <= TELEGRAM_LIMIT for m in result["telegram"])
-    first = result["telegram"][0]
+    first, text = result["telegram"][0], "\n".join(result["telegram"])
     assert "Jobs for you" in first and "✅ Yours: Python (1 of 2 required)" in first and "➕ New to you: Kubernetes" in first
     assert "📍 San Francisco, CA / New York City, NY · hybrid · senior" in first
-    row = conn.execute("SELECT kind, telegram_message_ids FROM reports WHERE id = ?", (result["report_id"],)).fetchone()
+    assert text.index("🏢 Established · 3") < text.index("🌱 Startups · 3") < text.index("🏆 Top tier · 2")
+    assert "<b>7. Applied AI Engineer 0</b> · Co 0" in text                  # numbered across the groups
+    row = conn.execute("SELECT kind, stats, telegram_message_ids FROM reports WHERE id = ?",
+                       (result["report_id"],)).fetchone()
     assert row["kind"] == "jobs_openings" and row["telegram_message_ids"] is None
+    assert json.loads(row["stats"])["tiers"] == {"established": 3, "startup": 3, "top": 2}
 
     assert mark_sent(conn, result["report_id"], [101, 102]) == 8
     again = build_openings(conn, s, now_dt=NOW)                              # the 8 sent ones never come back
     assert len(again["picked"]) == 4 and not {i for g in again["picked"] for i in g["ids"]} & {
         i for g in result["picked"] for i in g["ids"]}
+    assert len(build_openings(conn, s, per_tier={"top": 0}, now_dt=NOW)["picked"]) == 2
 
 
 def test_prefs_reject_unknown_names(tmp_path):
@@ -99,6 +141,11 @@ def test_prefs_reject_unknown_names(tmp_path):
     path.write_text("markets: [US, Germany]\n", encoding="utf-8")
     with pytest.raises(ValueError, match="Germany"):
         load_prefs(path)
+    path.write_text("per_tier: {faang: 2}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="faang"):
+        load_prefs(path)
+    path.write_text("per_tier: {top: 0}\n", encoding="utf-8")                # the other groups keep their defaults
+    assert load_prefs(path)["per_tier"] == {"established": 3, "startup": 3, "top": 0}
     assert load_prefs(tmp_path / "missing.yaml") == DEFAULTS
 
 
