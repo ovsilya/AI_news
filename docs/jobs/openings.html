@@ -189,31 +189,31 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 </ol>
 
 <h2 id="message">What arrives in Telegram</h2>
-<p>A heading with how many postings were considered, then the openings under their group's heading (🏢 Established, 🌱 Startups, 🏆 Top tier, numbered straight through, best fit first in each), packed into as few messages as fit, with one notification. The example above, rendered by the same code:</p>
+<p>A heading with how many postings were considered and how many picks each group got, then the openings under their group's heading (🏢 Established, 🌱 Startups, 🏆 Top tier, numbered straight through, best fit first in each). A day's eight usually fit in one message, so there's one notification; when they don't, a message ends between groups, never inside one. The example above, rendered by the same code:</p>
 <div class="tg">💼 <b>Jobs for you · Tue 13 Oct</b>
-1 match from 60 new postings in your roles and markets this week, by employer group, best fit first.
+1 pick from 60 new postings this week
+🌱 1 startup
 
 ━━━━━━━━━━━━
-<b>🌱 Startups · 1</b>
+<b>🌱 Startups</b>
 
-<b>1. Junior/Mid-level Forward Deployed Engineer</b> · Legora
-📍 New York City, NY · onsite · mid
+<b>1. <a href="https://jobs.ashbyhq.com/legora">Junior/Mid-level Forward Deployed Engineer</a></b>
+Legora · New York City 🇺🇸 · onsite · mid
 💰 $175k–$245k a year
 <i>Builds and deploys integrations and software solutions by working directly with enterprise customers to solve their specific legal workflow needs.</i>
-✅ Yours: Software engineering, REST APIs, Data pipelines, Customer-facing work, Communication, Debugging, AI agents (6 of 8 required)
-📚 Learning: TypeScript
-➕ New to you: Authentication, Integration
-🔗 <a href="https://jobs.ashbyhq.com/legora">Open the posting</a> · FDE / applied AI · posted Mon 12 Oct · fit 59
+🎯 Fit 59 · 6 of 8 required skills · posted Mon 12 Oct
+➕ To learn: Authentication, Integration (learning: TypeScript)
 
 ━━━━━━━━━━━━
-<i>Fit = your skills against the posting&#x27;s (required in full, preferred at half), plus seniority. Each posting is sent once.</i></div>
+<i>Fit 0–100: 70 for skills (required in full, preferred at half), 30 for level. Tap a title to open the posting. Each posting is sent once.</i></div>
 <ul>
-<li><b>📍</b> where (the first two places, and how many more), the work policy, the level, and “visa sponsorship” when the posting says it offers it.</li>
+<li><b>The title</b> opens the employer's own posting.</li>
+<li><b>The line under it:</b> the employer, where (the first two cities, how many more, and the country's flag), the work policy, the level, and “visa sponsorship” when the posting says it offers it. Career sites write places in many ways (“USA, GA, Atlanta”, “California - San Francisco”); only the city is kept.</li>
 <li><b>💰</b> the posted pay, when there is one: the board's own figure if it publishes one, else the range in the text.</li>
-<li><b>✅ Yours</b> the skills you have, with how many of the required ones; <b>📚 Learning</b> the ones on your learning list; <b>➕ New to you</b> the required skills on neither list.</li>
-<li><b>🔗</b> the employer's own posting, the role family, when it was published, and the fit.</li>
+<li><b>🎯</b> the fit, how many of the required skills you have, and when the posting was published.</li>
+<li><b>➕ To learn</b> the required skills on neither of your lists, and in brackets the posting's skills you're learning (a <b>📚</b> line when nothing is missing).</li>
 </ul>
-<p class="muted">These lines reveal which skills you have to anyone who can read the channel, as the weekly report's “Your fit” section does.</p>
+<p class="muted">These lines show anyone who can read the channel which skills you have and which you lack, as the weekly report's “Your fit” section does.</p>
 
 <h2 id="once">Sent once: how it's tracked</h2>
 <ul>
@@ -231,6 +231,7 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <tr><td><code>ainews openings</code></td><td>Ranks the candidates, prints the list with each fit, and saves the message; nothing is sent</td></tr>
 <tr><td><code>ainews send --openings</code></td><td>Sends the message you just checked</td></tr>
 <tr><td><code>ainews openings --send</code></td><td>Builds and sends in one go</td></tr>
+<tr><td><code>ainews openings --redo --send</code></td><td>Rebuilds the latest sent openings, say after a layout change, and sends them again; without <code>--send</code> their postings count as unsent until you send</td></tr>
 <tr><td><code>ainews openings --tier top=0</code></td><td>No top-tier openings this time; <code>--tier startup=5</code> gives startups more places. The rest keep their places</td></tr>
 </tbody></table></div>
 <p class="muted">Free and instant: no model call, no network call except to Telegram. After deployment, the daily 05:00 jobs run will send the openings at the end.</p>

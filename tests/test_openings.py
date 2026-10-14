@@ -10,8 +10,8 @@ from ainews.config import ROOT
 from ainews.deliver.render import TELEGRAM_LIMIT, visible_len
 from ainews.jobs.boards import TIERS, Company, load_companies
 from ainews.jobs.extract import Skills
-from ainews.jobs.openings import (DEFAULTS, _pay, _places, _share_out, build_openings, fit_score, load_prefs, mark_sent,
-                                  pick_openings)
+from ainews.jobs.openings import (DEFAULTS, _city, _pay, _share_out, _where, build_openings, fit_score, load_prefs,
+                                  mark_sent, pick_openings)
 
 SKILLS = Skills(ROOT / "config" / "skills.yaml")
 NOW = datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc)
@@ -120,10 +120,13 @@ def test_build_sends_once_and_fits_telegram(conn, settings, tmp_path):
     assert [g["tier"] for g in result["picked"]] == ["established"] * 3 + ["startup"] * 3 + ["top"] * 2
     assert all(visible_len(m) <= TELEGRAM_LIMIT for m in result["telegram"])
     first, text = result["telegram"][0], "\n".join(result["telegram"])
-    assert "Jobs for you" in first and "✅ Yours: Python (1 of 2 required)" in first and "➕ New to you: Kubernetes" in first
-    assert "📍 San Francisco, CA / New York City, NY · hybrid · senior" in first
-    assert text.index("🏢 Established · 3") < text.index("🌱 Startups · 3") < text.index("🏆 Top tier · 2")
-    assert "<b>7. Applied AI Engineer 0</b> · Co 0" in text                  # numbered across the groups
+    assert len(result["telegram"]) == 1                                       # all eight fit in one message
+    assert "Jobs for you" in first and "🏢 3 established · 🌱 3 startups · 🏆 2 top tier" in first
+    assert "🎯 Fit 65 · 1 of 2 required skills · posted" in first
+    assert "➕ To learn: Kubernetes (learning: MCP)" in first
+    assert "Co 4 · San Francisco / New York City 🇺🇸 · hybrid · senior" in first
+    assert text.index("<b>🏢 Established</b>") < text.index("<b>🌱 Startups</b>") < text.index("<b>🏆 Top tier</b>")
+    assert '<b>7. <a href="https://jobs.example/co0:1">Applied AI Engineer 0</a></b>' in text   # numbered across groups
     row = conn.execute("SELECT kind, stats, telegram_message_ids FROM reports WHERE id = ?",
                        (result["report_id"],)).fetchone()
     assert row["kind"] == "jobs_openings" and row["telegram_message_ids"] is None
@@ -134,6 +137,9 @@ def test_build_sends_once_and_fits_telegram(conn, settings, tmp_path):
     assert len(again["picked"]) == 4 and not {i for g in again["picked"] for i in g["ids"]} & {
         i for g in result["picked"] for i in g["ids"]}
     assert len(build_openings(conn, s, per_tier={"top": 0}, now_dt=NOW)["picked"]) == 2
+    conn.execute("UPDATE reports SET telegram_message_ids = '[101, 102]' WHERE id = ?", (result["report_id"],))
+    redo = build_openings(conn, s, redo=True, now_dt=NOW)                    # the sent eight are candidates again
+    assert redo["redone"] == result["report_id"] and len(redo["picked"]) == 8
 
 
 def test_prefs_reject_unknown_names(tmp_path):
@@ -150,8 +156,16 @@ def test_prefs_reject_unknown_names(tmp_path):
 
 
 def test_places_and_pay():
-    assert _places(["Washington, DC", "Washington, District of Columbia, United States"]) == "Washington, DC"
-    assert _places(["New Jersey; Remote - Illinois; Remote - Texas"]) == "New Jersey / Remote - Illinois +1 more"
+    assert [_city(p)[0] for p in ("USA, GA, Atlanta", "California - San Francisco", "United States of America, Eagan, "
+                                  "Minnesota", "New York - New York", "San Jose Office (First St)", "UK, Cambridge",
+                                  "Austin, TX", "Washington, District of Columbia, United States")] == [
+        "Atlanta", "San Francisco", "Eagan", "New York", "San Jose", "Cambridge", "Austin", "Washington DC"]
+    assert _city("US, CA, Remote") == ("", True) and _city("Remote - Illinois") == ("", True)
+    assert _where({"places": ["Washington, DC", "Washington, District of Columbia, United States"],
+                   "markets": ["US"]}) == "Washington DC 🇺🇸"
+    assert _where({"places": ["London", "Toronto, ON", "Zurich"], "markets": ["UK", "CA", "CH"]}) == (
+        "London / Toronto +1 more 🇬🇧🇨🇦🇨🇭")
+    assert _where({"places": ["Remote"], "markets": ["remote"]}) == "Remote"
     assert _pay({"min": 175100, "max": 245000, "currency": "USD", "period": "year"}) == "$175k–$245k a year"
     assert _pay({"min": 60, "max": 80, "currency": "GBP", "period": "hour"}) == "£60–£80 an hour"
     assert _pay(None) == ""

@@ -291,7 +291,10 @@ def cmd_openings(args, settings) -> None:
             sys.exit(f"ainews: --tier wants GROUP=N, GROUP one of {', '.join(TIERS)} (e.g. --tier top=0), not {item!r}")
         per_tier[name] = int(n)
     conn = db.connect(settings.db_path)
-    result = build_openings(conn, settings, per_tier=per_tier)
+    result = build_openings(conn, settings, per_tier=per_tier, redo=args.redo)
+    if args.redo:
+        print(f"redo: the postings of openings #{result['redone']} are candidates again" if result["redone"]
+              else "redo: no sent openings to rebuild")
     wait = f"; {result['unread']} more new postings wait for the model to read them" if result["unread"] else ""
     if not result["report_id"]:
         print(f"no new openings above the fit bar: {result['considered']} new postings in your roles and markets{wait}")
@@ -435,6 +438,8 @@ def main(argv: list[str] | None = None) -> None:
     j.add_argument("--max-extract", type=int, help="postings the model reads this run (default 200)")
     op = sub.add_parser("openings", help="this week's new postings that fit you best (local file; --send to post)")
     op.add_argument("--send", action="store_true", help="post to the Telegram channel; each posting is sent once")
+    op.add_argument("--redo", action="store_true",
+                    help="rebuild the latest sent openings (e.g. after a layout change); send them again with --send")
     op.add_argument("--tier", action="append", default=[], metavar="GROUP=N",
                     help="places for one employer group this run, e.g. --tier top=0 --tier startup=5"
                          " (groups: top, established, startup; defaults 2, 3, 3 or per_tier in private/openings.yaml)")

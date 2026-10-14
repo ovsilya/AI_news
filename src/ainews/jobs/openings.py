@@ -25,10 +25,10 @@ from pathlib import Path
 import yaml
 
 from ..db import finish_run, now, start_run
-from ..deliver.render import DIVIDER, _day, _pack
+from ..deliver.render import DIVIDER, PACK_LIMIT, _day, _pack, visible_len
 from .boards import TIERS, Company, load_companies
 from .extract import Skills
-from .filters import FAMILIES, MARKETS
+from .filters import _STATES, FAMILIES, MARKETS
 from .stats import CURRENCY, TARGET, _renormalize, _when, load_fit_profile
 
 FRESH = timedelta(days=7)
@@ -41,9 +41,23 @@ DEFAULTS = {"families": list(TARGET), "markets": list(MARKETS), "levels": ["seni
             "per_tier": {"established": 3, "startup": 3, "top": 2}, "min_fit": 50}
 TIER_LABELS = {"established": "🏢 Established", "startup": "🌱 Startups", "top": "🏆 Top tier"}
 NO_SPILL = "top"         # the one group that never takes the places another group leaves empty
-SHOW_SKILLS = 8
-FOOTER = ("Fit = your skills against the posting's (required in full, preferred at half), plus seniority."
-          " Each posting is sent once.")
+SHOW_SKILLS = 5
+FOOTER = ("Fit 0–100: 70 for skills (required in full, preferred at half), 30 for level."
+          " Tap a title to open the posting. Each posting is sent once.")
+FLAGS = {"US": "🇺🇸", "CA": "🇨🇦", "UK": "🇬🇧", "CH": "🇨🇭", "AE": "🇦🇪"}
+# Location parts that name a country, state or province rather than a city: "USA, GA, Atlanta",
+# "California - San Francisco", "United States of America, Eagan, Minnesota".
+_REGIONS = {x.casefold() for x in _STATES + [
+    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida",
+    "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine",
+    "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
+    "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma",
+    "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah",
+    "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming", "District of Columbia",
+    "ON", "BC", "QC", "AB", "Ontario", "British Columbia", "Quebec", "Québec", "Alberta",
+    "US", "USA", "U.S.", "United States", "United States of America", "America", "UK", "United Kingdom",
+    "Great Britain", "England", "Scotland", "Canada", "Switzerland", "United Arab Emirates", "UAE"]}
+_NOISE = re.compile(r"\s*\([^)]*\)|\s+(office|metro|metro area|area|hq)\b(?=\s*(\(|$))", re.I)   # "San Jose Office (First St)"
 NO_PROFILE = " Add private/skills.yaml to rank by your skills."
 PER_EMPLOYER = 2
 
@@ -117,10 +131,12 @@ def pick_openings(conn: sqlite3.Connection, skills: Skills, profile: dict | None
             g = groups[key]
             g["ids"].append(r["id"])
             g["places"] += [p for p in places if p not in g["places"]]
+            g["markets"] += [m for m in json.loads(r["markets"]) if m not in g["markets"]]
             continue
         employer = employers[r["company"]]
         groups[key] = {"ids": [r["id"]], "fit": fit, "posted": when.isoformat(), "company": employer.name,
                        "tier": employer.tier, "title": " ".join(r["title"].split()), "url": r["url"], "places": places,
+                       "markets": json.loads(r["markets"]),
                        "family": data["role_family"],
                        **_skills_for(data, profile),
                        **{k: data.get(k) for k in ("seniority", "remote_policy", "visa_sponsorship", "salary", "summary")}}
@@ -186,91 +202,137 @@ def _pay(sal: dict | None) -> str:
     return f"{cur}{lo:,.0f}–{cur}{hi:,.0f}"
 
 
-def _places(places: list[str]) -> str:
-    """'San Francisco, CA | New York City, NY' and 'San Francisco, California, United States' -> two cities."""
-    seen, out = set(), []
-    for place in (p.strip() for loc in places for p in re.split(r"[|;]", loc)):
-        city = place.split(",")[0].strip().casefold()
-        if place and city not in seen:
-            seen.add(city)
-            out.append(", ".join(x.strip() for x in place.split(",")[:2]))
-    return " / ".join(out[:2]) + (f" +{len(out) - 2} more" if len(out) > 2 else "")
+def _city(place: str) -> tuple[str, bool]:
+    """('Atlanta', False) from 'USA, GA, Atlanta'; ('', True) from 'Remote'. Cities come first after a comma
+    ('Austin, TX') and last after a dash ('California - San Francisco'), so that's the fallback when every
+    part is also a region's name ('New York - New York'), unless the place is remote ('Remote - Illinois')."""
+    place = re.sub(r"\bWashington,?\s*(D\.?C\.?|District of Columbia)\b|\bDistrict of Columbia\s*-\s*Washington\b",
+                   "Washington DC", place)
+    dashed = " - " in place
+    parts = [_NOISE.sub("", p.strip()).strip() for p in place.split(" - " if dashed else ",")]
+    remote = any("remote" in p.casefold() for p in parts)
+    named = [p for p in parts if p and "remote" not in p.casefold()]
+    cities = [p for p in named if p.casefold() not in _REGIONS]
+    if cities or remote:   # 'US, CA, Remote' is remote work, not a city
+        return (cities[0] if cities else ""), remote
+    return (named[-1 if dashed else 0] if named else ""), False
+
+
+def _where(g: dict) -> str:
+    """'San Francisco / New York City 🇺🇸', with '+2 more' past two cities; 'Remote 🇺🇸' when no city is named."""
+    cities, remote = [], False
+    for place in (p.strip() for loc in g["places"] for p in re.split(r"[|;]", loc)):
+        city, rem = _city(place)
+        remote |= rem
+        if city and city.casefold() not in {c.casefold() for c in cities}:
+            cities.append(city)
+    flags = "".join(FLAGS[m] for m in g.get("markets") or [] if m in FLAGS)
+    where = " / ".join(cities[:2]) + (f" +{len(cities) - 2} more" if len(cities) > 2 else "") or ("Remote" if remote else "")
+    return f"{where} {flags}".strip()
 
 
 def _facts(g: dict) -> list[str]:
-    parts = [_places(g["places"])]
+    parts = [g["company"], _where(g)]
     if g.get("remote_policy") in ("remote", "hybrid", "onsite"):
         parts.append(g["remote_policy"])
     if g.get("seniority") not in (None, "unknown"):
         parts.append(g["seniority"])
     if g.get("visa_sponsorship") == "yes":
         parts.append("visa sponsorship")
-    return parts
+    return [p for p in parts if p]
 
 
-def _skill_lines(g: dict) -> list[tuple[str, str]]:
-    out = []
-    if g["have"]:
-        count = f" ({g['required_have']} of {g['required']} required)" if g["required"] else ""
-        out.append(("✅ Yours", ", ".join(g["have"][:SHOW_SKILLS]) + count))
-    if g["learning"]:
-        out.append(("📚 Learning", ", ".join(g["learning"][:SHOW_SKILLS])))
+def _clip(names: list[str]) -> str:
+    return ", ".join(names[:SHOW_SKILLS]) + (f" +{len(names) - SHOW_SKILLS}" if len(names) > SHOW_SKILLS else "")
+
+
+def _match_line(g: dict, posted: str) -> str:
+    skills = f" · {g['required_have']} of {g['required']} required skills" if g["required"] else ""
+    return f"🎯 Fit {g['fit']}{skills} · posted {posted}"
+
+
+def _gap_line(g: dict) -> str:
+    """The required skills you don't have yet, and which of the posting's skills you're learning."""
+    learning = f"learning: {_clip(g['learning'])}" if g["learning"] else ""
     if g["missing"]:
-        out.append(("➕ New to you", ", ".join(g["missing"][:SHOW_SKILLS])))
-    return out
+        return f"➕ To learn: {_clip(g['missing'])}" + (f" ({learning})" if learning else "")
+    return f"📚 {learning[0].upper()}{learning[1:]}" if learning else ""
 
 
 def title_for(day: datetime) -> str:
     return f"Jobs for you · {day:%a} {day.day} {day:%b}"
 
 
+def _tier_counts(picked: list[dict]) -> str:
+    """'🏢 3 established · 🌱 3 startups · 🏆 2 top tier'."""
+    out = []
+    for tier, in_tier in groupby(picked, key=lambda g: g["tier"]):
+        emoji, name = TIER_LABELS[tier].split(" ", 1)
+        n = len(list(in_tier))
+        out.append(f"{emoji} {n} {name.lower().removesuffix('s') if n == 1 else name.lower()}")
+    return " · ".join(out)
+
+
 def render(picked: list[dict], considered: int, unread: int, title: str, footer: str) -> tuple[str, list[str]]:
-    """picked comes group by group (established, startups, top tier); each group gets a heading."""
+    """picked comes group by group (established, startups, top tier); each group gets a heading, and a
+    message ends between groups when the next group doesn't fit, never inside one."""
     e = html.escape
-    lead = (f"{len(picked)} match{'es' * (len(picked) != 1)} from {considered} new posting{'s' * (considered != 1)}"
-            " in your roles and markets this week, by employer group, best fit first.")
+    lead = f"{len(picked)} pick{'s' * (len(picked) != 1)} from {considered} new posting{'s' * (considered != 1)} this week"
+    counts = _tier_counts(picked)
     wait = f"{unread} more new postings wait for the model to read them." if unread else ""
-    md = [f"# {title}", "", lead] + ([wait] if wait else []) + [""]
-    units = [f"💼 <b>{e(title)}</b>\n{e(lead)}" + (f"\n<i>{e(wait)}</i>" if wait else "")]
+    md = [f"# {title}", "", lead, counts] + ([wait] if wait else []) + [""]
+    units = [f"💼 <b>{e(title)}</b>\n{e(lead)}\n{e(counts)}" + (f"\n<i>{e(wait)}</i>" if wait else "")]
     i = 0
     for tier, in_tier in groupby(picked, key=lambda g: g["tier"]):
-        in_tier = list(in_tier)
-        md += [f"## {TIER_LABELS[tier]} · {len(in_tier)}", ""]
-        for first, g in enumerate(in_tier):
+        md += [f"## {TIER_LABELS[tier]}", ""]
+        blocks = []
+        for g in in_tier:
             i += 1
             posted = _day(datetime.fromisoformat(g["posted"]))
-            facts, pay = " · ".join(_facts(g)), _pay(g.get("salary"))
-            tail = f"{FAMILIES[g['family']]} · posted {posted} · fit {g['fit']}"
-            md += [f"### {i}. {g['title']} · {g['company']}", "", f"📍 {facts}"] + ([f"💰 {pay}"] if pay else [])
+            facts, pay, gaps = " · ".join(_facts(g)), _pay(g.get("salary")), _gap_line(g)
+            md += [f"### {i}. [{g['title']}]({g['url']})", "", facts] + ([f"💰 {pay}"] if pay else [])
             md += [f"_{g['summary']}_"] if g.get("summary") else []
-            md += [f"{label}: {text}" for label, text in _skill_lines(g)]
-            md += [f"🔗 [Open the posting]({g['url']}) · {tail}", ""]
-            unit = [f"{DIVIDER}\n<b>{e(TIER_LABELS[tier])} · {len(in_tier)}</b>\n"] if not first else []
-            unit += [f"<b>{i}. {e(g['title'])}</b> · {e(g['company'])}", f"📍 {e(facts)}"]
-            unit += [f"💰 {e(pay)}"] if pay else []
-            unit += [f"<i>{e(g['summary'])}</i>"] if g.get("summary") else []
-            unit += [f"{label}: {e(text)}" for label, text in _skill_lines(g)]
-            unit.append(f'🔗 <a href="{e(g["url"], quote=True)}">Open the posting</a> · {e(tail)}')
-            units.append("\n".join(unit))
+            md += [_match_line(g, posted)] + ([gaps] if gaps else []) + [""]
+            block = [f'<b>{i}. <a href="{e(g["url"], quote=True)}">{e(g["title"])}</a></b>', e(facts)]
+            block += [f"💰 {e(pay)}"] if pay else []
+            block += [f"<i>{e(g['summary'])}</i>"] if g.get("summary") else []
+            block += [e(_match_line(g, posted))] + ([e(gaps)] if gaps else [])
+            blocks.append("\n".join(block))
+        head = f"{DIVIDER}\n<b>{e(TIER_LABELS[tier])}</b>"
+        whole = "\n\n".join([head] + blocks)
+        if visible_len(whole) <= PACK_LIMIT:
+            units.append(whole)
+        else:   # a group too long for one message: its heading travels with its first opening
+            units += [f"{head}\n\n{blocks[0]}"] + blocks[1:]
     md += ["---", footer]
     units.append(f"{DIVIDER}\n<i>{e(footer)}</i>")
     return "\n".join(md), _pack(units)
 
 
 def build_openings(conn: sqlite3.Connection, settings, *, per_tier: dict[str, int] | None = None,
-                   now_dt: datetime | None = None) -> dict:
+                   redo: bool = False, now_dt: datetime | None = None) -> dict:
     """Ranks this week's unsent postings and stores the message (kind "jobs_openings"); nothing is sent here.
-    per_tier overrides some groups' places for this run (e.g. {"top": 0})."""
+    per_tier overrides some groups' places for this run (e.g. {"top": 0}); redo makes the postings of the
+    latest sent openings candidates again, to rebuild them (say, after a layout change)."""
     now_dt = now_dt or datetime.now(timezone.utc)
     run_id = start_run(conn, "openings")
     try:
+        redone = None
+        if redo:
+            last = conn.execute("SELECT id FROM reports WHERE kind = 'jobs_openings' AND telegram_message_ids IS NOT NULL"
+                                " ORDER BY id DESC LIMIT 1").fetchone()
+            if last:
+                redone = last["id"]
+                conn.execute("DELETE FROM job_alerts WHERE report_id = ?", (redone,))
+                conn.commit()
         skills = Skills(settings.skills_path)
         prefs = load_prefs(settings.openings_path)
         prefs["per_tier"] = {**prefs["per_tier"], **(per_tier or {})}
         profile = load_fit_profile(settings.fit_path, skills)
         employers = {c.id: c for c in load_companies(settings.companies_path)}
         found = pick_openings(conn, skills, profile, prefs, employers, now_dt=now_dt)
-        result = {"report_id": None, **found, "markdown": "", "telegram": [], "has_profile": profile is not None}
+        result = {"report_id": None, **found, "markdown": "", "telegram": [], "has_profile": profile is not None,
+                  "redone": redone}
         if found["picked"]:
             local = now_dt.astimezone()
             title = title_for(local)

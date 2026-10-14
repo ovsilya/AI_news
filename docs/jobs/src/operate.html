@@ -15,6 +15,7 @@
 <tr><td><code>ainews openings --send</code></td><td>Builds the openings and posts them; each posting is sent once</td></tr>
 <tr><td><code>ainews openings --tier top=0</code></td><td>Changes one employer group's places for this run: <code>top</code>, <code>established</code> or <code>startup</code> (the defaults are <code>per_tier</code> in <code>private/openings.yaml</code>, else {{per_tier_text}})</td></tr>
 <tr><td><code>ainews send --openings</code></td><td>Posts the latest saved openings</td></tr>
+<tr><td><code>ainews openings --redo</code></td><td>Rebuilds the latest sent openings (after a layout change, for example): their postings count as unsent again, so add <code>--send</code> to post them. <code>ainews tg-clean</code> then removes the old copy</td></tr>
 <tr><td><code>ainews weekly</code></td><td>Builds the weekly report (about 1 cent) and saves <code>out/jobs-&lt;date&gt;.md</code></td></tr>
 <tr><td><code>ainews weekly --no-llm</code></td><td>The report's tables only, without the notes, for free</td></tr>
 <tr><td><code>ainews weekly --send</code></td><td>Builds the report and posts it to Telegram</td></tr>

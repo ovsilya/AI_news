@@ -388,7 +388,8 @@ def openings_preview() -> str:
     d, prof = EXAMPLE_POSTING, EXAMPLE_PROFILE
     g = {"ids": [1], "fit": openings.fit_score(d, prof, openings.DEFAULTS), "posted": "2026-10-12T09:00:00+00:00",
          "company": "Legora", "tier": "startup", "title": "Junior/Mid-level Forward Deployed Engineer",
-         "url": "https://jobs.ashbyhq.com/legora", "places": ["New York City, NY"], "family": d["role_family"],
+         "url": "https://jobs.ashbyhq.com/legora", "places": ["New York City, NY"], "markets": ["US"],
+         "family": d["role_family"],
          **openings._skills_for(d, prof),
          **{k: d.get(k) for k in ("seniority", "remote_policy", "visa_sponsorship", "salary", "summary")}}
     _, messages = openings.render([g], 60, 0, openings.title_for(datetime(2026, 10, 13)), openings.FOOTER)
