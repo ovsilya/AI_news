@@ -6,7 +6,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -41,6 +41,13 @@ CREATE TABLE IF NOT EXISTS items (
 CREATE INDEX IF NOT EXISTS items_canonical ON items(canonical_url);
 CREATE INDEX IF NOT EXISTS items_fetched ON items(fetched_at);
 CREATE INDEX IF NOT EXISTS items_story ON items(story_id);
+
+-- Links a feed listed that never became items: too old when first listed, or listed on a new source's
+-- first fetch (its baseline). Remembering them keeps old posts a feed re-dates from coming back as new.
+CREATE TABLE IF NOT EXISTS feed_seen (
+    source_id TEXT NOT NULL, canonical_url TEXT NOT NULL, seen_at TEXT NOT NULL,
+    PRIMARY KEY (source_id, canonical_url)
+);
 
 -- A story groups items about the same thing.
 CREATE TABLE IF NOT EXISTS stories (

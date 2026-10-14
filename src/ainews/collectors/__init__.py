@@ -44,7 +44,7 @@ def iso_from_epoch(ts: float | int | None) -> str | None:
 
 
 def registry() -> dict[str, Callable]:
-    from . import changelog, github_releases, hf_papers, hn, openrouter, rss
+    from . import changelog, github_releases, hf_papers, hn, openrouter, podcast, rss
 
     return {
         "rss": rss.collect,
@@ -53,4 +53,5 @@ def registry() -> dict[str, Callable]:
         "hf_papers": hf_papers.collect,
         "hn": hn.collect,
         "openrouter": openrouter.collect,
+        "podcast": podcast.collect,
     }

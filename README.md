@@ -14,7 +14,7 @@ Browse the HTML docs online: **[ovsilya.github.io/AI_news](https://ovsilya.githu
 ## Status
 
 **Phase 1 (MVP) and the first part of Phase 3 (jobs), deployed on GCP** (since 2026-10-14): Cloud Run jobs started by Cloud Scheduler post the openings at 05:00, the brief at 06:00 and the weekly jobs report on Mondays ([setup §6](docs/setup.md#6-deploy-to-gcp-cloud-run-jobs-on-a-schedule)).
-- 54 news sources across seven layers, defined in [config/sources.yaml](config/sources.yaml), from business and policy down to kernels.
+- 60 news sources across seven layers, defined in [config/sources.yaml](config/sources.yaml), from business and policy down to kernels.
 - Collectors: RSS/Atom, GitHub releases, a CHANGELOG diff, HF Daily Papers, Hacker News, and an OpenRouter model and price diff.
 - Dedup by canonical URL and MinHash, then a heat score.
 - Gemini 3.1 Flash-Lite judges stories against your profile and Gemini 3.5 Flash-Lite writes the brief, through Vertex AI (Claude is an optional provider). The brief teaches: up to 15 stories, packed into as few Telegram messages as fit, each with its date, a flag for how much of the article the editor read, a detailed "What happened" (from the article text, not just the headline), a "What is it?" explanation and a "Comment from a pro" from a senior engineer guiding your career, and a Trends & future of work section covers where AI is heading and how it changes tech work and jobs. Numbers the sources don't support are dropped before anything is published.

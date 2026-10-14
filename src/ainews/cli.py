@@ -38,6 +38,9 @@ def cmd_collect(args, settings) -> dict:
         fetcher.close()
     db.finish_run(conn, run_id, "ok", stats)
     print(f"collected {stats['new_items']} new items from {stats['sources']} sources ({stats['errors']} errors)")
+    if stats["baseline"]:
+        print(f"new sources, first fetch remembered as a baseline (their posts come in from the next run):"
+              f" {', '.join(stats['baseline'])}")
     return stats
 
 

@@ -275,6 +275,8 @@ Fetching:
 
 Every raw item is stored: `source_id, url, canonical_url, title, published_at, fetched_at, text, text_hash, engagement{points, stars, upvotes}`.
 
+Entries older than 7 days aren't reported, but every link a feed lists is remembered (`feed_seen`), so a post comes in once at most, even from a feed that re-dates posts when they are edited (the LangChain blog does). A source added to a running install starts with a baseline: its first fetch is remembered and nothing from it is reported until the next run. Docs changelogs that link every entry to one page by `#anchor` keep the anchor in the query, so each entry stays its own item.
+
 ### 3.3 Normalise, dedup and cluster
 
 Dedup runs in three passes:
@@ -447,7 +449,7 @@ AI_news/
 │   ├── companies.yaml      # ATS slugs for jobs tracking
 │   └── profile.md          # who you are / what matters (personal; may stay out of the public repo)
 ├── src/ainews/
-│   ├── collectors/         # rss.py, hf_papers.py, hn.py, github_releases.py, openrouter.py, page_diff.py, ats.py
+│   ├── collectors/         # rss.py, hf_papers.py, hn.py, github_releases.py, openrouter.py, podcast.py, page_diff.py, ats.py
 │   ├── pipeline/           # normalize.py, dedup.py, cluster.py, score.py, editor.py, verify.py
 │   ├── jobs/               # extract.py, trends.py
 │   ├── trends/             # bursts.py, weekly.py

@@ -3,7 +3,7 @@
 #
 # Fields
 #   id            stable key (used in the database; don't rename)
-#   kind          rss | github_releases | changelog | hf_papers | hn | openrouter
+#   kind          rss | github_releases | changelog | hf_papers | hn | openrouter | podcast (Apple's directory)
 #   layer         big_picture | trends | models | tools | research | systems | community
 #   weight        authority prior, 0.3–1.5 (used in the heat score)
 #   role          primary (original reporting) | proxy (search feed standing in for a missing one)
@@ -36,12 +36,18 @@ sources:
      keywords: ["AI Foundry", "OpenAI", "Azure AI", "Copilot", "model"]}
   - {id: vertex-notes, name: Vertex AI release notes, kind: rss, url: "https://docs.cloud.google.com/feeds/vertex-ai-release-notes.xml", layer: tools, weight: 1.0, expect_every: 7,
      enabled: false}  # feed stale since 2026-03-16 (the generative-AI variant since 2026-05-26); page diff planned
+  # LangChain, LangGraph, LangSmith. The blog dates a post by its last edit, so old posts come back dated today;
+  # ingest remembers every link a feed lists, which keeps them out. The docs changelogs carry one #anchor per entry.
+  - {id: langchain-blog, name: LangChain blog, kind: rss, url: "https://www.langchain.com/blog/rss.xml", layer: tools, weight: 0.9, expect_every: 3}
+  - {id: langsmith-changelog, name: LangSmith changelog, kind: rss, url: "https://docs.langchain.com/langsmith/changelog/rss.xml", layer: tools, weight: 1.0, expect_every: 10}
+  - {id: langchain-oss, name: LangChain OSS changelog, kind: rss, url: "https://docs.langchain.com/oss/python/releases/changelog/rss.xml", layer: tools, weight: 1.1, expect_every: 45}
 
   # --- Newsletters (original writing; link-vote aggregators come in Phase 2) ----------
   - {id: latent-space, name: Latent Space / AINews, kind: rss, url: "https://www.latent.space/feed", layer: community, weight: 1.2, expect_every: 2}
   - {id: simonw, name: Simon Willison, kind: rss, url: "https://simonwillison.net/atom/everything/", layer: tools, weight: 1.2, expect_every: 2}
   - {id: interconnects, name: Interconnects, kind: rss, url: "https://www.interconnects.ai/feed", layer: research, weight: 1.1, expect_every: 7}
   - {id: import-ai, name: Import AI, kind: rss, url: "https://importai.substack.com/feed", layer: research, weight: 1.0, expect_every: 10}
+  - {id: hamel, name: Hamel Husain, kind: rss, url: "https://hamel.dev/index.xml", layer: tools, weight: 1.1, expect_every: 21}
 
   # --- Research --------------------------------------------------------------------
   - {id: hf-papers, name: HF Daily Papers, kind: hf_papers, url: "https://huggingface.co/api/daily_papers", layer: research, weight: 1.0, expect_every: 2,
@@ -75,6 +81,12 @@ sources:
      min_points: 100, keywords: *ai}
   - {id: r-localllama, name: r/LocalLLaMA, kind: rss, url: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day", layer: community, weight: 0.7, expect_every: 1}
   - {id: r-ml, name: r/MachineLearning, kind: rss, url: "https://www.reddit.com/r/MachineLearning/top/.rss?t=day", layer: community, weight: 0.7, expect_every: 1}
+
+  # --- Talks & interviews: podcasts stand in for YouTube while its channel feeds return 404 (see gpu-mode) ----
+  - {id: dwarkesh, name: Dwarkesh Podcast, kind: rss, url: "https://www.dwarkesh.com/feed", layer: trends, weight: 1.0, expect_every: 14, keywords: *ai}
+  # No Priors' own feed links episodes only to the audio file; Apple's directory has a page per episode.
+  - {id: no-priors, name: No Priors, kind: podcast, layer: trends, weight: 0.8, expect_every: 7,
+     url: "https://itunes.apple.com/lookup?id=1668002688&media=podcast&entity=podcastEpisode&limit=20"}
 
   # --- Big picture: business ---------------------------------------------------------
   - {id: the-information, name: The Information, kind: rss, url: "https://www.theinformation.com/feed", layer: big_picture, weight: 1.2, expect_every: 1, keywords: *ai}

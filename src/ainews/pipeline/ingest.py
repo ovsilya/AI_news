@@ -11,7 +11,7 @@ from ..db import now
 from .normalize import canonical_url
 
 log = logging.getLogger(__name__)
-MAX_AGE_DAYS = 7   # ignore feed entries older than this (first runs would otherwise import whole archives)
+MAX_AGE_DAYS = 7   # don't report feed entries older than this (first runs would otherwise import whole archives)
 
 
 def _too_old(published_at: str | None, cutoff: datetime) -> bool:
@@ -26,12 +26,26 @@ def _too_old(published_at: str | None, cutoff: datetime) -> bool:
     return ts < cutoff
 
 
-def store_items(conn: sqlite3.Connection, source, items) -> int:
-    """Insert new items; refresh engagement on ones already seen. Returns the number of new items."""
+def needs_baseline(conn: sqlite3.Connection, source_id: str) -> bool:
+    """True for a source that has never been fetched successfully and has nothing stored or remembered."""
+    for table in ("items", "feed_seen"):
+        if conn.execute(f"SELECT 1 FROM {table} WHERE source_id = ? LIMIT 1", (source_id,)).fetchone():
+            return False
+    row = conn.execute("SELECT last_status FROM source_health WHERE source_id = ?", (source_id,)).fetchone()
+    return row is None or row["last_status"].startswith("error")
+
+
+def store_items(conn: sqlite3.Connection, source, items, *, baseline: bool = False) -> int:
+    """Insert new items; refresh engagement on ones already seen. Returns the number of new items.
+
+    Every link a feed lists is remembered, so a post comes in once at most: entries too old to report go
+    to feed_seen, which keeps old posts that a feed re-dates when they are edited (the LangChain blog does)
+    from coming back as new. With baseline (a source's first fetch) everything listed is remembered and
+    nothing is reported, since a new feed's dates can't be trusted yet."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=MAX_AGE_DAYS)
     fetched, new = now(), 0
     for it in items:
-        if not it.title or not it.url or _too_old(it.published_at, cutoff):
+        if not it.title or not it.url:
             continue
         if not source.matches(f"{it.title} {it.summary}"):
             continue
@@ -43,6 +57,12 @@ def store_items(conn: sqlite3.Connection, source, items) -> int:
         if row:
             if engagement:
                 conn.execute("UPDATE items SET engagement = ? WHERE id = ?", (engagement, row["id"]))
+            continue
+        if baseline or _too_old(it.published_at, cutoff):
+            conn.execute("INSERT OR IGNORE INTO feed_seen VALUES (?, ?, ?)", (source.id, canon, fetched))
+            continue
+        if conn.execute("SELECT 1 FROM feed_seen WHERE source_id = ? AND canonical_url = ?",
+                        (source.id, canon)).fetchone():
             continue
         conn.execute(
             "INSERT INTO items (source_id, url, canonical_url, title, summary, published_at, fetched_at,"
@@ -71,12 +91,17 @@ def _health(conn, source_id: str, status: str, new: int) -> None:
 
 def collect_all(conn: sqlite3.Connection, sources, fetcher, settings) -> dict:
     collectors = registry()
-    stats = {"sources": 0, "errors": 0, "new_items": 0, "per_source": {}}
+    stats = {"sources": 0, "errors": 0, "new_items": 0, "per_source": {}, "baseline": []}
+    # A fresh install reports the last MAX_AGE_DAYS from every source; a source added later starts with a baseline.
+    established = conn.execute("SELECT 1 FROM source_health LIMIT 1").fetchone() is not None
     for src in sources:
         stats["sources"] += 1
         try:
             items = collectors[src.kind](src, fetcher, conn, settings)
-            new = store_items(conn, src, items)
+            baseline = established and needs_baseline(conn, src.id)
+            new = store_items(conn, src, items, baseline=baseline)
+            if baseline:
+                stats["baseline"].append(src.id)
             _health(conn, src.id, "ok", new)
             conn.commit()
         except Exception as exc:

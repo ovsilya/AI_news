@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 import pytest
@@ -70,6 +70,47 @@ def test_same_url_from_two_sources_is_one_story(conn, settings):
     result = build_brief(conn, settings, SOURCES, llm=None, now_dt=NOW)
     assert result["stats"]["dedup"] == {"new_stories": 2, "by_url": 1, "by_text": 0}
     assert result["stats"]["candidates"] == 2
+
+
+def _post(slug, days_ago):
+    return RawItem(url=f"https://vendor.ai/blog/{slug}", title=f"Post {slug}",
+                   published_at=(NOW - timedelta(days=days_ago)).isoformat())
+
+
+def test_old_posts_a_feed_redates_stay_out(conn):
+    assert store_items(conn, SRC["blog"], [_post("old", 300), _post("fresh", 1)]) == 1
+    # The feed edits the old post and gives it today's date: it was listed before, so it isn't news.
+    assert store_items(conn, SRC["blog"], [_post("old", 0), _post("fresh", 0)]) == 0
+    assert conn.execute("SELECT count(*) FROM feed_seen").fetchone()[0] == 1
+
+
+def _collect(conn, settings, monkeypatch, sources, listed):
+    from ainews.pipeline import ingest
+
+    monkeypatch.setattr(ingest, "registry", lambda: {"rss": lambda src, *a: listed[src.id]})
+    return ingest.collect_all(conn, sources, None, settings)
+
+
+def test_a_new_source_starts_with_a_baseline(conn, settings, monkeypatch):
+    lc = Source(id="lc", name="LangChain blog", kind="rss", layer="tools")
+    listed = {"blog": [_post("a", 1)], "lc": [_post("lc-1", 0), _post("lc-2", 2)]}
+    first = _collect(conn, settings, monkeypatch, [SRC["blog"]], listed)       # a fresh install reports the last week
+    assert first["new_items"] == 1 and first["baseline"] == []
+
+    added = _collect(conn, settings, monkeypatch, [SRC["blog"], lc], listed)   # a source added later
+    assert added["per_source"]["lc"] == 0 and added["baseline"] == ["lc"]
+    listed["lc"] = [_post("lc-3", 0)] + listed["lc"]
+    after = _collect(conn, settings, monkeypatch, [SRC["blog"], lc], listed)
+    assert after["per_source"]["lc"] == 1 and after["baseline"] == []
+
+
+def test_baseline_waits_for_a_successful_fetch_and_spares_quiet_sources(conn, settings, monkeypatch):
+    from ainews.pipeline.ingest import needs_baseline
+
+    conn.execute("INSERT INTO source_health (source_id, last_status) VALUES ('broke', 'error: 404'), ('quiet', 'ok')")
+    assert needs_baseline(conn, "broke")        # its first fetch failed, so the baseline is still to come
+    assert not needs_baseline(conn, "quiet")    # fetched fine before, just nothing new in a while
+    assert needs_baseline(conn, "brand-new")
 
 
 def test_brief_with_fake_llm_verifies_and_renders(conn, settings):

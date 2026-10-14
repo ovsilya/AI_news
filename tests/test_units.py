@@ -44,6 +44,31 @@ def test_parse_feed():
     assert items[0].published_at == "2026-10-12T08:00:00+00:00"
 
 
+def test_changelog_entries_on_one_page_stay_apart():
+    page = "https://docs.example.com/changelog"
+    entry = "<item><title>{t}</title><link>{page}#{a}</link><guid isPermaLink='false'>{g}</guid></item>"
+    rss = "<rss version='2.0'><channel><title>Changelog</title>" + "".join(
+        entry.format(t=t, page=page, a=a, g=g) for t, a, g in
+        [("Sep 1 - langchain", "sep-1", "g1"), ("May 12 - langchain", "may-12", "g2"), ("May 12 - langgraph", "may-12", "g3")]
+    ) + "</channel></rss>"
+    urls = [i.url for i in parse_feed(rss)]
+    assert urls[0] == f"{page}?entry=sep-1#sep-1"
+    assert len({canonical_url(u) for u in urls}) == 3      # the two May 12 entries differ by GUID
+
+
+def test_podcast_episodes_link_to_their_own_page():
+    from ainews.collectors.podcast import parse_lookup
+
+    items = parse_lookup(json.dumps({"results": [
+        {"wrapperType": "track", "kind": "podcast", "trackName": "The show itself"},
+        {"wrapperType": "podcastEpisode", "trackName": "Open models, with a CEO", "releaseDate": "2026-10-09T17:24:00Z",
+         "description": "<p>Is the future of AI open?</p>",
+         "trackViewUrl": "https://podcasts.apple.com/us/podcast/open-models/id1?i=1000794029585&uo=4"}]}))
+    assert [(i.title, i.summary, i.published_at) for i in items] == [
+        ("Open models, with a CEO", "Is the future of AI open?", "2026-10-09T17:24:00Z")]
+    assert items[0].url == "https://podcasts.apple.com/us/podcast/open-models/id1?i=1000794029585"
+
+
 def test_prerelease_filter():
     titles = [i.title for i in parse_feed(fixture("releases.atom"))]
     kept = [t for t in titles if not PRERELEASE.search(t)]

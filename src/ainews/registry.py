@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-KINDS = {"rss", "github_releases", "changelog", "hf_papers", "hn", "openrouter"}
+KINDS = {"rss", "github_releases", "changelog", "hf_papers", "hn", "openrouter", "podcast"}
 LAYERS = {"big_picture", "trends", "models", "tools", "research", "systems", "community"}
 
 

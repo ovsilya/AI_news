@@ -1,11 +1,11 @@
 {
-  "updated": "2026-10-12",
+  "updated": "2026-10-13",
   "blocks": [
     {
       "id": "src-vendor",
       "slug": "vendors",
       "name": "Vendors & changelogs",
-      "what": "RSS/Atom feeds and page diffs of official blogs, API changelogs and release notes: OpenAI, Anthropic, Google, Mistral, HF, and the cloud providers.",
+      "what": "RSS/Atom feeds and page diffs of official blogs, API changelogs and release notes: OpenAI, Anthropic, Google, Mistral, HF, LangChain, and the cloud providers.",
       "why": "The primary source for launches, price changes and deprecations, which are the news most likely to affect your code.",
       "sources": [
         {
@@ -137,6 +137,30 @@
           "methods": [
             "rss"
           ]
+        },
+        {
+          "name": "LangChain blog",
+          "url": "https://www.langchain.com/blog/rss.xml",
+          "how": "RSS. Its dates are a post's last edit, so the brief remembers every link it has listed to keep re-dated old posts out",
+          "methods": [
+            "rss"
+          ]
+        },
+        {
+          "name": "LangSmith changelog",
+          "url": "https://docs.langchain.com/langsmith/changelog/rss.xml",
+          "how": "RSS of the docs changelog: one entry per weekly LangSmith Cloud update, each told apart by its #anchor",
+          "methods": [
+            "rss"
+          ]
+        },
+        {
+          "name": "LangChain OSS changelog",
+          "url": "https://docs.langchain.com/oss/python/releases/changelog/rss.xml",
+          "how": "RSS of the docs changelog: the notable langchain, langgraph and deepagents releases (their repos ship patch releases almost daily)",
+          "methods": [
+            "rss"
+          ]
         }
       ]
     },
@@ -144,7 +168,7 @@
       "id": "src-news",
       "slug": "newsletters",
       "name": "Newsletters",
-      "what": "Curated digests: AINews, TLDR AI, Simon Willison, Import AI, Interconnects and others.",
+      "what": "Curated digests and practitioner blogs: AINews, TLDR AI, Simon Willison, Import AI, Interconnects, Hamel Husain and others.",
       "why": "Their links count as votes for what matters, and AINews recaps chatter on X and Discord that we don't pull directly. Each link is resolved to the original article, so newsletters never create duplicate stories.",
       "sources": [
         {
@@ -183,6 +207,14 @@
           "name": "Import AI",
           "url": "https://importai.substack.com/feed",
           "how": "RSS",
+          "methods": [
+            "rss"
+          ]
+        },
+        {
+          "name": "Hamel Husain",
+          "url": "https://hamel.dev/index.xml",
+          "how": "RSS: evals and LLM products in production",
           "methods": [
             "rss"
           ]
@@ -374,7 +406,7 @@
       "id": "src-community",
       "slug": "community",
       "name": "Community",
-      "what": "HN (Algolia, filtered by points), r/LocalLLaMA and r/MachineLearning RSS, Bluesky researcher lists, and YouTube channel RSS.",
+      "what": "HN (Algolia, filtered by points), r/LocalLLaMA and r/MachineLearning RSS, Bluesky researcher lists, podcasts (Dwarkesh, No Priors), and YouTube channel RSS.",
       "why": "Shows what practitioners are arguing about, and how real adoption compares with the hype.",
       "sources": [
         {
@@ -413,6 +445,22 @@
           "name": "Bluesky list feeds",
           "url": "https://docs.bsky.app/docs/api/app-bsky-feed-get-list-feed",
           "how": "Public AppView API, no auth (researcher lists)",
+          "methods": [
+            "json-api"
+          ]
+        },
+        {
+          "name": "Dwarkesh Podcast",
+          "url": "https://www.dwarkesh.com/feed",
+          "how": "RSS (Substack) with full transcripts, AI keyword filter. Stands in for talks while YouTube's channel feeds are down",
+          "methods": [
+            "rss-filter"
+          ]
+        },
+        {
+          "name": "No Priors",
+          "url": "https://itunes.apple.com/lookup?id=1668002688&media=podcast&entity=podcastEpisode&limit=20",
+          "how": "Apple's public podcast directory (iTunes lookup, no key): a page, date and show notes per episode. The show's own feed links only the audio file",
           "methods": [
             "json-api"
           ]
@@ -978,7 +1026,7 @@
       "name": "RSS / Atom feed",
       "how": "Fetch the publisher's feed with a feed-reader User-Agent and conditional headers (If-None-Match / If-Modified-Since). A 304 reply means nothing changed and costs nothing to parse. New items are recognised by GUID or link and passed to dedup.",
       "why": "The feed is the publisher's own machine-readable channel: allowed by design, stable for years, and it gives a clean title, date and link without parsing HTML. One cheap request per source per run.",
-      "watch": "Paywalled sites send only a headline and teaser, so the brief links out. A few feeds need a browser-like User-Agent (VentureBeat). Intermittent 404s are retried with backoff.",
+      "watch": "Paywalled sites send only a headline and teaser, so the brief links out. A few feeds need a browser-like User-Agent (VentureBeat). Intermittent 404s are retried with backoff. Some feeds re-date old posts when they are edited (the LangChain blog does), so every link a feed lists is remembered, and a new source's first fetch only records what is there.",
       "plain": "Most blogs and news sites publish a feed: a small file that lists their latest posts (title, date, link) in a standard format. RSS and Atom are two versions of the same idea. Our collector opens that file twice a day and keeps anything it hasn't seen before. It's like subscribing to a magazine instead of walking to the newsstand to check whether a new issue is out. Why we prefer it: the site publishes the feed precisely so that programs can read it, so it is allowed, free, and rarely breaks."
     },
     {
@@ -1000,7 +1048,7 @@
     {
       "id": "json-api",
       "name": "Public JSON API (no key)",
-      "how": "Call a public endpoint that returns JSON: HN Algolia search, HF Daily Papers and trending, OpenRouter /models, the Greenhouse, Lever, Ashby and SmartRecruiters job-board APIs, the Bluesky AppView, npm.",
+      "how": "Call a public endpoint that returns JSON: HN Algolia search, HF Daily Papers and trending, OpenRouter /models, Apple's podcast directory, the Greenhouse, Lever, Ashby and SmartRecruiters job-board APIs, the Bluesky AppView, npm.",
       "why": "Fields we rank on (points, upvotes, prices, context length, salary, location) come back typed, with no scraping. Job-board APIs exist precisely so that postings get syndicated, so polling them is the intended use.",
       "watch": "Respect each provider's rate limit and cache responses. A schema change shows up as zero items, which the source health check reports.",
       "plain": "Some sites have a door built for programs instead of people, called an API. You send a request to a special web address and get back clean, labelled data (title, upvotes, salary, city) instead of a page designed for human eyes. These public APIs need no sign-up. Why: we get exactly the fields we need with no guesswork. Job-board APIs like Greenhouse exist so that companies' jobs reach as many places as possible, so reading them is what they're for."
