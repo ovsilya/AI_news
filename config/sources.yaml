@@ -123,4 +123,6 @@ sources:
   - {id: thinking-machines, name: Thinking Machines, kind: rss, url: "https://thinkingmachines.ai/blog/index.xml", layer: research, weight: 1.2, expect_every: 45}
   - {id: raschka, name: Sebastian Raschka, kind: rss, url: "https://magazine.sebastianraschka.com/feed", layer: research, weight: 1.0, expect_every: 30}
   - {id: lei-mao, name: Lei Mao, kind: rss, url: "https://leimao.github.io/feed.xml", layer: systems, weight: 0.9, expect_every: 30}
-  - {id: gpu-mode, name: GPU MODE (YouTube), kind: rss, url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCJgIbYl6C5no72a0NUAPcTA", layer: systems, weight: 0.8, expect_every: 30}
+  # YouTube's channel feeds return 404 platform-wide since early 2026-10 (feeds/videos.xml?channel_id=UCJgIbYl6C5no72a0NUAPcTA);
+  # meanwhile the lecture slides and notes on GitHub stand in. Switch back when the YouTube feed answers again.
+  - {id: gpu-mode, name: GPU MODE (lecture slides), kind: rss, url: "https://github.com/gpu-mode/lectures/commits/main.atom", layer: systems, weight: 0.8, role: proxy, keywords: [lecture, slides, notes], expect_every: 45}

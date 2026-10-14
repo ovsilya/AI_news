@@ -420,7 +420,7 @@
         {
           "name": "YouTube channel feeds (e.g. GPU MODE)",
           "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCJgIbYl6C5no72a0NUAPcTA",
-          "how": "RSS, no quota (titles; transcripts later)",
+          "how": "RSS, no quota (titles; transcripts later). Returns 404 for every channel since early October 2026, a YouTube-wide outage",
           "methods": [
             "rss"
           ]
@@ -772,9 +772,9 @@
           ]
         },
         {
-          "name": "GPU MODE (YouTube)",
-          "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCJgIbYl6C5no72a0NUAPcTA",
-          "how": "RSS (intermittent 404 → retry)",
+          "name": "GPU MODE (lecture slides on GitHub)",
+          "url": "https://github.com/gpu-mode/lectures/commits/main.atom",
+          "how": "Atom feed of the lectures repo, keeping lecture, slides and notes commits; stands in while YouTube's channel feeds return 404",
           "methods": [
             "rss"
           ]
@@ -832,7 +832,10 @@
     {
       "id": "src-jobs",
       "slug": "job-boards",
-      "guide": {"href": "../jobs/index.html", "text": "How the job search works: the sources, the filters, the model and the weekly report"},
+      "guide": {
+        "href": "../jobs/index.html",
+        "text": "How the job search works: the sources, the filters, the model and the weekly report"
+      },
       "name": "Job boards",
       "what": "Two ways in. By company (live): the Greenhouse, Lever and Ashby job-board APIs of 97 employers, mostly AI companies, and the Workday career sites of 32 banks, insurers, pharma and big-tech employers such as NVIDIA, Salesforce, Capital One, TD, Barclays and Roche (config/companies.yaml); together about 2,400 open postings in your target roles and markets. An employer that isn't on the list isn't seen. Next by company: SuccessFactors, Oracle Recruiting and SmartRecruiters career sites. By role (planned), whatever the employer: SerpApi Google Jobs twice a week (free tier), your job-alert emails read through Gmail, the Reed API (UK, daily), swissdevjobs.ch RSS (CH, daily) and USAJobs (US, weekly). The UAE relies mostly on searching by role, and on global employers' UAE roles (Salesforce has FDE roles in Dubai).",
       "why": "Data straight from employers: legal, free, with full descriptions and often salary. SerpApi and alert emails will fill the remaining gaps without scraping LinkedIn or Indeed. Your alert emails are legal to parse because they are sent to you.",
