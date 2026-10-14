@@ -13,7 +13,7 @@ Browse the HTML docs online: **[ovsilya.github.io/AI_news](https://ovsilya.githu
 
 ## Status
 
-**Phase 1 (MVP) and the first part of Phase 3 (jobs), deployed on GCP** (since 2026-10-14): Cloud Run jobs started by Cloud Scheduler post the openings at 05:00, the brief at 06:00 and the weekly jobs report on Mondays ([setup §6](docs/setup.md#6-deploy-to-gcp-cloud-run-jobs-on-a-schedule)).
+**Phase 1 (MVP) and the first part of Phase 3 (jobs), deployed on GCP** (since 2026-10-14): Cloud Run jobs started by Cloud Scheduler post the openings at 05:00 and the brief at 06:00 every other day (odd-numbered dates), and the weekly jobs report on Mondays ([setup §6](docs/setup.md#6-deploy-to-gcp-cloud-run-jobs-on-a-schedule)).
 - 60 news sources across seven layers, defined in [config/sources.yaml](config/sources.yaml), from business and policy down to kernels.
 - Collectors: RSS/Atom, GitHub releases, a CHANGELOG diff, HF Daily Papers, Hacker News, and an OpenRouter model and price diff.
 - Dedup by canonical URL and MinHash, then a heat score.

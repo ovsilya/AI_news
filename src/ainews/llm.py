@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+import time
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 
@@ -77,6 +78,15 @@ def worst_case_usd(model: str, prompt_chars: int, max_tokens: int) -> float:
     return (prompt_chars / 3 * pin * CACHE_WRITE + max_tokens * pout) / 1_000_000
 
 
+def period_start(*, month: bool = False, now_ts: float | None = None) -> str:
+    """Local midnight today (or on the 1st of this month), in the time zone the app runs in (TZ), as a UTC
+    timestamp comparable with llm_calls.at. The caps follow your day, not UTC's: west of UTC, UTC's day starts
+    the afternoon or evening before, which put the evening's runs on the next morning's bill."""
+    t = time.localtime(now_ts)
+    start = time.mktime((t.tm_year, t.tm_mon, 1 if month else t.tm_mday, 0, 0, 0, 0, 0, -1))
+    return datetime.fromtimestamp(start, timezone.utc).isoformat(timespec="seconds")
+
+
 def spent_since(conn: sqlite3.Connection, since_iso: str) -> float:
     row = conn.execute("SELECT COALESCE(SUM(cost_usd), 0) AS s FROM llm_calls WHERE at >= ?", (since_iso,)).fetchone()
     return float(row["s"])
@@ -89,7 +99,7 @@ class LLM:
     """Provider-independent part: the switch, the spending guard, logging and JSON parsing."""
 
     def __init__(self, settings, conn: sqlite3.Connection, run_id: int | None = None, *,
-                 ignore_switch: bool = False, client=None):
+                 ignore_switch: bool = False, client=None, reserve: float = 0.0):
         if not settings.llm_enabled and not ignore_switch:
             raise LLMDisabled("model calls are switched off: set AINEWS_LLM_ENABLED=true in .env to turn them on "
                               "(or use --no-llm)")
@@ -98,6 +108,7 @@ class LLM:
         self.settings = settings
         self.client = client or self._make_client(settings)
         self.conn, self.run_id = conn, run_id
+        self.reserve = reserve   # left under the day and month caps for a later lane (the jobs lane keeps it for the brief)
         self.total_cost = 0.0
 
     def _make_client(self, settings):
@@ -112,16 +123,14 @@ class LLM:
         """Refuse the call before it is made if the worst case would break any cap."""
         s = self.settings
         worst = worst_case_usd(model, prompt_chars, max_tokens)
-        now_dt = datetime.now(timezone.utc)
-        day = now_dt.replace(hour=0, minute=0, second=0, microsecond=0).isoformat(timespec="seconds")
-        month = now_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat(timespec="seconds")
-        checks = [("run", self.total_cost, s.max_usd_per_run),
-                  ("day", spent_since(self.conn, day), s.max_usd_per_day),
-                  ("month", spent_since(self.conn, month), s.max_usd_per_month)]
-        for name, spent, cap in checks:
-            if spent + worst > cap:
+        checks = [("run", self.total_cost, s.max_usd_per_run, 0.0),
+                  ("day", spent_since(self.conn, period_start()), s.max_usd_per_day, self.reserve),
+                  ("month", spent_since(self.conn, period_start(month=True)), s.max_usd_per_month, self.reserve)]
+        for name, spent, cap, keep in checks:
+            if spent + worst > cap - keep:
+                kept = f", keeping ${keep:.2f} for the brief (AINEWS_BRIEF_RESERVE_USD)" if keep else ""
                 raise BudgetExceeded(f"{purpose}: refused, {name} spend ${spent:.2f} + worst case ${worst:.2f} "
-                                     f"> cap ${cap:.2f} (AINEWS_MAX_USD_PER_{name.upper()})")
+                                     f"> cap ${cap:.2f} (AINEWS_MAX_USD_PER_{name.upper()}){kept}")
 
     def json(self, *, model: str, system: str, user: str, schema: dict, max_tokens: int,
              effort: str = "medium", purpose: str = "", stream: bool = False) -> dict:

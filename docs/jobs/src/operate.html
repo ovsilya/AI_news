@@ -5,7 +5,7 @@
 <div class="tablewrap"><table>
 <thead><tr><th style="width:36%">Command</th><th>What it does</th></tr></thead>
 <tbody>
-<tr><td><code>ainews jobs</code></td><td>The daily run: polls all {{n_employers}} employers, saves new, changed and closed postings, then the model reads up to 200 unread ones. Prints a summary such as “polled 129 boards (0 errors) … 148 new, 0 changed, 0 closed”</td></tr>
+<tr><td><code>ainews jobs</code></td><td>The jobs run: polls all {{n_employers}} employers, saves new, changed and closed postings, then the model reads up to 200 unread ones. Prints a summary such as “polled 129 boards (0 errors) … 148 new, 0 changed, 0 closed”</td></tr>
 <tr><td><code>ainews jobs --no-llm</code></td><td>Polls only, with no model calls, for free</td></tr>
 <tr><td><code>ainews jobs --only nvidia,td</code></td><td>Polls only these employers (ids from <code>companies.yaml</code>)</td></tr>
 <tr><td><code>ainews jobs --max-extract 50</code></td><td>Lets the model read at most 50 postings this run</td></tr>
@@ -24,7 +24,7 @@
 </tbody></table></div>
 
 <h2 id="cloud">In the cloud</h2>
-<p>Deployed on GCP (<a href="https://github.com/ovsilya/AI_news/blob/main/docs/setup.md#6-deploy-to-gcp-cloud-run-jobs-on-a-schedule">setup §6</a>), three Cloud Run jobs run on a schedule in your time zone: <code>ainews-jobs</code> at 05:00 (<code>ainews jobs --send-openings</code>), <code>ainews-brief</code> at 06:00, and <code>ainews-weekly</code> on Mondays at 07:00. Each run downloads the database from a private bucket, works on it, and uploads it again, so don't run the lanes on the laptop as well.</p>
+<p>Deployed on GCP (<a href="https://github.com/ovsilya/AI_news/blob/main/docs/setup.md#6-deploy-to-gcp-cloud-run-jobs-on-a-schedule">setup §6</a>), three Cloud Run jobs run on a schedule in your time zone: <code>ainews-jobs</code> at 05:00 (<code>ainews jobs --send-openings</code>) and <code>ainews-brief</code> at 06:00, every other day (odd-numbered dates), and <code>ainews-weekly</code> on Mondays at 07:00. Each run downloads the database from a private bucket, works on it, and uploads it again, so don't run the lanes on the laptop as well.</p>
 <div class="tablewrap"><table>
 <thead><tr><th style="width:46%">Command</th><th>What it does</th></tr></thead>
 <tbody>
@@ -44,7 +44,8 @@
 <tbody>
 <tr><td><code>AINEWS_LLM_ENABLED</code></td><td><code>false</code></td><td>The on/off switch for all model calls. When off, <code>ainews jobs</code> polls only</td></tr>
 <tr><td><code>AINEWS_MAX_JOBS_EXTRACT</code></td><td><code>200</code></td><td>Postings the model reads per run</td></tr>
-<tr><td><code>AINEWS_MAX_USD_PER_RUN</code> · <code>_DAY</code> · <code>_MONTH</code></td><td>0.30 · 0.75 · 10</td><td>Spending caps in US dollars, shared with the daily brief</td></tr>
+<tr><td><code>AINEWS_MAX_USD_PER_RUN</code> · <code>_DAY</code> · <code>_MONTH</code></td><td>0.30 · 0.75 · 10</td><td>Spending caps in US dollars, shared with the brief. A day starts at midnight in your time zone</td></tr>
+<tr><td><code>AINEWS_BRIEF_RESERVE_USD</code></td><td>0.15</td><td>How much of the day's cap the jobs lane leaves for the brief, which runs an hour later</td></tr>
 <tr><td><code>AINEWS_COMPANIES</code></td><td><code>config/companies.yaml</code></td><td>Another employer list, for example for a test</td></tr>
 <tr><td><code>AINEWS_FIT</code></td><td><code>private/skills.yaml</code></td><td>Your have and learning lists</td></tr>
 <tr><td><code>AINEWS_OPENINGS</code></td><td><code>private/openings.yaml</code></td><td>Which openings reach you: role families, markets, levels, years, places per employer group, the fit bar</td></tr>

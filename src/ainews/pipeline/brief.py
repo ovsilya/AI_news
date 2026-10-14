@@ -20,9 +20,9 @@ from .verify import verify
 log = logging.getLogger(__name__)
 
 
-def _since(conn: sqlite3.Connection, now_dt: datetime) -> str:
-    """Stories updated since the last brief (pm edition = changes only), at most 26 h back."""
-    floor = (now_dt - timedelta(hours=26)).isoformat(timespec="seconds")
+def _since(conn: sqlite3.Connection, now_dt: datetime, lookback_hours: int = 26) -> str:
+    """Stories updated since the last brief (pm edition = changes only), at most lookback_hours back."""
+    floor = (now_dt - timedelta(hours=lookback_hours)).isoformat(timespec="seconds")
     row = conn.execute("SELECT MAX(created_at) AS t FROM briefs").fetchone()
     return max(row["t"], floor) if row and row["t"] else floor
 
@@ -39,7 +39,8 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
     stats: dict = {"edition": edition, "llm": llm is not None}
     try:
         stats["dedup"] = assign_stories(conn, layers, now=now_dt)
-        candidates = load_candidates(conn, weights, _since(conn, now_dt), limit=settings.max_judge_stories, now=now_dt,
+        since = _since(conn, now_dt, settings.brief_lookback_hours)
+        candidates = load_candidates(conn, weights, since, limit=settings.max_judge_stories, now=now_dt,
                                      per_source=per_source)
         stats["candidates"] = len(candidates)
         profile = settings.profile_text()

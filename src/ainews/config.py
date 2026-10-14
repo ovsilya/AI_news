@@ -45,8 +45,10 @@ class Settings:
     max_usd_per_run: float = 0.30
     max_usd_per_day: float = 0.75
     max_usd_per_month: float = 10.0
+    brief_reserve_usd: float = 0.15   # the jobs lane runs first and leaves this much of the day's cap for the brief
     max_judge_stories: int = 120
     max_jobs_extract: int = 200    # postings read by the model per jobs run
+    brief_lookback_hours: int = 26  # how far back a brief may reach for stories: a day plus slack; more if briefs are rarer
     state_bucket: str = ""         # in the cloud: the bucket holding the database and private files (cloud.py)
 
     @classmethod
@@ -79,8 +81,10 @@ class Settings:
             max_usd_per_run=float(env("AINEWS_MAX_USD_PER_RUN", "0.30")),
             max_usd_per_day=float(env("AINEWS_MAX_USD_PER_DAY", "0.75")),
             max_usd_per_month=float(env("AINEWS_MAX_USD_PER_MONTH", "10")),
+            brief_reserve_usd=float(env("AINEWS_BRIEF_RESERVE_USD", "0.15")),
             max_judge_stories=int(env("AINEWS_MAX_JUDGE_STORIES", "120")),
             max_jobs_extract=int(env("AINEWS_MAX_JOBS_EXTRACT", "200")),
+            brief_lookback_hours=int(env("AINEWS_BRIEF_LOOKBACK_HOURS", "26")),
             state_bucket=env("AINEWS_STATE_BUCKET", ""),
         )
 

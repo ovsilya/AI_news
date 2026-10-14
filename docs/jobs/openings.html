@@ -166,7 +166,7 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <h2 id="groups">Three employer groups</h2>
 <p>Ranked by fit alone, most days would go to frontier labs and the best-known AI companies: their postings are written for exactly these skills, and they post a lot. Those are also the hardest offers to get. So every employer belongs to one of three groups, and each group has its own places in the day's list:</p>
 <div class="tablewrap"><table>
-<thead><tr><th style="width:18%">Group</th><th>Who</th><th style="width:14%" class="num">Employers</th><th style="width:14%" class="num">Places a day</th></tr></thead>
+<thead><tr><th style="width:18%">Group</th><th>Who</th><th style="width:14%" class="num">Employers</th><th style="width:14%" class="num">Places per list</th></tr></thead>
 <tbody>
 <tr><td>🏢 Established</td><td>Public companies, banks, insurers, pharma and consulting firms, and private companies past roughly 1,000 people: Salesforce, Capital One, TD, Roche, Datadog, Snowflake, CoreWeave…</td><td class="num">47</td><td class="num">3</td></tr>
 <tr><td>🌱 Startups</td><td>Smaller private companies: Legora, Dust, Faculty, LangChain, Baseten, Supabase…</td><td class="num">59</td><td class="num">3</td></tr>
@@ -234,7 +234,7 @@ Legora · New York City 🇺🇸 · onsite · mid
 <tr><td><code>ainews openings --redo --send</code></td><td>Rebuilds the latest sent openings, say after a layout change, and sends them again; without <code>--send</code> their postings count as unsent until you send</td></tr>
 <tr><td><code>ainews openings --tier top=0</code></td><td>No top-tier openings this time; <code>--tier startup=5</code> gives startups more places. The rest keep their places</td></tr>
 </tbody></table></div>
-<p class="muted">Free and instant: no model call, no network call except to Telegram. Deployed, the daily 05:00 jobs run sends the openings at the end (<code>ainews jobs --send-openings</code>).</p>
+<p class="muted">Free and instant: no model call, no network call except to Telegram. Deployed, the 05:00 jobs run (every other day) sends the openings at the end (<code>ainews jobs --send-openings</code>).</p>
 
 <div class="callout">
 <p><b>Why not let the model rank?</b> The model already did the hard part, reading each posting into a form. Ranking those forms in code costs nothing, gives the same answer every run, and shows its working: every opening lists the skills behind its fit, so you can see why it's there and fix your lists if it shouldn't be.</p>

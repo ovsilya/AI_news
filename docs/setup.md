@@ -73,7 +73,7 @@ Layers 1 and 2 are already in the code. Layer 3 needs nothing from you while you
 | # | Guardrail | What it stops | Acts | Where |
 |---|---|---|---|---|
 | 1 | **The button**: `AINEWS_LLM_ENABLED=false` (the default) | Every model call, except the deliberate `ainews check` | Immediately | code ✓ |
-| 2 | **App caps**: $0.30 per run, $0.75 per day, $10 per month; at most 120 stories judged; editor output capped at 32k tokens | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI | Before each call | code ✓ |
+| 2 | **App caps**: $0.30 per run, $0.75 per day (from local midnight; the jobs lane leaves $0.15 of it for the brief), $10 per month; at most 120 stories judged; editor output capped at 32k tokens | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI | Before each call | code ✓ |
 | 3 | **Vertex AI quotas**: none to lower for Gemini (see below) | — | — | — |
 | 4 | **Budget alerts**: about US$10/month (in your billing currency), emails at 25/50/90/100% and at 100% forecast | Nothing by itself; it tells you | Hours of delay | script |
 | 5 | **Kill switch** (optional): unlinks billing when actual spend passes the budget | Everything paid in the project | Hours of delay | script |
@@ -156,12 +156,12 @@ Nothing to sign up for: the employers' job boards (Greenhouse, Lever, Ashby) are
 
 ## 6. Deploy to GCP (Cloud Run jobs on a schedule)
 
-Deployed, everything runs on its own and posts to the channel: the jobs lane and the day's openings at 05:00, the brief at 06:00, and the weekly jobs report on Mondays at 07:00, in your time zone. [infra/deploy.sh](../infra/deploy.sh) does it in steps you can run again safely; it reads the project from `GCP_PROJECT_ID` and the time zone from `AINEWS_TZ` in `.env`.
+Deployed, everything runs on its own and posts to the channel: the jobs lane and the openings at 05:00 and the brief at 06:00, every other day (odd-numbered dates), and the weekly jobs report on Mondays at 07:00, in your time zone. `EVERY_DAYS` at the top of the script sets the rhythm (1 for daily), and the brief's lookback follows it, so a brief always covers everything since the last one. [infra/deploy.sh](../infra/deploy.sh) does it in steps you can run again safely; it reads the project from `GCP_PROJECT_ID` and the time zone from `AINEWS_TZ` in `.env`.
 
 | Piece | What it is |
 |---|---|
 | **Cloud Run jobs** | `ainews-jobs` (`ainews jobs --send-openings`), `ainews-brief` (`ainews run --send`), `ainews-weekly` (`ainews weekly --send`): one image, one task each, no retries, so a failed run never posts twice |
-| **Cloud Scheduler** | `ainews-jobs-daily`, `ainews-brief-am`, `ainews-weekly-mon` start them (three triggers, within the free tier) |
+| **Cloud Scheduler** | `ainews-jobs-am`, `ainews-brief-am`, `ainews-weekly-mon` start them (three triggers, within the free tier) |
 | **State bucket** | `gs://<project>-ainews-state`, private and versioned: the database and your private files between runs. Each run downloads them and uploads the database when it ends, only if no other run saved one in between; the 20 earlier copies are kept for up to 30 days |
 | **Secret Manager** | The bot token (`ainews-telegram-bot-token`) |
 | **Artifact Registry** | The image (`ainews` repository, the 3 newest kept), built by Cloud Build from an allowlist ([.gcloudignore](../.gcloudignore)): code and public config only, never `private/`, `data/` or `.env` |
@@ -179,5 +179,5 @@ Deployed, everything runs on its own and posts to the channel: the jobs lane and
 - **Look at the data:** `ainews state pull` copies the cloud database to `data/` (your local one is kept as `data/ainews.local-<time>.sqlite`); then `ainews budget` and the SQL in [Run & change it](jobs/operate.html#data) work on it.
 - **Changed your profile, skills or openings preferences?** `ainews state push --private` uploads them; the cloud database stays as it is.
 
-**Cost.** The jobs use about 10 minutes of one CPU a day, within or close to Cloud Run's free tier; the bucket, image and secret cost cents a month. Model calls are unchanged from running by hand, about $3–8 a month, and the app's own caps ($0.75 a day, $10 a month) still apply: they count the calls recorded in the database, which every run shares.
+**Cost.** The jobs use about 10 minutes of one CPU per run day, within or close to Cloud Run's free tier; the bucket, image and secret cost cents a month. Model calls are unchanged from running by hand, about $3–8 a month, and the app's own caps ($0.75 a day, $10 a month) still apply: they count the calls recorded in the database, which every run shares. A day starts at midnight in your time zone, and the jobs lane, which runs first, leaves $0.15 of the day's cap for the brief (`AINEWS_BRIEF_RESERVE_USD`).
 

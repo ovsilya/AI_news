@@ -159,14 +159,13 @@ def cmd_check(args, settings) -> None:
 
 
 def cmd_budget(args, settings) -> None:
-    from .llm import spent_since
+    from .llm import period_start, spent_since
 
     conn = db.connect(settings.db_path)
-    now = datetime.now(timezone.utc)
-    day = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat(timespec="seconds")
-    month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat(timespec="seconds")
+    month = period_start(month=True)
     print(f"model calls: {'ON' if settings.llm_enabled else 'OFF'} (AINEWS_LLM_ENABLED)")
-    print(f"today:      ${spent_since(conn, day):.4f} of ${settings.max_usd_per_day:.2f}")
+    print(f"today:      ${spent_since(conn, period_start()):.4f} of ${settings.max_usd_per_day:.2f}"
+          f" (since local midnight; the jobs lane leaves ${settings.brief_reserve_usd:.2f} for the brief)")
     print(f"this month: ${spent_since(conn, month):.4f} of ${settings.max_usd_per_month:.2f}")
     print(f"per run cap: ${settings.max_usd_per_run:.2f} · judge cap: {settings.max_judge_stories} stories")
     for r in conn.execute("SELECT purpose, model, COUNT(*) n, SUM(cost_usd) c FROM llm_calls"
@@ -200,7 +199,7 @@ def cmd_jobs(args, settings) -> None:
         from .llm import LLMDisabled, make_llm
 
         try:
-            llm = make_llm(settings, conn, run_id)
+            llm = make_llm(settings, conn, run_id, reserve=settings.brief_reserve_usd)   # runs before the brief
         except LLMDisabled as exc:
             print(f"extraction skipped: {exc}")
         else:

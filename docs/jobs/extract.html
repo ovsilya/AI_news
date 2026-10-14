@@ -211,9 +211,9 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <tbody>
 <tr><td style="width:34%">Per posting</td><td>About $0.0011: roughly 1,600 tokens in and 460 out (the first 210 postings cost $0.23 in 42 calls)</td></tr>
 <tr><td>Per run</td><td>Up to 200 postings (<code>AINEWS_MAX_JOBS_EXTRACT</code>), newest first: about $0.22 and 4 minutes for 40 calls</td></tr>
-<tr><td>Spending guard</td><td>Every call is checked against the caps first ($0.30 a run, $0.75 a day, $10 a month). A call that could break a cap isn't sent; reading stops cleanly and resumes on the next run</td></tr>
+<tr><td>Spending guard</td><td>Every call is checked against the caps first ($0.30 a run, $0.75 a day from local midnight, $10 a month), and reading leaves $0.15 of the day's cap for the brief that follows. A call that could break a cap isn't sent; reading stops cleanly and resumes on the next run</td></tr>
 <tr><td>A failed batch</td><td>Logged and skipped; its five postings stay unread and are tried again next run</td></tr>
-<tr><td>The backlog</td><td>On 13 Oct 2026, 2,065 postings were waiting: about ten daily runs, or five if you run it twice a day</td></tr>
+<tr><td>The backlog</td><td>On 13 Oct 2026, 2,065 postings were waiting: about ten runs</td></tr>
 </tbody></table></div>
 
 <div class="next"><a href="poll.html">← 2 · Filter &amp; track</a><a href="openings.html">4 · Openings →</a></div>

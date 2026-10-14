@@ -34,12 +34,16 @@ JOBS=(
   "ainews-brief|run,--send|30m"
   "ainews-weekly|weekly,--send|20m"
 )
+# Jobs + openings and the brief run every EVERY_DAYS days. Cron counts days of the month, so 2 means the
+# odd-numbered days: the 31st and the 1st run back to back, and the gap is never more than two days.
+EVERY_DAYS=2
 # Triggers: name, job, cron, in TZ_NAME.
 SCHEDULES=(
-  "ainews-jobs-daily|ainews-jobs|0 5 * * *"
-  "ainews-brief-am|ainews-brief|0 6 * * *"
+  "ainews-jobs-am|ainews-jobs|0 5 */$EVERY_DAYS * *"
+  "ainews-brief-am|ainews-brief|0 6 */$EVERY_DAYS * *"
   "ainews-weekly-mon|ainews-weekly|0 7 * * 1"
 )
+RETIRED=(ainews-jobs-daily)   # earlier trigger names; schedule removes them so they can't keep firing
 
 say() { printf '\n== %s\n' "$*"; }
 
@@ -103,7 +107,9 @@ release() {
 
   env="^@^GCP_PROJECT_ID=$PROJECT@VERTEX_REGION=global@AINEWS_LLM_ENABLED=true@AINEWS_STATE_BUCKET=$BUCKET@TZ=$TZ_NAME"
   env+="@TELEGRAM_CHAT_ID=$chat"
-  for key in AINEWS_MAX_USD_PER_RUN AINEWS_MAX_USD_PER_DAY AINEWS_MAX_USD_PER_MONTH AINEWS_MAX_JOBS_EXTRACT; do
+  env+="@AINEWS_BRIEF_LOOKBACK_HOURS=$((24 * EVERY_DAYS + 2))"   # a brief covers everything since the last one
+  for key in AINEWS_MAX_USD_PER_RUN AINEWS_MAX_USD_PER_DAY AINEWS_MAX_USD_PER_MONTH AINEWS_MAX_JOBS_EXTRACT \
+             AINEWS_BRIEF_RESERVE_USD; do
     value="$(from_env "$key")"
     if [[ -n "$value" ]]; then env+="@$key=$value"; fi
   done
@@ -131,6 +137,12 @@ schedule() {
       --uri "https://run.googleapis.com/v2/projects/$PROJECT/locations/$REGION/jobs/$job:run" --http-method POST \
       --oauth-service-account-email "$SCHED_SA" "${G[@]}" >/dev/null
     gcloud scheduler jobs resume "$name" --location "$REGION" "${G[@]}" >/dev/null 2>&1 || true
+  done
+  for name in "${RETIRED[@]}"; do
+    if gcloud scheduler jobs describe "$name" --location "$REGION" "${G[@]}" >/dev/null 2>&1; then
+      say "Removing the retired trigger $name"
+      gcloud scheduler jobs delete "$name" --location "$REGION" "${G[@]}"
+    fi
   done
 }
 

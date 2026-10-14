@@ -1,5 +1,6 @@
+import time
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -107,6 +108,38 @@ def test_daily_cap_counts_earlier_runs(conn, settings):
     with pytest.raises(BudgetExceeded, match="day"):
         call(llm, max_tokens=16000, model="gemini-3.8-flash")
     call(llm, max_tokens=1000)  # a cheap Flash-Lite call still fits under the cap
+
+
+@pytest.fixture
+def local_tz(monkeypatch):
+    def use(name):
+        monkeypatch.setenv("TZ", name)
+        time.tzset()
+    yield use
+    monkeypatch.undo()
+    time.tzset()
+
+
+def test_the_day_starts_at_local_midnight(local_tz):
+    from ainews.llm import period_start
+
+    local_tz("America/Los_Angeles")
+    brief_time = datetime(2026, 10, 14, 13, 0, tzinfo=timezone.utc).timestamp()   # 06:00 local
+    assert period_start(now_ts=brief_time) == "2026-10-14T07:00:00+00:00"        # not 00:00 UTC (17:00 the day before)
+    assert period_start(month=True, now_ts=brief_time) == "2026-10-01T07:00:00+00:00"
+    after_dst = datetime(2026, 11, 2, 18, 0, tzinfo=timezone.utc).timestamp()     # clocks went back on Nov 1
+    assert period_start(now_ts=after_dst) == "2026-11-02T08:00:00+00:00"
+    assert period_start(month=True, now_ts=after_dst) == "2026-11-01T07:00:00+00:00"
+
+
+def test_jobs_lane_leaves_a_reserve_for_the_brief(conn, settings):
+    conn.execute("INSERT INTO llm_calls (at, purpose, model, input_tokens, output_tokens, cost_usd)"
+                 " VALUES (?, 'jobs', 'gemini-3.1-flash-lite', 0, 0, 0.60)", (now(),))
+    capped = replace(settings, llm_enabled=True, max_usd_per_day=0.75)
+    jobs = make_llm(capped, conn, client=FakeGemini(), reserve=0.15)
+    with pytest.raises(BudgetExceeded, match="keeping \\$0.15 for the brief"):
+        call(jobs)
+    call(make_llm(capped, conn, client=FakeGemini()))   # the brief itself may use the reserve
 
 
 def test_worst_case_is_an_upper_bound():
