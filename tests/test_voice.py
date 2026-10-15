@@ -75,6 +75,17 @@ def test_the_narrator_explains_each_story_in_order_from_the_brief_only():
                         "narrator: story 2 missing; its title is read"]
 
 
+def test_the_narrator_may_say_in_digits_what_the_brief_spells_out():
+    from ainews.pipeline.narrate import _spelled
+
+    assert _spelled("raised six point eight billion dollars, hired one thousand people") == {"6.8", "1000"}
+    assert _spelled("version one point four point six, one hundred thirty-seven billion, seven hundred") == {
+        "1.4.6", "137", "700"}
+    assert _spelled("thirty-eight billion, fifty percent, two thousand and twenty-six, a hundred") == {
+        "38", "50", "2026", "100"}
+    assert _spelled("seventeen, ninety-nine, the point is, someone, tens") == {"17", "99"}
+
+
 def test_the_brief_keeps_what_its_voice_said(conn, settings):
     from test_pipeline import NOW, SOURCES, FakeLLM, seed
 

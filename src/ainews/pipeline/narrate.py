@@ -26,6 +26,13 @@ PARTS = ("what_happened", "in_simple_words", "why_it_matters")
 # what holds the overview to its few minutes. The first sentences carry the point.
 MAX_SENTENCES = {"top": (2, 2, 1), "other": (1, 2, 1)}
 LEAD = re.compile(r"\bnumber \d+\.$", re.I)   # "In research, number 12." is said with the sentence after it
+# Numbers the brief spells out ("six point eight billion"), which the narrator writes with digits ("6.8 billion").
+# Million and up stay words either way, so a run of number words ends there.
+SMALL = {w: i for i, w in enumerate("zero one two three four five six seven eight nine ten eleven twelve thirteen"
+                                     " fourteen fifteen sixteen seventeen eighteen nineteen".split())}
+TENS = {w: 10 * i for i, w in enumerate("twenty thirty forty fifty sixty seventy eighty ninety".split(), start=2)}
+_WORD = "|".join([*SMALL, *TENS, "hundred", "thousand", "point"])
+SPELLED = re.compile(rf"\b(?:{_WORD})(?:(?:[\s-]+|\s+and\s+)(?:{_WORD}))*\b", re.I)
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -56,6 +63,40 @@ def narrator_payload(brief: dict) -> dict:
         {"number": n, "section": LABELS[key].split(" ", 1)[1], "title": it["title"], "summary": it.get("summary", ""),
          EXPLAINER: _flat(it.get("explainer"), keep=PLAIN), PRO_TAKE: _flat(it.get("pro_take"))}
         for key, _, n, it in _numbered(brief)]}
+
+
+def _value(words: list[str]) -> int | None:
+    """['one', 'hundred', 'thirty', 'seven'] -> 137; None without a number word."""
+    if not any(w in SMALL or w in TENS or w in ("hundred", "thousand") for w in words):
+        return None
+    total = current = 0
+    for w in words:
+        if w == "hundred":
+            current = (current or 1) * 100
+        elif w == "thousand":
+            total, current = total + (current or 1) * 1000, 0
+        else:
+            current += SMALL.get(w, TENS.get(w, 0))
+    return total + current
+
+
+def _spelled(text: str) -> set[str]:
+    """The numbers text spells out, with digits: 'six point eight billion' -> {'6.8'}, 'version one point four
+    point six' -> {'1.4.6'}, 'one thousand' -> {'1000'}."""
+    out = set()
+    for run in SPELLED.finditer(text):
+        whole, *decimals = " ".join(w for w in re.split(r"[\s-]+", run.group(0).casefold()) if w != "and").split("point")
+        head = _value(whole.split())
+        if head is None:
+            continue
+        digits = [str(head)]
+        for part in decimals:   # each spoken digit after "point": "four point six" -> "4.6"
+            ds = part.split()
+            if not ds or any(SMALL.get(d, 10) > 9 for d in ds):
+                break
+            digits.append("".join(str(SMALL[d]) for d in ds))
+        out.add(".".join(digits))
+    return _numbers(" ".join(out))
 
 
 def _sentences(text: str) -> list[str]:
@@ -94,8 +135,9 @@ def narrate(llm, brief: dict, *, model: str, prompts_dir: Path, profile: str, sp
             f" and less for minor ones. The brief:\n" + json.dumps(payload, ensure_ascii=False))
     out = llm.json(model=model, system=system, user=user, schema=SCHEMA, max_tokens=12000, effort="medium",
                    purpose="narrator")
-    # Numbers it may say: the brief's, the story numbers and the date.
-    allowed = _numbers(json.dumps(payload, ensure_ascii=False) + " " + spoken_date)
+    # Numbers it may say: the brief's, in digits or spelled out, the story numbers and the date.
+    said_in_brief = json.dumps(payload, ensure_ascii=False)
+    allowed = _numbers(said_in_brief + " " + spoken_date) | _spelled(said_in_brief)
     allowed |= {str(s["number"]) for s in payload["stories"]}
     warnings: list[str] = []
     written = {s.get("number"): s for s in out.get("stories") or []}
