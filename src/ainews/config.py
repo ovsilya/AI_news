@@ -55,7 +55,7 @@ class Settings:
     model_voice: str = "gemini-2.5-flash-tts"
     model_narrator: str = "gemini-3.8-flash"   # writes the spoken overview
     voice_name: str = "Charon"     # one of Gemini TTS's prebuilt voices
-    voice_minutes: int = 7         # length of the spoken overview the narrator writes
+    voice_minutes: int = 8         # length of the spoken overview the narrator writes
     voice_max_usd_per_brief: float = 0.30
     voice_max_usd_per_month: float = 3.0
 
@@ -98,7 +98,7 @@ class Settings:
             model_voice=env("MODEL_VOICE", "gemini-2.5-flash-tts"),
             model_narrator=env("MODEL_NARRATOR", "gemini-3.8-flash"),
             voice_name=env("AINEWS_VOICE_NAME", "Charon"),
-            voice_minutes=int(env("AINEWS_VOICE_MINUTES", "7")),
+            voice_minutes=int(env("AINEWS_VOICE_MINUTES", "8")),
             voice_max_usd_per_brief=float(env("AINEWS_VOICE_MAX_USD_PER_BRIEF", "0.30")),
             voice_max_usd_per_month=float(env("AINEWS_VOICE_MAX_USD_PER_MONTH", "3")),
         )

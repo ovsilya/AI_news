@@ -56,9 +56,9 @@ def test_the_narrator_explains_each_story_in_order_from_the_brief_only():
                          "why_it_matters": "Since you've built RAG, you may need less of it."}],
                     "closing": "Read number 1 first."})
     script, version, warnings = narrate(llm, BRIEF, model="gemini-3.8-flash", prompts_dir=ROOT / "prompts",
-                                        profile="An FDE.", spoken_date="Thursday, October 15", minutes=7)
+                                        profile="An FDE.", spoken_date="Thursday, October 15", minutes=8)
     assert version == "narrator-v5" and llm.asked["purpose"] == "narrator" and llm.asked["model"] == "gemini-3.8-flash"
-    assert "about 980 words in total" in llm.asked["user"] and "about 300 words per story" in llm.asked["user"]
+    assert "about 896 words in total" in llm.asked["user"] and "about 272 words per story" in llm.asked["user"]
     assert "An FDE." in llm.asked["system"]
     sent = json.loads(llm.asked["user"].split("\n", 1)[1])
     assert [x["number"] for x in sent["stories"]] == [1, 2, 3] and sent["stories"][2]["section"] == "Tools & SDKs"

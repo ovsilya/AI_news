@@ -29,10 +29,12 @@ PARALLEL = 4             # parts read at the same time
 TRIES = 3
 PAUSE = b"\0" * (RATE * 2 * 7 // 10)   # 0.7 s of silence between parts
 AUDIO_TOKENS_PER_SECOND = 25
-SLOWEST_CHARS_PER_SECOND = 9    # for the worst case; measured 16 to 17 with STYLE
-# Not read out. A "calm" host read anywhere from 10 to 15 characters a second from one call to the next; this one
-# keeps to about 16.5, the pace of a normal podcast.
-STYLE = "Read this aloud like a friendly tech podcast host, at a brisk, lively conversational pace:"
+SLOWEST_CHARS_PER_SECOND = 9    # for the worst case; measured 12.7 to 13.8 with STYLE
+# Not read out. A teacher's pace, for a script that explains: about 13 characters a second and steady from one
+# call to the next, where a "calm" or "moderate" host read anywhere from 10 to 15, and a "brisk" one (16.5) felt
+# too fast once each story was explained.
+STYLE = ("Read this aloud like a friendly teacher explaining new ideas, clearly and at a moderate, even pace,"
+         " with a short pause between paragraphs:")
 SENTENCE = re.compile(r"(?<=[.!?…])\s+")
 
 

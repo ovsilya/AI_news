@@ -19,7 +19,7 @@ from .verify import SENTENCE, _numbers
 
 log = logging.getLogger(__name__)
 
-WORDS_PER_MINUTE = 140   # Gemini TTS at voice.STYLE's pace, measured on the narrator's scripts
+WORDS_PER_MINUTE = 112   # Gemini TTS at voice.STYLE's pace (about 13.3 characters a second), measured on the narrator's scripts
 PLAIN = {"analogy", "example"}   # the "What is it?" points that explain in everyday terms; "How it works" is too deep to hear
 PARTS = ("what_happened", "in_simple_words", "why_it_matters")
 # Sentences kept per part, top stories first: the model tends to write two where one is asked for, and this is
