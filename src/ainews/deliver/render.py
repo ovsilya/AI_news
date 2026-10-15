@@ -218,3 +218,40 @@ def to_telegram(brief: dict, stories: dict[int, Story], source_names: dict[str, 
 
     units.append(f"{DIVIDER}\n<i>{e(footer)}</i>")
     return _pack(units)
+
+
+SPOKEN = {"→": " to ", "&": " and ", "~": "about ", "≈": "about ", "×": " times ", "•": ""}
+URL = re.compile(r"\(?https?://[^\s)\]]+\)?")
+EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿️‍]")
+OUTRO = "That's the brief. The links to every story are in the messages below."
+
+
+def _spoken(text: str) -> str:
+    """Text as it should be read: no links, emoji or Markdown marks, symbols said in words."""
+    text = EMOJI.sub("", URL.sub("", text or ""))
+    for symbol, words in SPOKEN.items():
+        text = text.replace(symbol, words)
+    text = " ".join(re.sub(r"[*_`#|]", "", text).split())
+    return re.sub(r" ([.,;:!?])", r"\1", text)   # where a link was taken out
+
+
+def _sentence(text: str) -> str:
+    text = _spoken(text)
+    return text if not text or text[-1] in ".!?…:" else text + "."
+
+
+def to_speech(brief: dict, title: str) -> str:
+    """The brief as a script to read aloud: title and headline, then each story with its number, what
+    happened, and the two notes, in paragraphs; links and coverage flags are left to the text messages."""
+    paragraphs = [_sentence(title) + " " + _sentence(brief["headline"])]
+    for key, first, n, it in _numbered(brief):
+        lines = [_sentence(LABELS[key])] if first else []
+        lines.append(f"Story {n}. {_sentence(it['title'])}")
+        if it.get("summary"):
+            lines.append(_sentence(it["summary"]))
+        for name, field in ((EXPLAINER, "explainer"), (f"{PRO_TAKE}.", "pro_take")):
+            intro, points = _note(it.get(field))
+            if intro or points:
+                lines.append(" ".join([name] + [_sentence(t) for t in [intro, *points] if t]))
+        paragraphs.append("\n".join(lines))
+    return "\n\n".join(paragraphs + [OUTRO])

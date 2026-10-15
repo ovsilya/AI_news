@@ -50,6 +50,12 @@ class Settings:
     max_jobs_extract: int = 200    # postings read by the model per jobs run
     brief_lookback_hours: int = 26  # how far back a brief may reach for stories: a day plus slack; more if briefs are rarer
     state_bucket: str = ""         # in the cloud: the bucket holding the database and private files (cloud.py)
+    # The brief read aloud and sent as one voice message (deliver/voice.py), with caps of its own.
+    voice: str = "brief"           # "brief", or "off"
+    model_voice: str = "gemini-2.5-flash-tts"
+    voice_name: str = "Charon"     # one of Gemini TTS's prebuilt voices
+    voice_max_usd_per_brief: float = 0.75
+    voice_max_usd_per_month: float = 6.0
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -86,6 +92,11 @@ class Settings:
             max_jobs_extract=int(env("AINEWS_MAX_JOBS_EXTRACT", "200")),
             brief_lookback_hours=int(env("AINEWS_BRIEF_LOOKBACK_HOURS", "26")),
             state_bucket=env("AINEWS_STATE_BUCKET", ""),
+            voice=env("AINEWS_VOICE", "brief").strip().lower(),
+            model_voice=env("MODEL_VOICE", "gemini-2.5-flash-tts"),
+            voice_name=env("AINEWS_VOICE_NAME", "Charon"),
+            voice_max_usd_per_brief=float(env("AINEWS_VOICE_MAX_USD_PER_BRIEF", "0.75")),
+            voice_max_usd_per_month=float(env("AINEWS_VOICE_MAX_USD_PER_MONTH", "6")),
         )
 
     def profile_text(self) -> str:

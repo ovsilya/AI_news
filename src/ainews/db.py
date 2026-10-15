@@ -6,7 +6,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -81,6 +81,8 @@ CREATE TABLE IF NOT EXISTS briefs (
     telegram_message_ids TEXT,    -- JSON list, empty until delivered
     cost_usd REAL DEFAULT 0
 );
+-- Channel posts of a brief that a redo replaced (its row is gone), for tg-clean to remove.
+CREATE TABLE IF NOT EXISTS replaced_posts (message_id INTEGER PRIMARY KEY, replaced_at TEXT NOT NULL);
 
 CREATE TABLE IF NOT EXISTS runs (
     id INTEGER PRIMARY KEY, lane TEXT NOT NULL, started_at TEXT NOT NULL,

@@ -25,6 +25,8 @@ PRICES = {
     "gemini-3.7-flash": (0.75, 3.75),
     "gemini-3.8-flash": (0.75, 3.75),
     "gemini-3.1-pro": (2.00, 12.00),
+    "gemini-2.5-flash-tts": (0.50, 10.00),   # text in, audio out (25 audio tokens a second)
+    "gemini-2.5-pro-tts": (1.00, 20.00),
     "claude-haiku-5-5": (0.10, 0.50),
     "claude-sonnet-5-5": (2.0, 10.0),
     "claude-opus-5-5": (4.0, 20.0),
@@ -87,9 +89,29 @@ def period_start(*, month: bool = False, now_ts: float | None = None) -> str:
     return datetime.fromtimestamp(start, timezone.utc).isoformat(timespec="seconds")
 
 
-def spent_since(conn: sqlite3.Connection, since_iso: str) -> float:
-    row = conn.execute("SELECT COALESCE(SUM(cost_usd), 0) AS s FROM llm_calls WHERE at >= ?", (since_iso,)).fetchone()
+VOICE = "voice"   # purpose of the brief's text-to-speech calls, which have their own caps (deliver/voice.py)
+
+
+def spent_since(conn: sqlite3.Connection, since_iso: str, *, voice: bool = False) -> float:
+    """Spend since since_iso on text calls (the AINEWS_MAX_USD_* caps), or with voice=True on the voice."""
+    row = conn.execute("SELECT COALESCE(SUM(cost_usd), 0) AS s FROM llm_calls WHERE at >= ?"
+                       f" AND purpose {'' if voice else 'NOT '}LIKE '{VOICE}%'", (since_iso,)).fetchone()
     return float(row["s"])
+
+
+def log_call(conn: sqlite3.Connection, run_id: int | None, model: str, usage: Usage, purpose: str) -> float:
+    """Records one billed call in llm_calls; returns its cost."""
+    cost = cost_usd(model, usage)
+    log.info("%s %s: in=%d out=%d cache_read=%d $%.4f", purpose, model, usage.input_tokens,
+             usage.output_tokens, usage.cache_read_tokens, cost)
+    conn.execute(
+        "INSERT INTO llm_calls (run_id, at, purpose, model, input_tokens, output_tokens,"
+        " cache_read_tokens, cache_write_tokens, cost_usd) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (run_id, now(), purpose, model, usage.input_tokens, usage.output_tokens,
+         usage.cache_read_tokens, usage.cache_write_tokens, cost),
+    )
+    conn.commit()
+    return cost
 
 
 PLACEHOLDER_PROJECTS = {"", "your-personal-project-id"}
@@ -146,17 +168,7 @@ class LLM:
             raise LLMError(f"{purpose}: response is not valid JSON ({exc})") from exc
 
     def _log(self, model: str, usage: Usage, purpose: str) -> None:
-        cost = cost_usd(model, usage)
-        self.total_cost += cost
-        log.info("%s %s: in=%d out=%d cache_read=%d $%.4f", purpose, model, usage.input_tokens,
-                 usage.output_tokens, usage.cache_read_tokens, cost)
-        self.conn.execute(
-            "INSERT INTO llm_calls (run_id, at, purpose, model, input_tokens, output_tokens,"
-            " cache_read_tokens, cache_write_tokens, cost_usd) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (self.run_id, now(), purpose, model, usage.input_tokens, usage.output_tokens,
-             usage.cache_read_tokens, usage.cache_write_tokens, cost),
-        )
-        self.conn.commit()
+        self.total_cost += log_call(self.conn, self.run_id, model, usage, purpose)
 
 
 class GeminiLLM(LLM):

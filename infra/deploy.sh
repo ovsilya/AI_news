@@ -31,7 +31,7 @@ G=(--project "$PROJECT" --quiet)
 # Lane jobs: name, command, timeout. An evening brief would be one more: run,--edition,pm,--send
 JOBS=(
   "ainews-jobs|jobs,--send-openings|45m"
-  "ainews-brief|run,--send|30m"
+  "ainews-brief|run,--send|45m"
   "ainews-weekly|weekly,--send|20m"
 )
 # Jobs + openings and the brief run every EVERY_DAYS days (1 for daily). Cron counts days of the month, so
@@ -110,7 +110,8 @@ release() {
   env+="@TELEGRAM_CHAT_ID=$chat"
   env+="@AINEWS_BRIEF_LOOKBACK_HOURS=$((24 * (EVERY_DAYS + 2) + 2))"   # since the last brief, month-end gaps too
   for key in AINEWS_MAX_USD_PER_RUN AINEWS_MAX_USD_PER_DAY AINEWS_MAX_USD_PER_MONTH AINEWS_MAX_JOBS_EXTRACT \
-             AINEWS_BRIEF_RESERVE_USD; do
+             AINEWS_BRIEF_RESERVE_USD AINEWS_VOICE AINEWS_VOICE_NAME MODEL_VOICE AINEWS_VOICE_MAX_USD_PER_BRIEF \
+             AINEWS_VOICE_MAX_USD_PER_MONTH; do
     value="$(from_env "$key")"
     if [[ -n "$value" ]]; then env+="@$key=$value"; fi
   done

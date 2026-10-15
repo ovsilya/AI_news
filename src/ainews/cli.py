@@ -3,6 +3,7 @@ budget | tg-chats | tg-test | tg-clean | state`."""
 from __future__ import annotations
 
 import argparse
+import html
 import logging
 import sys
 from datetime import datetime, timedelta, timezone
@@ -85,9 +86,36 @@ def cmd_brief(args, settings) -> None:
     if args.send:
         from .deliver.telegram import Telegram
 
-        ids = Telegram(settings.telegram_bot_token, settings.telegram_chat_id).send_messages(result["telegram"])
+        tg = Telegram(settings.telegram_bot_token, settings.telegram_chat_id)
+        speech = (None if args.no_voice or args.no_llm or settings.voice != "brief"
+                  else _read_aloud(result, settings, conn, path.with_suffix(".ogg")))
+        ids = []
+        if speech is not None:   # first, so it is what you see when you open the channel
+            minutes = max(1, round(speech.seconds / 60))
+            try:
+                ids.append(tg.send_voice(speech.ogg, caption=f"🎧 <b>{html.escape(result['title'])}</b> · {minutes} min",
+                                         seconds=speech.seconds))
+            except Exception as exc:
+                print(f"voice message not sent: {exc}")
+        voiced = len(ids)
+        ids += tg.send_messages(result["telegram"], notify=not voiced)
         mark_sent(conn, result["brief_id"], ids)
-        print(f"sent {len(ids)} Telegram messages")
+        print(f"sent {len(ids) - voiced} Telegram messages" + (" and the voice message" if voiced else ""))
+
+
+def _read_aloud(result: dict, settings, conn, path):
+    """The brief read aloud (deliver/voice.py), also written to path; None, with the reason printed, if it
+    can't be made: the text brief goes out regardless."""
+    from .deliver.voice import Speaker
+
+    try:
+        speech = Speaker(settings, conn).read(result["speech"])
+    except Exception as exc:
+        print(f"no voice message: {exc}")
+        return None
+    path.write_bytes(speech.ogg)
+    print(f"voice: {speech.seconds / 60:.1f} min, {len(speech.ogg) / 1e6:.1f} MB, ${speech.cost_usd:.3f}; wrote {path}")
+    return speech
 
 
 def cmd_run(args, settings) -> None:
@@ -168,6 +196,8 @@ def cmd_budget(args, settings) -> None:
           f" (since local midnight; the jobs lane leaves ${settings.brief_reserve_usd:.2f} for the brief)")
     print(f"this month: ${spent_since(conn, month):.4f} of ${settings.max_usd_per_month:.2f}")
     print(f"per run cap: ${settings.max_usd_per_run:.2f} · judge cap: {settings.max_judge_stories} stories")
+    print(f"voice:      ${spent_since(conn, month, voice=True):.4f} of ${settings.voice_max_usd_per_month:.2f} this month,"
+          f" at most ${settings.voice_max_usd_per_brief:.2f} a brief (AINEWS_VOICE={settings.voice}; not in the caps above)")
     for r in conn.execute("SELECT purpose, model, COUNT(*) n, SUM(cost_usd) c FROM llm_calls"
                           " WHERE at >= ? GROUP BY 1, 2 ORDER BY 4 DESC", (month,)):
         print(f"  {r['purpose']:<8} {r['model']:<22} {r['n']:>4} calls  ${r['c']:.4f}")
@@ -391,6 +421,7 @@ def cmd_tg_clean(args, settings) -> None:
     for table in ("briefs", "reports"):
         for (ids,) in conn.execute(f"SELECT telegram_message_ids FROM {table} WHERE telegram_message_ids IS NOT NULL"):
             sent_ids |= set(json.loads(ids))
+    sent_ids |= {r[0] for r in conn.execute("SELECT message_id FROM replaced_posts")}   # briefs a redo replaced
     first = min(kept)
     # Channel message ids count up from 1, so everything below the kept posts' first message is older. Above
     # it, only posts we sent and have since replaced go: never a message we have no record of sending.
@@ -467,6 +498,7 @@ def main(argv: list[str] | None = None) -> None:
         b.add_argument("--send", action="store_true", help="post to the Telegram channel (default: local file only)")
         b.add_argument("--redo", action="store_true",
                        help="replace the latest brief: its stories can be used again (judge scores are reused)")
+        b.add_argument("--no-voice", action="store_true", help="with --send: no voice message (AINEWS_VOICE)")
     sn = sub.add_parser("send", help="post the latest stored brief to Telegram")
     sn.add_argument("--force", action="store_true", help="send even if it was already sent")
     what = sn.add_mutually_exclusive_group()

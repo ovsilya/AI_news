@@ -316,7 +316,7 @@ A separate **Trends & future of work** section (3–4 items) covers where AI is 
 
 **Article text.** Feeds often carry only a headline or teaser, so the editor would have nothing to explain. RSS items keep the longer of summary and full content (up to 4,000 characters). Before the editor runs, each chosen story with under 800 characters of text gets one article page fetched (polite fetcher, robots.txt honoured, main text extracted by trafilatura, cached in `article_text`). Paywalled pages give a teaser; Google News links can't be opened, so those stories keep their headline.
 
-**Telegram.** As few messages as possible, because every message shows up on the phone (only the first one makes a sound). The first message opens with the title, headline and a numbered contents list; whole items follow, packed up to Telegram's 4,096-character limit: section heading, title, date and coverage flag, what happened, the two notes as quoted blocks with bullet points, links. A typical 14-item brief is 8 messages. `ainews tg-clean` deletes the channel's earlier posts, and posts that a newer version replaced (openings resent with `--redo`), and keeps the latest brief, jobs report and openings (Telegram lets a bot delete its own posts only within 48 hours).
+**Telegram.** As few messages as possible, because every message shows up on the phone (only the first one makes a sound). The first message opens with the title, headline and a numbered contents list; whole items follow, packed up to Telegram's 4,096-character limit: section heading, title, date and coverage flag, what happened, the two notes as quoted blocks with bullet points, links. A typical 14-item brief is 8 messages. The brief opens with one **voice message**: the whole brief read aloud by Gemini 2.5 Flash TTS (stories and both notes; links stay in the text), read in parts of about 4.5 minutes, four at a time, joined and encoded as OGG/Opus. It has spending caps of its own ($0.75 a brief, $6 a month), so it can't starve the text, and if it fails the brief goes out as text only. `ainews tg-clean` deletes the channel's earlier posts, and posts that a newer version replaced (openings or a brief resent with `--redo`), and keeps the latest brief, jobs report and openings (Telegram lets a bot delete its own posts only within 48 hours).
 
 **Date and coverage flag.** Under each title: when the story was published (the earliest feed date of its sources, or when we first saw it if the feed has no date) and how much of it the editor read: 📄 full article (600+ characters of body text), 📄 paper abstract, 📝 excerpt only (a teaser or paywall preview), or 📌 headline only (for example Google News results). The headline-only check ignores text that just repeats the headline.
 
@@ -360,7 +360,7 @@ Failures are logged to Langfuse.
 | **Telegram bot** (primary) | Morning brief split into section messages. Each story has buttons: 👍, 👎, 🔇 mute source, ➕ more like this. Feedback is written to SQLite. |
 | **Email** (Resend free tier) | The same brief rendered as HTML, for reading on desktop. |
 | **Static archive** | A page per brief plus `feed.xml`, so past briefs are searchable and the brief can be read in any RSS reader. |
-| **Audio** (optional, phase 4) | A two-voice 5–10 minute version via Gemini Flash TTS, or Google Chirp 3 HD on its free tier. |
+| **Audio** (built in v1.7) | The whole brief read aloud in one voice by Gemini 2.5 Flash TTS and sent as a Telegram voice message, about $0.40 for 25 minutes. A shorter two-voice version is a later option. |
 
 **Learning loop:** once a week, Claude rewrites `profile.md` from the past week's feedback; you review the diff. Once there are about 300 labels, a small logistic-regression re-ranker trained on judge sub-scores and metadata is added.
 
@@ -435,7 +435,8 @@ Drawbacks:
 | Weekly trends report (Opus 5.5) | ~200k input + 20k output per week | ~$5 |
 | Embeddings (voyage-4-lite) | ~45M tokens | ~$1 (first 200M tokens free) |
 | VPS + backups | Hetzner CX23, R2 free tier | ~€6–7 |
-| Email, Telegram, SerpApi, Langfuse, TTS | Free tiers | $0 |
+| Brief read aloud (Gemini 2.5 Flash TTS, built later) | ~10 briefs × 25 min, $10 per 1M audio tokens | ~$4 |
+| Email, Telegram, SerpApi, Langfuse | Free tiers | $0 |
 | **Total** | | **≈ $35–40/mo** |
 
 With Claude Sonnet 5.5 as the editor ($2/$10 per 1M tokens), the daily editor drops to about $9, for a total of **≈ $25/mo**. This is your call; compare quality on the golden set first.
@@ -453,7 +454,7 @@ AI_news/
 │   ├── pipeline/           # normalize.py, dedup.py, cluster.py, score.py, editor.py, verify.py
 │   ├── jobs/               # extract.py, trends.py
 │   ├── trends/             # bursts.py, weekly.py
-│   ├── deliver/            # telegram.py, email.py, site.py, tts.py
+│   ├── deliver/            # telegram.py, email.py, site.py, voice.py
 │   ├── bot/                # feedback handler (long polling)
 │   ├── db.py               # SQLite schema + migrations
 │   └── cli.py              # `ainews run daily|weekly|jobs|health`

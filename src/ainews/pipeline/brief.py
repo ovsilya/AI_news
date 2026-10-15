@@ -8,7 +8,7 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 from ..db import finish_run, now, start_run
-from ..deliver.render import to_markdown, to_telegram
+from ..deliver.render import to_markdown, to_speech, to_telegram
 from ..llm import BudgetExceeded
 from .dedup import assign_stories
 from .editor import brief_without_llm, source_text, write_brief
@@ -29,7 +29,8 @@ def _since(conn: sqlite3.Connection, now_dt: datetime, lookback_hours: int = 26)
 
 def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, edition: str = "am",
                 now_dt: datetime | None = None, fetcher=None) -> dict:
-    """Builds and stores a brief. Returns {"brief_id", "markdown", "telegram", "warnings", "stats"}."""
+    """Builds and stores a brief. Returns {"brief_id", "title", "markdown", "telegram", "speech", "warnings",
+    "stats"}: speech is the script for reading it aloud (deliver/voice.py)."""
     now_dt = now_dt or datetime.now(timezone.utc)
     run_id = start_run(conn, "brief")
     layers = {s.id: s.layer for s in sources}
@@ -52,7 +53,8 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
             chosen = select_by_heat(candidates, per_source)
         stats["selected"] = len(chosen)
 
-        date_label = now_dt.astimezone().strftime("%a %d %b %Y")  # reader's local date (set TZ on Cloud Run)
+        local = now_dt.astimezone()   # the reader's date (set TZ on Cloud Run)
+        date_label = local.strftime("%a %d %b %Y")
         if not chosen:
             draft = {"headline": "Nothing new since the last brief.", "sections": [], "prompt_version": "none"}
         elif llm is not None:
@@ -82,6 +84,7 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
         stats["coverage"] = dict(Counter(coverage(by_id[i]) for i in shown))  # full article, excerpt, …
         markdown = to_markdown(brief, by_id, names, title, footer)
         telegram = to_telegram(brief, by_id, names, title, footer)
+        spoken = f"AI Brief for {local:%A}, {local:%B} {local.day}" + (", evening update" if edition == "pm" else "")
         brief_id = conn.execute(
             "INSERT INTO briefs (created_at, edition, story_ids, markdown, telegram_html, cost_usd)"
             " VALUES (?, ?, ?, ?, ?, ?)",
@@ -90,8 +93,8 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
         conn.commit()
         stats["cost_usd"] = round(cost, 4)
         finish_run(conn, run_id, "ok", stats)
-        return {"brief_id": brief_id, "markdown": markdown, "telegram": telegram, "warnings": warnings,
-                "stats": stats}
+        return {"brief_id": brief_id, "title": title, "markdown": markdown, "telegram": telegram,
+                "speech": to_speech(brief, spoken), "warnings": warnings, "stats": stats}
     except Exception as exc:
         finish_run(conn, run_id, f"error: {exc}"[:300], stats)
         raise
@@ -99,10 +102,13 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
 
 def drop_latest_brief(conn: sqlite3.Connection) -> int | None:
     """Forget the most recent brief so its stories can be picked again (to redo a brief).
-    Judge scores are kept, so a redo mostly pays for the editor only."""
-    row = conn.execute("SELECT id FROM briefs ORDER BY id DESC LIMIT 1").fetchone()
+    Judge scores are kept, so a redo mostly pays for the editor only. If it was sent, its posts are
+    remembered as replaced, for tg-clean."""
+    row = conn.execute("SELECT id, telegram_message_ids FROM briefs ORDER BY id DESC LIMIT 1").fetchone()
     if row is None:
         return None
+    conn.executemany("INSERT OR IGNORE INTO replaced_posts VALUES (?, ?)",
+                     [(i, now()) for i in json.loads(row["telegram_message_ids"] or "[]")])
     conn.execute("DELETE FROM briefs WHERE id = ?", (row["id"],))
     conn.commit()
     return row["id"]

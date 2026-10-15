@@ -3,7 +3,8 @@ FROM python:3.13-slim
 
 ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 # tzdata: the jobs run in your time zone (TZ), so brief and openings titles carry your date.
-RUN apt-get update && apt-get install -y --no-install-recommends tzdata && rm -rf /var/lib/apt/lists/*
+# opus-tools: opusenc encodes the brief read aloud as OGG/Opus, the format of Telegram voice messages.
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata opus-tools && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY pyproject.toml ./

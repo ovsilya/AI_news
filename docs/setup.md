@@ -73,7 +73,7 @@ Layers 1 and 2 are already in the code. Layer 3 needs nothing from you while you
 | # | Guardrail | What it stops | Acts | Where |
 |---|---|---|---|---|
 | 1 | **The button**: `AINEWS_LLM_ENABLED=false` (the default) | Every model call, except the deliberate `ainews check` | Immediately | code ✓ |
-| 2 | **App caps**: $0.30 per run, $0.75 per day (from local midnight; the jobs lane leaves $0.15 of it for the brief), $10 per month; at most 120 stories judged; editor output capped at 32k tokens | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI | Before each call | code ✓ |
+| 2 | **App caps**: $0.30 per run, $0.75 per day (from local midnight; the jobs lane leaves $0.15 of it for the brief), $10 per month; at most 120 stories judged; editor output capped at 32k tokens. The brief read aloud has caps of its own, outside these: $0.75 a brief and $6 a month | Any single call whose *worst-case* cost would cross a cap. It is refused before it is sent, and the brief falls back to the digest without AI (or, for the voice, goes out as text only) | Before each call | code ✓ |
 | 3 | **Vertex AI quotas**: none to lower for Gemini (see below) | — | — | — |
 | 4 | **Budget alerts**: about US$10/month (in your billing currency), emails at 25/50/90/100% and at 100% forecast | Nothing by itself; it tells you | Hours of delay | script |
 | 5 | **Kill switch** (optional): unlinks billing when actual spend passes the budget | Everything paid in the project | Hours of delay | script |
@@ -104,7 +104,7 @@ The kill switch unlinks billing from the project once *actual* spend passes the 
 - Deployed, the jobs use a dedicated service account (`ainews-run`) with only the *Vertex AI User* role and access to its own bucket and secret.
 - `.env` is gitignored. On Cloud Run the Telegram token lives in Secret Manager.
 
-**Expected cost once on:** about $0.03–0.05 per brief: the judge on Gemini 3.1 Flash-Lite ($0.25 / $1.50 per 1M tokens) costs about a cent for the new stories, and the editor on 3.5 Flash-Lite ($0.30 / $2.50) about two to three cents. With two briefs a day that's about $2–3 a month. A run after changing `prompts/judge.md` re-scores every candidate and costs about $0.05. Prices are from the Vertex AI pricing page, checked 2026-10-12.
+**Expected cost once on:** about $0.03–0.05 per brief: the judge on Gemini 3.1 Flash-Lite ($0.25 / $1.50 per 1M tokens) costs about a cent for the new stories, and the editor on 3.5 Flash-Lite ($0.30 / $2.50) about two to three cents. With a brief every three days that's under $1 a month. Reading the brief aloud costs more than writing it: Gemini 2.5 Flash TTS charges $10 per 1M audio tokens, 25 tokens a second, so about $0.40 for a 25-minute brief, about $4 a month. A run after changing `prompts/judge.md` re-scores every candidate and costs about $0.05. Prices are from the Vertex AI pricing page, checked 2026-10-12.
 
 ## 4. Turning the button on
 
@@ -178,6 +178,7 @@ Deployed, everything runs on its own and posts to the channel: the jobs lane and
 - **Watch it:** Cloud Run → Jobs in the console lists every run with its logs, or `gcloud logging read 'resource.type="cloud_run_job"' --freshness 1d --format 'value(textPayload)'`.
 - **Look at the data:** `ainews state pull` copies the cloud database to `data/` (your local one is kept as `data/ainews.local-<time>.sqlite`); then `ainews budget` and the SQL in [Run & change it](jobs/operate.html#data) work on it.
 - **Changed your profile, skills or openings preferences?** `ainews state push --private` uploads them; the cloud database stays as it is.
+- **The brief read aloud.** Each brief opens with a voice message: Gemini 2.5 Flash TTS reads the whole brief (stories, "What is it?" and "Comment from a pro"; the links stay in the text) in parts, four at a time, and the parts are joined and encoded as OGG/Opus with `opusenc` (opus-tools, in the image). It adds about five minutes to the run. Change the voice with `AINEWS_VOICE_NAME` (e.g. Kore, Puck, Iapetus), turn it off with `AINEWS_VOICE=off`, or skip it once with `--no-voice`; then `infra/deploy.sh release`. If a voice cap would be crossed or the speech fails, the brief goes out as text only.
 
-**Cost.** The jobs use about 10 minutes of one CPU per run day, within or close to Cloud Run's free tier; the bucket, image and secret cost cents a month. Model calls are unchanged from running by hand, about $3–8 a month, and the app's own caps ($0.75 a day, $10 a month) still apply: they count the calls recorded in the database, which every run shares. A day starts at midnight in your time zone, and the jobs lane, which runs first, leaves $0.15 of the day's cap for the brief (`AINEWS_BRIEF_RESERVE_USD`).
+**Cost.** The jobs use about 10 minutes of one CPU per run day, within or close to Cloud Run's free tier; the bucket, image and secret cost cents a month. Model calls are unchanged from running by hand, about $3–4 a month plus about $4 for the voice, and the app's own caps ($0.75 a day, $10 a month, and $6 a month for the voice) still apply: they count the calls recorded in the database, which every run shares. A day starts at midnight in your time zone, and the jobs lane, which runs first, leaves $0.15 of the day's cap for the brief (`AINEWS_BRIEF_RESERVE_USD`).
 
