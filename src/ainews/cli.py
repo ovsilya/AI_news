@@ -350,6 +350,31 @@ def cmd_openings(args, settings) -> None:
         print(f"sent {len(ids)} Telegram messages; {n} postings won't be sent again")
 
 
+def cmd_standing(args, settings) -> None:
+    """"Where you stand" alone, rebuilt from today's data and your skills list; --send posts it in place of the
+    copy sent with the latest openings (tg-clean then removes that copy)."""
+    from .jobs.openings import build_standing, replace_standing
+
+    conn = db.connect(settings.db_path)
+    result = build_standing(conn, settings)
+    if not result["telegram"]:
+        print("not enough open roles in your role families, or no private/skills.yaml, to say where you stand")
+        return
+    settings.out_dir.mkdir(parents=True, exist_ok=True)
+    path = settings.out_dir / f"standing-{datetime.now():%Y-%m-%d}.md"
+    path.write_text(result["markdown"], encoding="utf-8")
+    s = result["standing"]
+    print(f"where you stand: {s['roles']} open roles, you cover {round(100 * s['median'])}% of a typical one · wrote {path}")
+    if args.send:
+        if result["report_id"] is None:
+            sys.exit("ainews: no sent openings yet; Where you stand goes out with them (ainews openings --send)")
+        from .deliver.telegram import Telegram
+
+        ids = Telegram(settings.telegram_bot_token, settings.telegram_chat_id).send_messages([result["telegram"]])
+        old = replace_standing(conn, result["report_id"], ids[0], s, result["telegram"])
+        print(f"sent message {ids[0]}" + (f"; it replaces {old}, which tg-clean will remove" if old else ""))
+
+
 def cmd_tg_chats(args, settings) -> None:
     """Lists chats the bot has seen recently, to find the channel's chat ID."""
     from .deliver.telegram import Telegram
@@ -517,6 +542,8 @@ def main(argv: list[str] | None = None) -> None:
     op.add_argument("--tier", action="append", default=[], metavar="GROUP=N",
                     help="places for one employer group this run, e.g. --tier top=0 --tier startup=5"
                          " (groups: top, established, startup; defaults 2, 3, 3 or per_tier in private/openings.yaml)")
+    sp = sub.add_parser("standing", help="'Where you stand' alone, from today's data and skills (--send to post it again)")
+    sp.add_argument("--send", action="store_true", help="post it in place of the copy sent with the latest openings")
     jp = sub.add_parser("jobs-probe", help="check which job board (Greenhouse, Lever, Ashby, Workday) an employer uses")
     jp.add_argument("slugs", nargs="+", help="board slugs, or Workday tenants with --workday (e.g. nvidia or nvidia.wd5)")
     jp.add_argument("--workday", action="store_true", help="find the tenants' Workday career sites")
@@ -568,7 +595,7 @@ def _dispatch(args, settings) -> None:
     {"collect": cmd_collect, "brief": cmd_brief, "run": cmd_run, "health": cmd_health,
      "sources": cmd_sources, "check": cmd_check, "budget": cmd_budget, "tg-chats": cmd_tg_chats,
      "tg-test": cmd_tg_test, "tg-clean": cmd_tg_clean, "send": cmd_send, "jobs": cmd_jobs,
-     "jobs-probe": cmd_jobs_probe, "weekly": cmd_weekly, "openings": cmd_openings,
+     "jobs-probe": cmd_jobs_probe, "weekly": cmd_weekly, "openings": cmd_openings, "standing": cmd_standing,
      "state": cmd_state}[args.cmd](args, settings)
 
 

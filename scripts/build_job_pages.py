@@ -472,6 +472,8 @@ def blocks() -> dict[str, str]:
         "top_skills": str(stats.TOP_SKILLS), "min_cohort": str(stats.MIN_COHORT),
         "min_tracking_days": str(stats.MIN_TRACKING.days), "min_skill": str(stats.MIN_SKILL),
         "min_salary": str(stats.MIN_SALARY), "min_group": str(stats.MIN_GROUP),
+        "show_asked": str(openings.SHOW_ASKED), "min_asked": str(openings.MIN_ASKED),
+        "family_gaps": str(openings.FAMILY_GAPS),
         "targets": ", ".join(targets), "n_targets": str(len(targets)),
         "openings_fresh_days": str(openings.FRESH.days),
         "openings_total": str(sum(openings.DEFAULTS["per_tier"].values())),

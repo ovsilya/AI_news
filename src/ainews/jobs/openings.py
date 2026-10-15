@@ -37,8 +37,8 @@ from ..deliver.render import DIVIDER, PACK_LIMIT, _day, _pack, visible_len
 from .boards import TIERS, Company, load_companies
 from .extract import Skills
 from .filters import _STATES, FAMILIES, MARKETS
-from .stats import (CURRENCY, SMALL_GAP, TARGET, _pct, _renormalize, _when, each_role, load_fit_profile, market_fit,
-                    skill_coverage)
+from .stats import (CURRENCY, SMALL_GAP, TARGET, _pct, _renormalize, _skills_of, _when, each_role, load_fit_profile,
+                    market_fit, skill_coverage)
 
 FRESH = timedelta(days=7)
 SKILL_POINTS, LEVEL_POINTS = 70, 30
@@ -53,6 +53,13 @@ NO_SPILL = "top"         # the one group that never takes the places another gro
 SHOW_SKILLS = 8
 GAP_SIZES = ((SMALL_GAP, "small gap", "🟢"), (60, "medium gap", "🟡"), (0, "big gap", "🔴"))   # by the skills you cover
 TOP_GAPS = 3        # "learning your top 3 gaps would give N roles a small gap"
+SHOW_ASKED, MIN_ASKED = 20, 5   # "Where you stand" lists up to 20 skills you have and 20 you lack, asked by 5%+ of roles
+FAMILY_GAPS = 3     # the skills each role family is missing most
+AREAS = {"languages": "Languages", "ml_frameworks": "ML frameworks", "llm_frameworks": "LLM frameworks",
+         "llm_techniques": "LLM techniques", "ml_practice": "ML practice", "model_providers": "Model providers",
+         "serving": "Serving", "vector_dbs": "Vector databases", "eval_observability": "Evals and observability",
+         "cloud_infra": "Cloud and infrastructure", "backend_web": "Backend and web",
+         "customer_facing": "People and customers"}   # skill categories in config/skills.yaml
 MIN_STANDING = 5    # roles needed before "Where you stand" says anything
 FOOTER = ("Fit 0–100: 70 for skills (required in full, preferred at half), 30 for level. Skills %: how much of a"
           " posting's skills you cover, a skill you're learning at half; the gap is small from 80%, medium from 60%."
@@ -176,9 +183,10 @@ def _size(share: float) -> tuple[str, str]:
 
 def where_you_stand(roles: list[dict], profile: dict | None, skills: Skills) -> dict | None:
     """Where you stand among roles given once each: market_fit (how much of a typical role's skills you cover,
-    overall, technical skills only, per family and level), how many roles fall in each gap size, which of your
-    skills they ask for most, which skills they ask for that you don't have, and how many would have a small
-    gap if you learned the TOP_GAPS skills that would add the most to your coverage."""
+    overall, technical skills only, per family and level), how many roles fall in each gap size, the skills
+    they ask for that you have, that you're learning and that you lack (each with the share of roles that ask
+    for it, and its area), the skills each family is missing most, and how many roles would have a small gap if
+    you learned the TOP_GAPS skills that would add the most to your coverage."""
     roles = [d for d in roles if skill_coverage(d, profile) is not None]
     if profile is None or len(roles) < MIN_STANDING:
         return None
@@ -209,7 +217,17 @@ def where_you_stand(roles: list[dict], profile: dict | None, skills: Skills) -> 
         n = sum(1 for c in covered if floor <= round(100 * c) < ceiling)
         sizes.append({"name": name, "dot": dot, "span": span, "roles": n, "pct": _pct(n, len(roles))})
         ceiling = floor
-    return {**market_fit(roles, profile, skills), "median": statistics.median(covered), "sizes": sizes,
+    def listed(names) -> list[tuple[str, int, str]]:
+        return [(s, pct(s), skills.category.get(s, "other")) for s in names if pct(s) >= MIN_ASKED][:SHOW_ASKED]
+
+    market = market_fit(roles, profile, skills)
+    for family in market["by_family"]:   # what each family asks for that you don't have, most asked first
+        lack = Counter(s for d in roles if FAMILIES.get(d.get("role_family")) == family["name"]
+                       for s in _skills_of(d) if s not in have and s not in learning)
+        family["missing"] = sorted(lack, key=lambda s: (-lack[s], s))[:FAMILY_GAPS]
+    return {**market, "median": statistics.median(covered), "sizes": sizes,
+            "have": listed(ranked), "learning": listed(s for s in gaps if s in learning),
+            "missing": listed(s for s in gaps if s not in learning),
             "strengths": [(s, pct(s)) for s in ranked[:5]],
             "gaps": [(s, pct(s), s in learning) for s in gaps[:6]],
             "top_gaps": first,
@@ -347,45 +365,77 @@ def _skill_lines(g: dict, posted: str) -> list[str]:
     return lines
 
 
-def _standing_blocks(s: dict, picked: list[dict]) -> list[tuple[str | None, list[str]]]:
-    """'Where you stand', as (heading or None, lines) blocks."""
+def _by_area(items: list[tuple[str, int, str]]) -> list[str]:
+    """'• Languages: Python 76%, SQL 16%': one line per skill area, the area with the most-asked skill first."""
+    areas: dict[str, list[str]] = {}
+    for name, pct, area in items:
+        areas.setdefault(area, []).append(f"{name} {pct}%")
+    return [f"• {AREAS.get(area, 'Other')}: {', '.join(names)}" for area, names in areas.items()]
+
+
+def _standing_blocks(s: dict, best: float | None) -> list[tuple[str | None, list[str]]]:
+    """'Where you stand', as (heading or None, lines) blocks: how big your gap is, the skills roles ask for that
+    you have and that you lack, what to learn first, then each role family."""
     tech = s.get("technical_median_pct")
     blocks = [(None, [f"🧩 You cover {_bar(s['median'])} {round(100 * s['median'])}% of a typical role's skills"
-                      + (f", {tech}% of its technical ones" if tech is not None else ""),
-                      " · ".join(f"{b['dot']} {b['pct']}% {b['name']} ({b['span']})" for b in s["sizes"])])]
-    if s.get("by_family"):
-        blocks.append(("By role family", [f"• {f['name']}: {f['median_pct']}% · 🟢 {f['small_gap_pct']}% small gap"
-                                          f" · {f['roles']} roles" for f in s["by_family"]]))
-    if s.get("by_level"):
-        blocks.append(("By level", [" · ".join(f"{g['name']} {g['median_pct']}%" for g in s["by_level"])]))
-    asked = []
-    if s["strengths"]:
-        asked.append("💪 Yours: " + ", ".join(f"{name} {pct}%" for name, pct in s["strengths"]))
-    if s["gaps"]:
-        asked.append("🧱 Missing: " + ", ".join(
-            f"{name} {pct}%" + (" (learning)" if learning else "") for name, pct, learning in s["gaps"]))
+                      + (f" ({tech}% of the technical ones)" if tech is not None else "")]
+               + [f"{b['dot']} {b['name'].capitalize()} ({b['span']}): {b['pct']}% of roles" for b in s["sizes"]])]
+    if s.get("have"):
+        blocks.append(("✅ Skills roles ask for that you have", _by_area(s["have"])))
+    if s.get("missing"):
+        blocks.append(("❌ Skills roles ask for that you don't have", _by_area(s["missing"])))
+    lines = []
+    if s.get("learning"):
+        lines.append("📚 You're learning: " + ", ".join(f"{name} {pct}%" for name, pct, _ in s["learning"]))
     top = s["top_gaps"]
     if top and s["small_after"] > s["small_now"]:
         names = ", ".join(top[:-1]) + (" and " if len(top) > 1 else "") + top[-1]
-        asked.append(f"🚀 Learning {names} would give {_pct(s['small_after'], s['roles'])}% of these roles a small"
-                     f" gap, up from {_pct(s['small_now'], s['roles'])}%")
-    if asked:
-        blocks.append(("Most asked (share of roles)", asked))
-    covered = [g["coverage"] for g in picked if g.get("coverage") is not None]
-    if covered:
-        blocks.append((None, [f"🎯 The openings above are your best fits, not typical roles: you cover"
-                              f" {round(100 * statistics.median(covered))}% of their skills."]))
+        lines.append(f"🚀 Learn first: {names}. Then {_pct(s['small_after'], s['roles'])}% of roles would have a small"
+                     f" gap, up from {_pct(s['small_now'], s['roles'])}%.")
+    if best is not None:
+        lines.append(f"🎯 The openings above are your best fits, not typical roles: you cover {round(100 * best)}% of"
+                     f" their skills.")
+    if lines:
+        blocks.append((None, lines))
+    if s.get("by_family"):
+        blocks.append(("By role family", [
+            f"• {f['name']} ({f['roles']} roles): you cover {f['median_pct']}%"
+            + (f". Missing most: {', '.join(f['missing'])}" if f.get("missing") else "") for f in s["by_family"]]))
     return blocks
 
 
-def standing_note(s: dict) -> str:
-    """The footer of "Where you stand": how it is measured, and how much of the market it has read."""
-    read = (f" The model has read {s['postings_read']:,} of the {s['postings_open']:,} open postings in your role"
-            f" families so far, newest first." if s.get("postings_open") and s["postings_read"] < s["postings_open"] else "")
-    return ("Every open role in your role families and markets that the model has read, each once (one title in"
-            " several cities is one role), whatever its posting date or level. A typical role is the median. Skills"
-            " count as in the openings: required in full, nice-to-haves at half, one you're learning at half;"
-            " “technical” leaves out customer-facing skills." + read)
+def standing_note(s: dict) -> list[str]:
+    """The footer of "Where you stand": what each number means, said with the message's own numbers."""
+    pct, example = round(100 * s["median"]), (s.get("have") or s.get("missing") or [None])[0]
+    lines = [f"• {pct}% of a typical role's skills: half of the roles have more than {pct}% of their skills on your"
+             f" list, half have less. A must-have skill counts in full; a nice-to-have, or one you're learning, counts"
+             f" half.",
+             f"• Small gap: you have {SMALL_GAP}% or more of what the role asks for."]
+    if example:
+        lines.append(f"• {example[0]} {example[1]}%: {example[1]} in 100 of these roles ask for {example[0]}.")
+    if s.get("technical_median_pct") is not None:
+        lines.append("• Technical: the same, leaving out skills such as communication.")
+    read = (f" The model has read {s['postings_read']:,} of the {s['postings_open']:,} open postings so far, newest"
+            f" first." if s.get("postings_open") and s["postings_read"] < s["postings_open"] else "")
+    return lines + ["• Every open role in your role families counts once, old or new." + read]
+
+
+def standing_message(s: dict, best: float | None) -> tuple[str, str]:
+    """'Where you stand' as (Markdown, Telegram HTML); best: how much of the openings' skills you cover."""
+    e = html.escape
+    head = f"📊 Where you stand · {s['roles']} open roles in your role families"
+    md, parts = [f"# {head}", ""], [f"<b>{e(head)}</b>"]
+    for heading, lines in _standing_blocks(s, best):
+        md += ([f"**{heading}**"] if heading else []) + lines + [""]
+        parts.append((f"<b>{e(heading)}</b>\n" if heading else "") + "\n".join(e(line) for line in lines))
+    note = standing_note(s)
+    return ("\n".join(md + ["_How to read this_", *note, ""]),
+            "\n\n".join(parts + ["<i>" + "\n".join(e(line) for line in ["How to read this", *note]) + "</i>"]))
+
+
+def _median_coverage(picked: list[dict]) -> float | None:
+    covered = [g["coverage"] for g in picked if g.get("coverage") is not None]
+    return statistics.median(covered) if covered else None
 
 
 def _versus(picked: list[dict], standing: dict | None) -> str:
@@ -450,15 +500,9 @@ def render(picked: list[dict], considered: int, unread: int, title: str, footer:
     units.append(f"{DIVIDER}\n<i>{e(footer)}</i>")
     messages = _pack(units)
     if standing:
-        head = f"📊 Where you stand · {standing['roles']} open roles in your role families"
-        md += [f"# {head}", ""]
-        parts = [f"<b>{e(head)}</b>"]
-        for heading, lines in _standing_blocks(standing, picked):
-            md += ([f"**{heading}**"] if heading else []) + lines + [""]
-            parts.append((f"<b>{e(heading)}</b>\n" if heading else "") + "\n".join(e(line) for line in lines))
-        note = standing_note(standing)
-        md += [f"_{note}_", ""]
-        messages.append("\n\n".join(parts + [f"<i>{e(note)}</i>"]))
+        standing_md, standing_html = standing_message(standing, _median_coverage(picked))
+        md.append(standing_md)
+        messages.append(standing_html)
     return "\n".join(md).rstrip() + "\n", messages
 
 
@@ -518,3 +562,51 @@ def mark_sent(conn: sqlite3.Connection, report_id: int, message_ids: list[int]) 
                      [(pid, report_id, stats["fits"].get(str(pid)), sent) for pid in stats["posting_ids"]])
     conn.commit()
     return len(stats["posting_ids"])
+
+
+def _latest_sent(conn: sqlite3.Connection):
+    return conn.execute("SELECT * FROM reports WHERE kind = 'jobs_openings' AND telegram_message_ids IS NOT NULL"
+                        " ORDER BY id DESC LIMIT 1").fetchone()
+
+
+def build_standing(conn: sqlite3.Connection, settings, *, now_dt: datetime | None = None) -> dict:
+    """'Where you stand' alone, from today's data and skills list, to send again without the openings (say,
+    after editing private/skills.yaml). The 🎯 line compares it with the latest sent openings. Nothing is sent
+    or stored here: {"standing", "markdown", "telegram" (one message, or None), "report_id" (those openings)}."""
+    skills = Skills(settings.skills_path)
+    prefs = load_prefs(settings.openings_path)
+    profile = load_fit_profile(settings.fit_path, skills)
+    found = pick_openings(conn, skills, profile, prefs, {c.id: c for c in load_companies(settings.companies_path)},
+                          now_dt=now_dt)
+    last, best = _latest_sent(conn), None
+    if last is not None and profile is not None:
+        ids = json.loads(last["stats"]).get("posting_ids") or []
+        rows = conn.execute(f"SELECT p.company, p.title, e.data FROM job_postings p JOIN job_extractions e"
+                            f" ON e.posting_id = p.id WHERE p.id IN ({','.join('?' * len(ids))})", ids).fetchall() if ids else []
+        best = _median_coverage([{"coverage": skill_coverage(d, profile)}
+                                 for d in each_role([(r, _renormalize(json.loads(r["data"]), skills)) for r in rows])])
+    result = {"standing": found["standing"], "markdown": "", "telegram": None,
+              "report_id": last["id"] if last is not None else None}
+    if found["standing"]:
+        result["markdown"], result["telegram"] = standing_message(found["standing"], best)
+    return result
+
+
+def replace_standing(conn: sqlite3.Connection, report_id: int, message_id: int, standing: dict, telegram: str) -> int | None:
+    """Makes a 'Where you stand' just sent (message_id) the one that belongs to openings report_id, in place of the
+    one sent with them, which is recorded as replaced so tg-clean removes it. Returns the old message id."""
+    row = conn.execute("SELECT telegram_message_ids, telegram_html, stats FROM reports WHERE id = ?", (report_id,)).fetchone()
+    ids, messages, stats = json.loads(row["telegram_message_ids"]), json.loads(row["telegram_html"]), json.loads(row["stats"])
+    old = None
+    if messages and messages[-1].startswith("<b>📊 Where you stand") and len(ids) == len(messages):
+        old, ids[-1], messages[-1] = ids[-1], message_id, telegram
+    else:   # openings sent with "Where you stand" inside them: this one joins them
+        ids.append(message_id)
+        messages.append(telegram)
+    stats["standing"] = standing
+    conn.execute("UPDATE reports SET telegram_message_ids = ?, telegram_html = ?, stats = ? WHERE id = ?",
+                 (json.dumps(ids), json.dumps(messages), json.dumps(stats), report_id))
+    if old is not None:
+        conn.execute("INSERT OR IGNORE INTO replaced_posts VALUES (?, ?)", (old, now()))
+    conn.commit()
+    return old

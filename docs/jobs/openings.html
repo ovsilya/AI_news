@@ -146,8 +146,8 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
   <text class="s" x="88" y="208" text-anchor="middle">any date · each once</text>
   <a href="#standing"><rect class="comp" x="208" y="140" width="584" height="100" rx="9"/>
   <text class="t" x="500" y="168" text-anchor="middle">📊 Where you stand: the market, not the best fits</text>
-  <text class="s" x="500" y="190" text-anchor="middle">a typical role's coverage · technical only · by family · by level</text>
-  <text class="s" x="500" y="208" text-anchor="middle">most-asked skills you have and lack · what to learn first</text></a>
+  <text class="s" x="500" y="190" text-anchor="middle">skills roles ask for, by area: the ones you have · the ones you lack</text>
+  <text class="s" x="500" y="208" text-anchor="middle">a typical role's coverage · what to learn first · role families last</text></a>
   <a href="#standing"><rect class="ext" x="826" y="140" width="172" height="100" rx="9"/>
   <text class="t" x="912" y="168" text-anchor="middle">Telegram</text>
   <text class="s" x="912" y="190" text-anchor="middle">its own message,</text>
@@ -228,25 +228,41 @@ Legora · New York City 🇺🇸 · onsite · mid
 
 <b>📊 Where you stand · 20 open roles in your role families</b>
 
-🧩 You cover ▰▰▰▰▱▱▱▱▱▱ 44% of a typical role&#x27;s skills, 40% of its technical ones
-🟢 10% small gap (80%+) · 🟡 20% medium gap (60–79%) · 🔴 70% big gap (under 60%)
+🧩 You cover ▰▰▰▰▱▱▱▱▱▱ 44% of a typical role&#x27;s skills (40% of the technical ones)
+🟢 Small gap (80%+): 10% of roles
+🟡 Medium gap (60–79%): 20% of roles
+🔴 Big gap (under 60%): 70% of roles
 
-<b>By role family</b>
-• FDE / applied AI: 50% · 🟢 14% small gap · 7 roles
-• AI engineer: 50% · 🟢 14% small gap · 7 roles
-• ML engineer: 18% · 🟢 0% small gap · 6 roles
+<b>✅ Skills roles ask for that you have</b>
+• Other: Software engineering 60%, Debugging 20%
+• Backend and web: REST APIs 40%
+• LLM techniques: AI agents 40%
+• People and customers: Communication 30%, Customer-facing work 20%
+• ML practice: Data pipelines 25%
 
-<b>By level</b>
-senior 47% · staff 40%
+<b>❌ Skills roles ask for that you don&#x27;t have</b>
+• Languages: Python 80%, CUDA 30%
+• Cloud and infrastructure: Kubernetes 60%, AWS 25%, Distributed systems 5%
+• ML frameworks: PyTorch 30%
+• Other: Authentication 20%, B2B 20%, Integration 10%, Model training 5%
+• People and customers: Product sense 10%
+• ML practice: Deep learning 5%, MLOps 5%
 
-<b>Most asked (share of roles)</b>
-💪 Yours: Software engineering 60%, REST APIs 40%, AI agents 40%, Communication 30%, Data pipelines 25%
-🧱 Missing: Python 80%, Kubernetes 60%, CUDA 30%, PyTorch 30%, TypeScript 30% (learning), AWS 25%
-🚀 Learning Python, Kubernetes and CUDA would give 45% of these roles a small gap, up from 10%
-
+📚 You&#x27;re learning: TypeScript 30%
+🚀 Learn first: Python, Kubernetes and CUDA. Then 45% of roles would have a small gap, up from 10%.
 🎯 The openings above are your best fits, not typical roles: you cover 68% of their skills.
 
-<i>Every open role in your role families and markets that the model has read, each once (one title in several cities is one role), whatever its posting date or level. A typical role is the median. Skills count as in the openings: required in full, nice-to-haves at half, one you&#x27;re learning at half; “technical” leaves out customer-facing skills.</i></div>
+<b>By role family</b>
+• FDE / applied AI (7 roles): you cover 50%. Missing most: Python, Kubernetes, AWS
+• AI engineer (7 roles): you cover 50%. Missing most: Python, Kubernetes, AWS
+• ML engineer (6 roles): you cover 18%. Missing most: CUDA, Kubernetes, PyTorch
+
+<i>How to read this
+• 44% of a typical role&#x27;s skills: half of the roles have more than 44% of their skills on your list, half have less. A must-have skill counts in full; a nice-to-have, or one you&#x27;re learning, counts half.
+• Small gap: you have 80% or more of what the role asks for.
+• Software engineering 60%: 60 in 100 of these roles ask for Software engineering.
+• Technical: the same, leaving out skills such as communication.
+• Every open role in your role families counts once, old or new.</i></div>
 <ul>
 <li><b>The title</b> opens the employer's own posting.</li>
 <li><b>The line under it:</b> the employer, where (the first two cities, how many more, and the country's flag), the work policy, the level, and “visa sponsorship” when the posting says it offers it. Career sites write places in many ways (“USA, GA, Atlanta”, “California - San Francisco”); only the city is kept.</li>
@@ -260,12 +276,14 @@ senior 47% · staff 40%
 <h2 id="standing">📊 Where you stand: the market, not the best fits</h2>
 <p>The openings are the best fits by design, so you always cover more of their skills than of most roles: read alone, they make your gaps look small. So a message of its own follows them, with the same measure for <b>every open role in your role families and markets that the model has read</b>, each role once (one title in several cities is one role), whatever its posting date or level, sent or not. Nothing on the way chooses roles by your skills: the search uses titles, markets and fixed AI search terms only, and the model reads each posting without your profile. The last message of the example above shows it, for a made-up market of 20 roles.</p>
 <ul>
-<li><b>🧩 Coverage:</b> how much of a typical role's skills you cover (the median), and of its technical skills only, leaving out customer-facing ones such as “Communication” or “Consulting”; then the share of roles with a small (80%+), medium (60–79%) or big gap.</li>
-<li><b>By role family</b> and <b>by level:</b> the same median for each family and level with at least 5 roles, and each family's share of roles with a small gap, so you see where you can compete today and where the gap is large.</li>
-<li><b>Most asked:</b> 💪 your skills that roles ask for most, 🧱 the skills you lack that they ask for most (the share of roles that list each), and 🚀 the three skills that would add the most to your coverage, required ones before nice-to-haves, with the share of roles that would then have a small gap.</li>
+<li><b>🧩 Coverage:</b> how much of a typical role's skills you cover (the median), and of its technical skills only, leaving out customer-facing ones such as “Communication” or “Consulting”; then, one per line, the share of roles with a small (80%+), medium (60–79%) or big gap.</li>
+<li><b>The skills themselves</b>, the heart of the message: ✅ the skills roles ask for that you have and ❌ those you don't, each with the share of roles that list it, grouped by area (languages, LLM techniques, cloud and infrastructure, people and customers, …), most-asked first, up to 20 each and only skills at least 5% of roles ask for. 📚 your “learning” skills, with how many roles ask for them.</li>
+<li><b>🚀 Learn first:</b> the three skills that would add the most to your coverage, required ones before nice-to-haves, with the share of roles that would then have a small gap.</li>
 <li><b>🎯</b> how much of the openings' skills you cover, next to the typical role.</li>
-<li><b>The footer</b> says how it is measured, and how many of the open postings in your families the model has read so far: it reads a fixed number of new postings each run, newest first, so older ones wait.</li>
+<li><b>By role family</b>, last: the median for each family with at least 5 roles and the 3 skills it asks for most that you lack.</li>
+<li><b>How to read this</b> explains each number with the message's own: what the typical role's share means, what a small gap is, what a skill's share means, and how many of the open postings the model has read so far (it reads a fixed number of new postings each run, newest first, so older ones wait).</li>
 </ul>
+<p>Sent again on its own, with the latest data and your skills list (after you edit <code>private/skills.yaml</code>, say), with <code>ainews standing --send</code>: the new message takes the old one's place in the latest openings, and <code>ainews tg-clean</code> removes the old one.</p>
 <p>Each list keeps these numbers (in <code>reports.stats</code>), so you can follow your gap over time. The weekly report's “Your fit” starts with the same measure.</p>
 <p class="muted">These lines show anyone who can read the channel which skills you have and which you lack, as the weekly report's “Your fit” section does.</p>
 

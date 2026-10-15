@@ -11,7 +11,8 @@ from ainews.deliver.render import TELEGRAM_LIMIT, visible_len
 from ainews.jobs.boards import TIERS, Company, load_companies
 from ainews.jobs.extract import Skills
 from ainews.jobs.openings import (DEFAULTS, _city, _pay, _share_out, _size, _skill_lines, _skills_for, _where,
-                                  build_openings, fit_score, load_prefs, mark_sent, pick_openings, where_you_stand)
+                                  build_openings, build_standing, fit_score, load_prefs, mark_sent, pick_openings,
+                                  replace_standing, where_you_stand)
 
 SKILLS = Skills(ROOT / "config" / "skills.yaml")
 NOW = datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc)
@@ -74,6 +75,10 @@ def test_where_you_stand_lists_gaps_and_picks_what_to_learn_first():
     assert s["gaps"][0] == ("Kubernetes", 67, False) and s["gaps"][2] == ("MCP", 17, True)
     assert s["top_gaps"] == ["Kubernetes", "Terraform", "MCP"]
     assert s["strengths"][0] == ("Python", 83)
+    # The skills themselves, with the share of roles that ask for each and its area, for the message's lists.
+    assert [(n, p) for n, p, _ in s["have"]] == [("Python", 83), ("RAG", 17)] and s["have"][0][2] == "languages"
+    assert [(n, p) for n, p, _ in s["missing"]] == [("Kubernetes", 67), ("Terraform", 67)]
+    assert [(n, p) for n, p, _ in s["learning"]] == [("MCP", 17)]
     assert [(b["roles"], b["pct"]) for b in s["sizes"]] == [(1, 17), (0, 0), (5, 83)] and [b["span"] for b in s["sizes"]] == ["80%+", "60–79%", "under 60%"]
     assert (s["small_now"], s["small_after"]) == (1, 6)
     assert where_you_stand(roles[:4], PROFILE, SKILLS) is None and where_you_stand(roles, None, SKILLS) is None   # too few; no skills file
@@ -179,6 +184,35 @@ def test_build_sends_once_and_fits_telegram(conn, settings, tmp_path):
     conn.execute("UPDATE reports SET telegram_message_ids = '[101, 102]' WHERE id = ?", (result["report_id"],))
     redo = build_openings(conn, s, redo=True, now_dt=NOW)                    # the sent eight are candidates again
     assert redo["redone"] == result["report_id"] and len(redo["picked"]) == 8
+
+
+def test_where_you_stand_is_sent_again_alone_in_place_of_the_last_copy(conn, settings, tmp_path):
+    for i in range(6):
+        _seed(conn, f"co{i}:1", company=f"co{i}", title=f"Applied AI Engineer {i}", required=("Python", "Kubernetes"),
+              preferred=("MCP",))
+    fit = tmp_path / "skills.yaml"
+    fit.write_text("have: [Python]\nlearning: [MCP]\n", encoding="utf-8")
+    companies = tmp_path / "companies.yaml"
+    companies.write_text("companies:\n" + "".join(
+        f"  - {{id: co{i}, name: Co {i}, ats: ashby, board: co{i}, tier: startup}}\n" for i in range(6)))
+    s = replace(settings, fit_path=fit, openings_path=tmp_path / "none.yaml", companies_path=companies)
+    assert build_standing(conn, s, now_dt=NOW)["report_id"] is None           # no openings sent yet
+    sent = build_openings(conn, s, now_dt=NOW)
+    assert len(sent["telegram"]) == 2
+    mark_sent(conn, sent["report_id"], [101, 102])                           # the openings, then Where you stand
+    again = build_standing(conn, s, now_dt=NOW)
+    text = again["telegram"]
+    assert again["report_id"] == sent["report_id"] and text.startswith("<b>📊 Where you stand · 6 open roles")
+    assert "<b>✅ Skills roles ask for that you have</b>\n• Languages: Python 100%" in text
+    assert "<b>❌ Skills roles ask for that you don&#x27;t have</b>\n• Cloud and infrastructure: Kubernetes 100%" in text
+    assert "📚 You&#x27;re learning: MCP 100%" in text and "you cover 50% of their skills" in text
+    assert "🟢 Small gap (80%+): 0% of roles\n🟡 Medium gap (60–79%): 0% of roles\n🔴 Big gap (under 60%): 100% of roles" in text
+    assert text.index("❌ Skills") < text.index("By role family") < text.index("How to read this")
+    assert "• Python 100%: 100 in 100 of these roles ask for Python." in text
+    assert replace_standing(conn, sent["report_id"], 103, again["standing"], text) == 102
+    row = conn.execute("SELECT telegram_message_ids, telegram_html FROM reports WHERE id = ?", (sent["report_id"],)).fetchone()
+    assert json.loads(row[0]) == [101, 103] and json.loads(row[1])[-1] == text
+    assert [r[0] for r in conn.execute("SELECT message_id FROM replaced_posts")] == [102]   # tg-clean removes it
 
 
 def test_prefs_reject_unknown_names(tmp_path):
