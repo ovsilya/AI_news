@@ -24,12 +24,12 @@ from ..llm import VOICE, BudgetExceeded, LLMError, Usage, log_call, period_start
 log = logging.getLogger(__name__)
 
 RATE = 24_000            # Hz, 16-bit mono: what Gemini TTS returns
-PART_CHARS = 3_500       # about 4.5 minutes read aloud, well under one request's limit
+PART_CHARS = 1_800       # about 2.3 minutes read aloud: longer parts drift slower (10.8 characters a second at 3,100)
 PARALLEL = 4             # parts read at the same time
 TRIES = 3
 PAUSE = b"\0" * (RATE * 2 * 7 // 10)   # 0.7 s of silence between parts
 AUDIO_TOKENS_PER_SECOND = 25
-SLOWEST_CHARS_PER_SECOND = 9    # for the worst case; measured 12.7 to 13.8 with STYLE
+SLOWEST_CHARS_PER_SECOND = 9    # for the worst case; measured 12.1 to 13.8 with STYLE
 # Not read out. A teacher's pace, for a script that explains: about 13 characters a second and steady from one
 # call to the next, where a "calm" or "moderate" host read anywhere from 10 to 15, and a "brisk" one (16.5) felt
 # too fast once each story was explained.
