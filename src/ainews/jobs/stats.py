@@ -5,7 +5,9 @@
   before, counted only when the two Wilson 95% intervals don't overlap. It waits for two weeks of
   daily tracking: until then the earlier period holds only postings that were still open when we
   started, which skews the comparison.
-- Fit: how much of the demand-weighted top skills your skills cover (private/skills.yaml)."""
+- Fit: how much of the demand-weighted top skills your skills cover (private/skills.yaml), and how much of
+  each open role's own skills you cover, across every open role in the target families, whatever its date or
+  level: the market as a whole, where the openings show only the roles that fit you best."""
 from __future__ import annotations
 
 import json
@@ -29,6 +31,9 @@ MIN_SKILL = 5
 MIN_SALARY = 5
 CURRENCY = {"USD": "$", "CAD": "C$", "GBP": "£", "CHF": "CHF ", "AED": "AED ", "EUR": "€"}
 PER_YEAR = {"year": 1, "month": 12, "hour": 2080}
+SMALL_GAP = 80          # % of a role's skills you cover from which the gap counts as small
+SOFT = {"customer_facing"}   # skill categories that aren't technical
+MIN_FAMILY = 5          # roles a family needs before its own coverage is shown
 
 
 def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
@@ -66,6 +71,21 @@ def _pct(k: int, n: int) -> int:
     return round(100 * k / n) if n else 0
 
 
+def skill_coverage(data: dict, profile: dict | None) -> float | None:
+    """How much of a posting's skills you cover, 0-1: its required skills count in full and its preferred ones at
+    half; a skill you have earns all of its weight, one you're learning half. None with nothing to compare."""
+    required, preferred = data.get("skills_required") or [], data.get("skills_preferred") or []
+    weight = len(required) + 0.5 * len(preferred)
+    if profile is None or not weight:
+        return None
+    have, learning = set(profile["have"]), set(profile["learning"])
+
+    def w(s: str) -> float:
+        return 1.0 if s in have else 0.5 if s in learning else 0.0
+
+    return (sum(map(w, required)) + 0.5 * sum(map(w, preferred))) / weight
+
+
 def load_fit_profile(path: Path, skills: Skills) -> dict | None:
     """private/skills.yaml: {"have": [...], "learning": [...]}, names mapped to canonical skills."""
     if not path.exists():
@@ -79,7 +99,7 @@ def market_stats(conn: sqlite3.Connection, skills: Skills, names: dict[str, str]
     now_dt = now_dt or datetime.now(timezone.utc)
     week, month = now_dt - timedelta(days=7), now_dt - timedelta(days=35)
     rows = conn.execute(
-        "SELECT p.company, p.markets, p.posted_at, p.first_seen, p.closed_at, e.data FROM job_postings p"
+        "SELECT p.company, p.title, p.markets, p.posted_at, p.first_seen, p.closed_at, e.data FROM job_postings p"
         " JOIN job_extractions e ON e.posting_id = p.id").fetchall()
     rows = [(r, _renormalize(json.loads(r["data"]), skills)) for r in rows]
     rows = [(r, d) for r, d in rows if d.get("role_family") in FAMILIES and d["role_family"] != "other"]
@@ -168,7 +188,7 @@ def market_stats(conn: sqlite3.Connection, skills: Skills, names: dict[str, str]
                           for c, n in employers.most_common(10)],
     }
     if fit_profile is not None:
-        stats["fit"] = fit(top, fit_profile, movement)
+        stats["fit"] = {**fit(top, fit_profile, movement), "market": market_fit(target, fit_profile, skills)}
     return stats
 
 
@@ -182,3 +202,34 @@ def fit(top: list[dict], profile: dict, movement: dict) -> dict:
             for s in top if s["name"] not in have]
     return {"coverage_pct": round(100 * covered / total), "have_in_top": [s["name"] for s in top if s["name"] in have],
             "gaps": gaps[:10]}
+
+
+def market_fit(target: list, profile: dict, skills: Skills) -> dict | None:
+    """How much of each open role's skills you cover (as in the openings: required in full, preferred at half,
+    learning at half), across every open target role, each role once: the median, the median counting technical
+    skills only, the share of roles with a small gap, and the median per role family. None without roles."""
+    roles = {}
+    for r, d in target:
+        roles.setdefault((r["company"], " ".join(r["title"].casefold().split())), d)
+    soft = {s for s, c in skills.category.items() if c in SOFT}
+
+    def technical(d: dict) -> dict:
+        return {**d, **{k: [s for s in d.get(k) or [] if s not in soft] for k in ("skills_required", "skills_preferred")}}
+
+    covered = [(d["role_family"], c) for d in roles.values() if (c := skill_coverage(d, profile)) is not None]
+    if not covered:
+        return None
+    tech = [c for d in roles.values() if (c := skill_coverage(technical(d), profile)) is not None]
+
+    def pct(x: float) -> int:
+        return round(100 * x)
+
+    by_family = []
+    for f in TARGET:
+        cs = [c for family, c in covered if family == f]
+        if len(cs) >= MIN_FAMILY:
+            by_family.append({"name": FAMILIES[f], "roles": len(cs), "median_pct": pct(median(cs))})
+    return {"roles": len(covered), "median_pct": pct(median(c for _, c in covered)),
+            "technical_median_pct": pct(median(tech)) if tech else None,
+            "small_gap_pct": _pct(sum(1 for _, c in covered if pct(c) >= SMALL_GAP), len(covered)),
+            "by_family": sorted(by_family, key=lambda f: -f["median_pct"])}

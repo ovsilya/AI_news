@@ -54,7 +54,7 @@
 <tr><td>🧰 Skills employers ask for</td><td>The top 15 skills with their share; the top 5 per target family; rising and falling skills</td><td>Share = postings naming the skill (required or preferred) ÷ open target postings. Ties are broken alphabetically. <a href="#movement">Rising and falling, explained below</a></td></tr>
 <tr><td>💰 Pay</td><td>A typical base range per year, per family and currency: “Solutions engineer: $180k–$248k (30 postings)”</td><td>Monthly pay ×12, hourly ×2,080. Low = the median of the minimums, high = the median of the maximums. Shown only with at least {{min_salary}} postings</td></tr>
 <tr><td>🏢 Who's hiring most</td><td>The top 10 employers by open target postings, with their FDE / applied AI count</td><td>Counts per employer</td></tr>
-<tr><td>🎯 Your fit</td><td>Coverage %, your skills that are in demand, the biggest gaps</td><td>Compares the top {{top_skills}} skills with <code>private/skills.yaml</code>. <a href="#fit">Explained below</a></td></tr>
+<tr><td>🎯 Your fit</td><td>How much of a typical open role's skills you cover, overall, for technical skills only and per family; the coverage of the top skills; your skills that are in demand; the biggest gaps</td><td>Compares every open target role, and the top {{top_skills}} skills, with <code>private/skills.yaml</code>. <a href="#fit">Explained below</a></td></tr>
 </tbody></table></div>
 
 <h3>A snapshot: what the first 180 postings ask for</h3>
@@ -102,8 +102,11 @@ With 9 of 40 this week (22.5%, interval {{wilson_c}}), the share still looks hig
 </div>
 
 <h2 id="fit">Your fit, explained</h2>
-<p>You keep two lists in <code>private/skills.yaml</code>, which is gitignored and never leaves your machine: skills you <b>have</b> (used in production or shown in a project) and skills you're <b>learning</b>. The report compares them with the top {{top_skills}} skills in your target families.</p>
-<p><b>Coverage</b> is weighted by demand: a skill named in 70% of postings counts 3½ times as much as one named in 20%. Here is a made-up example with five skills; your real numbers appear only in your own report:</p>
+<p>You keep two lists in <code>private/skills.yaml</code>, which is gitignored and never leaves your machine: skills you <b>have</b> (used in production or shown in a project) and skills you're <b>learning</b>. The report compares them with the market in two ways.</p>
+<p><b>A typical open role</b> comes first. For every open role in your target families, whatever its date or level, each role once (the same title at one employer in several cities is one role), it measures how much of that role's own skills you cover, as the openings do: required skills in full, nice-to-haves at half, a skill you're learning at half. The report gives the median, the median for technical skills only (leaving out customer-facing ones such as “Communication” or “Consulting”), how many roles have a small gap (80% or more), and the median per role family. This is the honest measure of your gap. The openings sent during the week are the best fits by design, so they always look better: they say so, and compare themselves with a typical role.</p>
+<p>A made-up example: “A typical open role: you cover 48% of its skills, 44% of its technical ones; 9% of the 600 open roles have a small gap (80%+). By role: FDE / applied AI 61% · Solutions engineer 57% · AI engineer 45% · ML engineer 33%.”</p>
+<p><b>The top {{top_skills}} skills</b> come next, which shows which common skills you have and which you lack. This coverage is weighted by demand: a skill named in 70% of postings counts 3½ times as much as one named in 20%. It is usually higher than a typical role's, because the most-asked skills are the common ones, and most gaps sit in the long tail of less common skills that this list leaves out.</p>
+<p>Here is a made-up example of the top-skills coverage with five skills; your real numbers appear only in your own report:</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Skill</th><th class="num">Share of postings</th><th>You</th><th class="num">Counts toward coverage</th></tr></thead>
 <tbody>

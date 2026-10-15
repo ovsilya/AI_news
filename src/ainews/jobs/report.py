@@ -16,7 +16,7 @@ from ..pipeline.score import load_prompt
 from ..pipeline.verify import _check_field, _unsupported
 from .boards import load_companies
 from .extract import Skills
-from .stats import load_fit_profile, market_stats
+from .stats import SMALL_GAP, TOP_SKILLS, load_fit_profile, market_stats
 
 log = logging.getLogger(__name__)
 
@@ -78,11 +78,23 @@ def _sections(stats: dict) -> list[tuple[str, list[str], str | None]]:
     if fit is None:
         you = ["Add private/skills.yaml (have / learning lists) to see how your skills match the demand."]
     else:
-        you = [f"Your skills cover {fit['coverage_pct']}% of the demand-weighted top skills for your target roles.",
-               "In demand and yours: " + (", ".join(fit["have_in_top"][:10]) or "none yet"),
-               "Biggest gaps: " + ", ".join(
-                   f"{g['name']} {g['pct']}%" + (" (learning)" if g["learning"] else "") + (" ↑" if g["rising"] else "")
-                   for g in fit["gaps"][:8])]
+        you = []
+        market = fit.get("market")
+        if market:   # first: every open role, not just the best fits the openings show
+            tech = market["technical_median_pct"]
+            you.append(f"A typical open role: you cover {market['median_pct']}% of its skills"
+                       + (f", {tech}% of its technical ones" if tech is not None else "")
+                       + f"; {market['small_gap_pct']}% of the {market['roles']} open role{'s' * (market['roles'] != 1)}"
+                       f" have a small gap ({SMALL_GAP}%+).")
+            if market["by_family"]:
+                you.append("By role: " + " · ".join(f"{f['name']} {f['median_pct']}%" for f in market["by_family"]))
+        higher = market and fit["coverage_pct"] > market["median_pct"]
+        you += [f"Of the {TOP_SKILLS} most-asked skills, weighted by demand, you have {fit['coverage_pct']}%"
+                + (" (higher, as most of your gaps are in less common skills)." if higher else "."),
+                "In demand and yours: " + (", ".join(fit["have_in_top"][:10]) or "none yet"),
+                "Biggest gaps: " + ", ".join(
+                    f"{g['name']} {g['pct']}%" + (" (learning)" if g["learning"] else "") + (" ↑" if g["rising"] else "")
+                    for g in fit["gaps"][:8])]
     return [("🧭 Roles and markets", roles, "market"),
             ("🧰 Skills employers ask for (share of open postings)", skills, "skills"),
             ("💰 Pay: typical posted base range per year (medians)", pay, None),

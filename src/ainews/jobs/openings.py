@@ -35,7 +35,7 @@ from ..deliver.render import DIVIDER, PACK_LIMIT, _day, _pack, visible_len
 from .boards import TIERS, Company, load_companies
 from .extract import Skills
 from .filters import _STATES, FAMILIES, MARKETS
-from .stats import CURRENCY, TARGET, _renormalize, _when, load_fit_profile
+from .stats import CURRENCY, SMALL_GAP, TARGET, _renormalize, _when, load_fit_profile, skill_coverage
 
 FRESH = timedelta(days=7)
 SKILL_POINTS, LEVEL_POINTS = 70, 30
@@ -48,7 +48,7 @@ DEFAULTS = {"families": list(TARGET), "markets": list(MARKETS), "levels": ["seni
 TIER_LABELS = {"established": "🏢 Established", "startup": "🌱 Startups", "top": "🏆 Top tier"}
 NO_SPILL = "top"         # the one group that never takes the places another group leaves empty
 SHOW_SKILLS = 8
-GAP_SIZES = ((80, "small gap", "🟢"), (60, "medium gap", "🟡"), (0, "big gap", "🔴"))   # by the skills you cover
+GAP_SIZES = ((SMALL_GAP, "small gap", "🟢"), (60, "medium gap", "🟡"), (0, "big gap", "🔴"))   # by the skills you cover
 TOP_GAPS = 3        # "learning your top 3 gaps would give N roles a small gap"
 MIN_STANDING = 5    # roles needed before "Where you stand" says anything
 FOOTER = ("Fit 0–100: 70 for skills (required in full, preferred at half), 30 for level. Skills %: how much of a"
@@ -85,21 +85,6 @@ def load_prefs(path: Path) -> dict:
     if bad:
         raise ValueError(f"{path.name}: per_tier wants a whole number of places for {', '.join(TIERS)}, not {bad}")
     return prefs
-
-
-def skill_coverage(data: dict, profile: dict | None) -> float | None:
-    """How much of a posting's skills you cover, 0-1: its required skills count in full and its preferred ones at
-    half; a skill you have earns all of its weight, one you're learning half. None with nothing to compare."""
-    required, preferred = data.get("skills_required") or [], data.get("skills_preferred") or []
-    weight = len(required) + 0.5 * len(preferred)
-    if profile is None or not weight:
-        return None
-    have, learning = set(profile["have"]), set(profile["learning"])
-
-    def w(s: str) -> float:
-        return 1.0 if s in have else 0.5 if s in learning else 0.0
-
-    return (sum(map(w, required)) + 0.5 * sum(map(w, preferred))) / weight
 
 
 def fit_score(data: dict, profile: dict | None, prefs: dict) -> int:
@@ -367,6 +352,15 @@ def _standing_lines(s: dict) -> list[str]:
     return lines
 
 
+def _versus(picked: list[dict], standing: dict | None) -> str:
+    """The picks are the best fits, so they match you better than most roles: how much better."""
+    covered = [g["coverage"] for g in picked if g.get("coverage") is not None]
+    if not covered or not standing:
+        return ""
+    return (f"Picked for fit: you cover {round(100 * statistics.median(covered))}% of these roles' skills, against"
+            f" {round(100 * standing['median'])}% for a typical role this week (📊 Where you stand, at the end).")
+
+
 def title_for(day: datetime) -> str:
     return f"Jobs for you · {day:%a} {day.day} {day:%b}"
 
@@ -386,11 +380,13 @@ def render(picked: list[dict], considered: int, unread: int, title: str, footer:
     """picked comes group by group (established, startups, top tier); each group gets a heading, and a
     message ends between groups when the next group doesn't fit, never inside one. "Where you stand" closes it."""
     e = html.escape
-    lead = f"{len(picked)} pick{'s' * (len(picked) != 1)} from {considered} new posting{'s' * (considered != 1)} this week"
+    n = len(picked)
+    lead = (f"The {n} best fits" if n != 1 else "The best fit") + f" of {considered} new posting{'s' * (considered != 1)} this week"
     counts = _tier_counts(picked)
-    wait = f"{unread} more new postings wait for the model to read them." if unread else ""
-    md = [f"# {title}", "", lead, counts] + ([wait] if wait else []) + [""]
-    units = [f"💼 <b>{e(title)}</b>\n{e(lead)}\n{e(counts)}" + (f"\n<i>{e(wait)}</i>" if wait else "")]
+    notes = [_versus(picked, standing)] + [f"{unread} more new postings wait for the model to read them." if unread else ""]
+    notes = [x for x in notes if x]
+    md = [f"# {title}", "", lead, counts] + notes + [""]
+    units = [f"💼 <b>{e(title)}</b>\n{e(lead)}\n{e(counts)}" + "".join(f"\n<i>{e(x)}</i>" for x in notes)]
     i = 0
     for tier, in_tier in groupby(picked, key=lambda g: g["tier"]):
         md += [f"## {TIER_LABELS[tier]}", ""]

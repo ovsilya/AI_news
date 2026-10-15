@@ -153,6 +153,8 @@ def test_build_sends_once_and_fits_telegram(conn, settings, tmp_path):
     first, text = result["telegram"][0], "\n".join(result["telegram"])
     assert len(result["telegram"]) == 1                                       # all eight fit in one message
     assert "Jobs for you" in first and "🏢 3 established · 🌱 3 startups · 🏆 2 top tier" in first
+    assert "The 8 best fits of 12 new postings this week" in first   # the best fits, not the market
+    assert "Picked for fit: you cover 50% of these roles&#x27; skills, against 50% for a typical role" in first
     # Python (have) + Kubernetes (new) required, MCP (learning) preferred: (1 + 0.5 * 0.5) / 2.5 = 50% covered.
     assert "🎯 Fit 65 · posted" in first
     assert "🧩 Skills ▰▰▰▰▰▱▱▱▱▱ 50% · 🔴 big gap, 1 required skill new to you" in first

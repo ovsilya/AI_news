@@ -12,8 +12,8 @@ from ainews.jobs.extract import Skills, extract_postings
 from ainews.jobs.filters import markets, role_family
 from ainews.jobs import workday
 from ainews.jobs.poll import poll_workday, store_board
-from ainews.jobs.report import build_weekly
-from ainews.jobs.stats import market_stats, wilson
+from ainews.jobs.report import build_weekly, render
+from ainews.jobs.stats import market_fit, market_stats, wilson
 
 SKILLS = Skills(ROOT / "config" / "skills.yaml")
 NOW = datetime(2026, 10, 12, 12, 0, tzinfo=timezone.utc)
@@ -264,10 +264,31 @@ def test_market_stats_shares_fit_and_trend_gate(conn):
                                 "range": "£100k–£150k"}]
     fit = stats["fit"]
     assert fit["coverage_pct"] == round(100 * 100 / (100 + 40))      # Python 100%, MCP 40%
+    # All 80 postings are one role (same employer and title): Python (have) and MCP (learning, half) = 75%.
+    assert fit["market"] == {"roles": 1, "median_pct": 75, "technical_median_pct": 75, "small_gap_pct": 0,
+                             "by_family": []}
+    md, _ = render(stats, {"headline": ""}, "Report", "Footer")
+    assert "A typical open role: you cover 75% of its skills, 75% of its technical ones; 0% of the 1 open role" in md
     assert fit["gaps"][0] == {"name": "MCP", "pct": 40, "learning": True, "rising": True}
     # With less than two weeks of tracking there are no trend claims.
     conn.execute("UPDATE job_postings SET first_seen = ?", ((NOW - timedelta(days=3)).isoformat(),))
     assert not market_stats(conn, SKILLS, {}, now_dt=NOW)["movement"]["ready"]
+
+
+def test_market_fit_counts_every_open_role_once_and_technical_skills_apart():
+    def role(title, family, required):
+        return {"company": "acme", "title": title}, {"role_family": family, "skills_required": required,
+                                                     "skills_preferred": []}
+
+    target = ([role(f"FDE {i}", "fde_applied_ai", ["Python", "Customer-facing work", "Go"]) for i in range(5)]
+              + [role("fde  0", "fde_applied_ai", ["Rust"])]                       # FDE 0 again: counted once
+              + [role("FDE 5", "fde_applied_ai", ["Python"])]
+              + [role(f"ML {i}", "ml_eng", ["Python", "PyTorch", "CUDA", "MCP"]) for i in range(5)])
+    market = market_fit(target, {"have": ["Python", "Customer-facing work"], "learning": ["MCP"]}, SKILLS)
+    # FDE: 2 of 3 (technical: 1 of 2), FDE 5: all; ML: (1 + 0.5) / 4. Medians of 11 roles.
+    assert market == {"roles": 11, "median_pct": 67, "technical_median_pct": 50, "small_gap_pct": 9,
+                      "by_family": [{"name": "FDE / applied AI", "roles": 6, "median_pct": 67},
+                                    {"name": "ML engineer", "roles": 5, "median_pct": 38}]}
 
 
 def test_wilson_interval():
