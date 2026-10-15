@@ -2,7 +2,7 @@
 
 The script is the narrator's few-minute overview (pipeline/narrate.py), or the headlines when it couldn't
 be written (render.to_speech). Gemini TTS returns 24 kHz 16-bit mono PCM
-and reads 11 to 13 characters a second; one request may produce about 11 minutes, so the script is read in
+and reads about 16.5 characters a second; one request may produce about 11 minutes, so the script is read in
 parts of at most PART_CHARS, a few at a time, then joined with a short pause and encoded as OGG/Opus
 (opusenc, from opus-tools), the format Telegram plays as a voice message.
 
@@ -29,8 +29,10 @@ PARALLEL = 4             # parts read at the same time
 TRIES = 3
 PAUSE = b"\0" * (RATE * 2 * 7 // 10)   # 0.7 s of silence between parts
 AUDIO_TOKENS_PER_SECOND = 25
-SLOWEST_CHARS_PER_SECOND = 9    # for the worst case; measured 11 to 13
-STYLE = "Read this aloud as a calm, clear morning tech-news host:"   # not read out; "at an easy pace" was too slow
+SLOWEST_CHARS_PER_SECOND = 9    # for the worst case; measured 16 to 17 with STYLE
+# Not read out. A "calm" host read anywhere from 10 to 15 characters a second from one call to the next; this one
+# keeps to about 16.5, the pace of a normal podcast.
+STYLE = "Read this aloud like a friendly tech podcast host, at a brisk, lively conversational pace:"
 SENTENCE = re.compile(r"(?<=[.!?…])\s+")
 
 

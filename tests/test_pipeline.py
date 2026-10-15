@@ -43,7 +43,11 @@ class FakeLLM:
     def json(self, *, purpose, user, **kw):
         self.calls.append(purpose)
         if purpose == "narrator":
-            return {"paragraphs": ["Good morning, here is your overview.", "Number 1. Model X ships with 1M context."]}
+            return {"opening": "Good morning, here is your overview.", "closing": "Read number 1.", "stories": [
+                {"number": 1, "what_happened": "Number 1. Model X ships with 1M context.",
+                 "in_simple_words": "It reads a lot at once.", "why_it_matters": "For you, less RAG."},
+                {"number": 2, "what_happened": "Number 2. Startup Y raised money.", "in_simple_words": "",
+                 "why_it_matters": ""}]}
         stories = json.loads(user.split("\n", 1)[1])
         if purpose == "judge":
             return {"scores": [{"id": s["id"], "relevance": 3, "novelty": 3, "actionability": 2, "credibility": 3,
@@ -120,7 +124,7 @@ def test_brief_with_fake_llm_verifies_and_renders(conn, settings):
     llm = FakeLLM()
     result = build_brief(conn, settings, SOURCES, llm=llm, now_dt=NOW)
     assert llm.calls == ["judge", "editor", "narrator"]
-    assert result["speech"].startswith("Good morning") and result["stats"]["speech"]["source"] == "narrator-v2"
+    assert result["speech"].startswith("Good morning") and result["stats"]["speech"]["source"] == "narrator-v5"
     md = result["markdown"]
     # Supported number kept, unsupported sentence dropped, invented title number replaced, unknown story dropped.
     assert "$3 per million input tokens" in md

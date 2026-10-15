@@ -81,7 +81,7 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
         speech, speech_source = (to_speech(brief, spoken), "headlines") if shown else ("", "none")
         if shown and llm is not None and settings.voice == "brief":
             try:   # a few minutes to listen to; without it, the voice reads the headlines
-                speech, speech_source, dropped = narrate(llm, brief, model=settings.model_editor,
+                speech, speech_source, dropped = narrate(llm, brief, model=settings.model_narrator,
                                                          prompts_dir=settings.prompts_dir, profile=profile,
                                                          spoken_date=f"{local:%A}, {local:%B} {local.day}",
                                                          minutes=settings.voice_minutes)

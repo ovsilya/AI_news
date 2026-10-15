@@ -38,29 +38,41 @@ def test_without_the_narrator_the_voice_reads_the_headlines():
 
 
 class Narrator:
-    def __init__(self, paragraphs):
-        self.paragraphs, self.asked = paragraphs, {}
+    def __init__(self, out):
+        self.out, self.asked = out, {}
 
     def json(self, **kw):
         self.asked = kw
-        return {"paragraphs": self.paragraphs}
+        return self.out
 
 
-def test_the_narrator_writes_a_short_overview_from_the_brief_only():
-    llm = Narrator(["Good morning. It is Thursday, October 15, and two launches lead.",
-                    "Number 1. Model X 2 reads 2M tokens. It is 40% faster.   Worth a look.",
-                    "Number 3. SDK 3.0 has breaking changes.", "Read number 1 first."])
-    script, version, warnings = narrate(llm, BRIEF, model="gemini-3.5-flash-lite", prompts_dir=ROOT / "prompts",
-                                        profile="An FDE.", spoken_date="Thursday, October 15", minutes=6)
-    assert version == "narrator-v2" and llm.asked["purpose"] == "narrator"
-    assert "675 to 825 words in total" in llm.asked["user"] and "about 217 words per story" in llm.asked["user"]
+def test_the_narrator_explains_each_story_in_order_from_the_brief_only():
+    llm = Narrator({"opening": "Good morning. It is Thursday, October 15, and two launches lead.",
+                    "stories": [   # out of order, story 2 missing, story 3 too long
+                        {"number": 3, "what_happened": "In tools, number 3. SDK 3.0 is out. It is big.",
+                         "in_simple_words": "A new client.", "why_it_matters": "For you, an upgrade. Plan for it."},
+                        {"number": 1, "what_happened": "Starting with the top stories, number 1. Model X 2 reads 2M tokens.",
+                         "in_simple_words": "It is 40% faster.   Put simply, it reads a whole repo.",
+                         "why_it_matters": "Since you've built RAG, you may need less of it."}],
+                    "closing": "Read number 1 first."})
+    script, version, warnings = narrate(llm, BRIEF, model="gemini-3.8-flash", prompts_dir=ROOT / "prompts",
+                                        profile="An FDE.", spoken_date="Thursday, October 15", minutes=7)
+    assert version == "narrator-v5" and llm.asked["purpose"] == "narrator" and llm.asked["model"] == "gemini-3.8-flash"
+    assert "about 980 words in total" in llm.asked["user"] and "about 300 words per story" in llm.asked["user"]
     assert "An FDE." in llm.asked["system"]
     sent = json.loads(llm.asked["user"].split("\n", 1)[1])
     assert [x["number"] for x in sent["stories"]] == [1, 2, 3] and sent["stories"][2]["section"] == "Tools & SDKs"
-    assert "How it works: sparse attention" in sent["stories"][0]["What is it?"]
-    # Story numbers, the date and the brief's own numbers may be said; a number from nowhere drops its sentence.
-    assert script.split("\n\n")[1] == "Number 1. Model X 2 reads 2M tokens. Worth a look."
-    assert warnings == ["narrator: dropped sentence with unsupported ['40']: 'It is 40% faster.'"]
+    assert sent["stories"][0]["What is it?"] == "A long-context model."   # the plain idea, not how it works
+    # The brief's order, every story with its number; a number from nowhere drops its sentence.
+    assert script.split("\n\n") == [
+        "Good morning. It is Thursday, October 15, and two launches lead.",
+        "Starting with the top stories, number 1. Model X 2 reads 2M tokens. Put simply, it reads a whole repo."
+        " Since you've built RAG, you may need less of it.",
+        "Number 2. Flash gets cheaper.",
+        "In tools, number 3. SDK 3.0 is out. A new client. For you, an upgrade.",   # one sentence a part
+        "Read number 1 first."]
+    assert warnings == ["narrator: dropped sentence with unsupported ['40']: 'It is 40% faster.'",
+                        "narrator: story 2 missing; its title is read"]
 
 
 def test_the_brief_keeps_what_its_voice_said(conn, settings):
