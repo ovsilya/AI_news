@@ -42,6 +42,8 @@ class FakeLLM:
 
     def json(self, *, purpose, user, **kw):
         self.calls.append(purpose)
+        if purpose == "narrator":
+            return {"paragraphs": ["Good morning, here is your overview.", "Number 1. Model X ships with 1M context."]}
         stories = json.loads(user.split("\n", 1)[1])
         if purpose == "judge":
             return {"scores": [{"id": s["id"], "relevance": 3, "novelty": 3, "actionability": 2, "credibility": 3,
@@ -117,7 +119,8 @@ def test_brief_with_fake_llm_verifies_and_renders(conn, settings):
     seed(conn)
     llm = FakeLLM()
     result = build_brief(conn, settings, SOURCES, llm=llm, now_dt=NOW)
-    assert llm.calls == ["judge", "editor"]
+    assert llm.calls == ["judge", "editor", "narrator"]
+    assert result["speech"].startswith("Good morning") and result["stats"]["speech"]["source"] == "narrator-v2"
     md = result["markdown"]
     # Supported number kept, unsupported sentence dropped, invented title number replaced, unknown story dropped.
     assert "$3 per million input tokens" in md
@@ -151,7 +154,7 @@ def test_brief_with_fake_llm_verifies_and_renders(conn, settings):
     assert drop_latest_brief(conn) == again["brief_id"] and drop_latest_brief(conn) == result["brief_id"]
     redo_llm = FakeLLM()
     redo = build_brief(conn, settings, SOURCES, llm=redo_llm, now_dt=NOW)
-    assert redo["stats"]["candidates"] == 2 and redo_llm.calls == ["editor"]
+    assert redo["stats"]["candidates"] == 2 and redo_llm.calls == ["editor", "narrator"]
 
 
 def _brief(n_items, pro_words):

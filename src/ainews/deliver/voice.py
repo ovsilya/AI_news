@@ -1,12 +1,13 @@
-"""The brief read aloud: Gemini text-to-speech on Vertex AI, sent to Telegram as one voice message.
+"""The brief's audio overview: Gemini text-to-speech on Vertex AI, sent to Telegram as one voice message.
 
-The script is the brief without its links (render.to_speech). Gemini TTS returns 24 kHz 16-bit mono PCM
+The script is the narrator's few-minute overview (pipeline/narrate.py), or the headlines when it couldn't
+be written (render.to_speech). Gemini TTS returns 24 kHz 16-bit mono PCM
 and reads 11 to 13 characters a second; one request may produce about 11 minutes, so the script is read in
 parts of at most PART_CHARS, a few at a time, then joined with a short pause and encoded as OGG/Opus
 (opusenc, from opus-tools), the format Telegram plays as a voice message.
 
 The voice has caps of its own (AINEWS_VOICE_MAX_USD_PER_BRIEF and _PER_MONTH): its calls are logged with
-purpose "voice", and the text caps leave them out, so reading the brief aloud can never starve the text."""
+purpose "voice", and the text caps leave them out, so the voice can never starve the text."""
 from __future__ import annotations
 
 import logging

@@ -87,7 +87,7 @@ def cmd_brief(args, settings) -> None:
         from .deliver.telegram import Telegram
 
         tg = Telegram(settings.telegram_bot_token, settings.telegram_chat_id)
-        speech = (None if args.no_voice or args.no_llm or settings.voice != "brief"
+        speech = (None if args.no_voice or args.no_llm or settings.voice != "brief" or not result["speech"]
                   else _read_aloud(result, settings, conn, path.with_suffix(".ogg")))
         ids = []
         if speech is not None:   # first, so it is what you see when you open the channel
@@ -104,8 +104,8 @@ def cmd_brief(args, settings) -> None:
 
 
 def _read_aloud(result: dict, settings, conn, path):
-    """The brief read aloud (deliver/voice.py), also written to path; None, with the reason printed, if it
-    can't be made: the text brief goes out regardless."""
+    """The brief's audio overview (deliver/voice.py), also written to path; None, with the reason printed, if
+    it can't be made: the text brief goes out regardless."""
     from .deliver.voice import Speaker
 
     try:

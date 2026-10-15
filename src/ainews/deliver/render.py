@@ -33,6 +33,7 @@ WHAT_HAPPENED = "What happened"
 DIVIDER = "━━━━━━━━━━━━"
 LABEL = re.compile(r"^([^:]{2,30}):\s+(.+)$", re.S)   # "How it works: …" -> bold label + text
 TAG = re.compile(r"<[^>]+>")
+SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
 
 def visible_len(text_html: str) -> int:
@@ -241,17 +242,12 @@ def _sentence(text: str) -> str:
 
 
 def to_speech(brief: dict, title: str) -> str:
-    """The brief as a script to read aloud: title and headline, then each story with its number, what
-    happened, and the two notes, in paragraphs; links and coverage flags are left to the text messages."""
+    """The brief's headlines read aloud, the voice message when the narrator can't write its overview:
+    title and headline, then each story's number, title and first sentence."""
     paragraphs = [_sentence(title) + " " + _sentence(brief["headline"])]
     for key, first, n, it in _numbered(brief):
         lines = [_sentence(LABELS[key])] if first else []
-        lines.append(f"Story {n}. {_sentence(it['title'])}")
-        if it.get("summary"):
-            lines.append(_sentence(it["summary"]))
-        for name, field in ((EXPLAINER, "explainer"), (f"{PRO_TAKE}.", "pro_take")):
-            intro, points = _note(it.get(field))
-            if intro or points:
-                lines.append(" ".join([name] + [_sentence(t) for t in [intro, *points] if t]))
+        lead = SENTENCE.split(_spoken(it.get("summary", "")), 1)[0]
+        lines.append(" ".join(x for x in (f"Number {n}.", _sentence(it["title"]), _sentence(lead)) if x))
         paragraphs.append("\n".join(lines))
     return "\n\n".join(paragraphs + [OUTRO])

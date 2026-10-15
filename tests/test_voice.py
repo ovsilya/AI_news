@@ -13,7 +13,9 @@ from ainews.deliver.render import OUTRO, to_speech
 from ainews.deliver.telegram import Telegram
 from ainews.deliver.voice import PAUSE, RATE, STYLE, Speaker, Speech, encode_ogg, parts
 from ainews.llm import BudgetExceeded, spent_since
+from ainews.config import ROOT
 from ainews.pipeline.brief import drop_latest_brief
+from ainews.pipeline.narrate import narrate
 
 BRIEF = {"headline": "Two launches and a price cut.", "sections": [
     {"key": "top", "items": [
@@ -25,17 +27,61 @@ BRIEF = {"headline": "Two launches and a price cut.", "sections": [
     {"key": "tools", "items": [{"title": "SDK 3.0", "story_ids": [3], "summary": "Breaking changes & a new client."}]}]}
 
 
-def test_the_spoken_brief_has_every_story_and_note_but_no_links():
+def test_without_the_narrator_the_voice_reads_the_headlines():
     script = to_speech(BRIEF, "AI Brief for Thursday, October 15")
     first, *stories, last = script.split("\n\n")
     assert first == "AI Brief for Thursday, October 15. Two launches and a price cut."
-    assert stories[0].splitlines() == [
-        "Top stories.", "Story 1. Model X 2 is out.", "It reads 2M tokens to a whole repo.",
-        "What is it? A long-context model. How it works: sparse attention. Cost: about $2 per 1M.",
-        "Comment from a pro. Worth a try for code review."]
-    assert stories[1] == "Story 2. Flash gets cheaper.\nInput price halves."    # empty notes are left out
-    assert stories[2].splitlines()[:2] == ["Tools and SDKs.", "Story 3. SDK 3.0."]
+    assert stories == ["Top stories.\nNumber 1. Model X 2 is out. It reads 2M tokens to a whole repo.",
+                       "Number 2. Flash gets cheaper. Input price halves.",
+                       "Tools and SDKs.\nNumber 3. SDK 3.0. Breaking changes and a new client."]
     assert "http" not in script and "🔥" not in script and last == OUTRO
+
+
+class Narrator:
+    def __init__(self, paragraphs):
+        self.paragraphs, self.asked = paragraphs, {}
+
+    def json(self, **kw):
+        self.asked = kw
+        return {"paragraphs": self.paragraphs}
+
+
+def test_the_narrator_writes_a_short_overview_from_the_brief_only():
+    llm = Narrator(["Good morning. It is Thursday, October 15, and two launches lead.",
+                    "Number 1. Model X 2 reads 2M tokens. It is 40% faster.   Worth a look.",
+                    "Number 3. SDK 3.0 has breaking changes.", "Read number 1 first."])
+    script, version, warnings = narrate(llm, BRIEF, model="gemini-3.5-flash-lite", prompts_dir=ROOT / "prompts",
+                                        profile="An FDE.", spoken_date="Thursday, October 15", minutes=6)
+    assert version == "narrator-v2" and llm.asked["purpose"] == "narrator"
+    assert "675 to 825 words in total" in llm.asked["user"] and "about 217 words per story" in llm.asked["user"]
+    assert "An FDE." in llm.asked["system"]
+    sent = json.loads(llm.asked["user"].split("\n", 1)[1])
+    assert [x["number"] for x in sent["stories"]] == [1, 2, 3] and sent["stories"][2]["section"] == "Tools & SDKs"
+    assert "How it works: sparse attention" in sent["stories"][0]["What is it?"]
+    # Story numbers, the date and the brief's own numbers may be said; a number from nowhere drops its sentence.
+    assert script.split("\n\n")[1] == "Number 1. Model X 2 reads 2M tokens. Worth a look."
+    assert warnings == ["narrator: dropped sentence with unsupported ['40']: 'It is 40% faster.'"]
+
+
+def test_the_brief_keeps_what_its_voice_said(conn, settings):
+    from test_pipeline import NOW, SOURCES, FakeLLM, seed
+
+    from ainews.pipeline.brief import build_brief
+
+    class Failing(FakeLLM):
+        def json(self, *, purpose, **kw):
+            if purpose == "narrator":
+                raise BudgetExceeded("narrator: refused")
+            return super().json(purpose=purpose, **kw)
+
+    seed(conn)
+    result = build_brief(conn, settings, SOURCES, llm=Failing(), now_dt=NOW)
+    assert result["speech"].split("\n\n")[1].startswith("Top stories.\nNumber 1. Model X ships")   # the headlines
+    assert result["stats"]["speech"]["source"] == "headlines" and "refused" in result["stats"]["narrator_error"]
+    row = conn.execute("SELECT source, script FROM brief_speech WHERE brief_id = ?", (result["brief_id"],)).fetchone()
+    assert tuple(row) == ("headlines", result["speech"])
+    drop_latest_brief(conn)
+    assert conn.execute("SELECT COUNT(*) FROM brief_speech").fetchone()[0] == 0
 
 
 def test_long_scripts_are_read_in_parts_between_paragraphs_then_sentences():
@@ -81,12 +127,13 @@ def test_the_brief_is_read_in_parts_joined_by_a_pause_and_billed_as_voice(conn, 
 
 def test_voice_has_caps_of_its_own(conn, settings):
     tts = FakeTTS()
-    with pytest.raises(BudgetExceeded, match="AINEWS_VOICE_MAX_USD_PER_BRIEF"):   # 20k characters: worst case $0.56
-        speaker(conn, settings, tts, voice_max_usd_per_brief=0.40).read("Word. " * 3_400)
+    six_minutes = "Word. " * 750   # 4,500 characters: worst case $0.13
+    with pytest.raises(BudgetExceeded, match="AINEWS_VOICE_MAX_USD_PER_BRIEF"):
+        speaker(conn, settings, tts, voice_max_usd_per_brief=0.10).read(six_minutes)
     conn.execute("INSERT INTO llm_calls (at, purpose, model, input_tokens, output_tokens, cost_usd)"
-                 " VALUES (?, 'voice', 'gemini-2.5-flash-tts', 0, 0, 5.80)", (now(),))
-    with pytest.raises(BudgetExceeded, match="month spend \\$5.80"):
-        speaker(conn, settings, tts, voice_max_usd_per_month=6.0).read("Word. " * 3_400)
+                 " VALUES (?, 'voice', 'gemini-2.5-flash-tts', 0, 0, 2.90)", (now(),))
+    with pytest.raises(BudgetExceeded, match="month spend \\$2.90"):
+        speaker(conn, settings, tts).read(six_minutes)
     assert tts.calls == []
 
 

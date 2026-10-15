@@ -9,10 +9,11 @@ from datetime import datetime, timedelta, timezone
 
 from ..db import finish_run, now, start_run
 from ..deliver.render import to_markdown, to_speech, to_telegram
-from ..llm import BudgetExceeded
+from ..llm import BudgetExceeded, LLMError
 from .dedup import assign_stories
 from .editor import brief_without_llm, source_text, write_brief
 from .fulltext import coverage, enrich
+from .narrate import narrate
 from .rank import load_candidates, select, select_by_heat
 from .score import judge
 from .verify import verify
@@ -30,7 +31,7 @@ def _since(conn: sqlite3.Connection, now_dt: datetime, lookback_hours: int = 26)
 def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, edition: str = "am",
                 now_dt: datetime | None = None, fetcher=None) -> dict:
     """Builds and stores a brief. Returns {"brief_id", "title", "markdown", "telegram", "speech", "warnings",
-    "stats"}: speech is the script for reading it aloud (deliver/voice.py)."""
+    "stats"}: speech is the script of its audio overview (deliver/voice.py), "" when there are no stories."""
     now_dt = now_dt or datetime.now(timezone.utc)
     run_id = start_run(conn, "brief")
     layers = {s.id: s.layer for s in sources}
@@ -76,6 +77,22 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
             log.info("verify: %s", w)
 
         shown = sorted({i for sec in brief["sections"] for it in sec["items"] for i in it["story_ids"]})
+        spoken = f"AI Brief for {local:%A}, {local:%B} {local.day}" + (", evening update" if edition == "pm" else "")
+        speech, speech_source = (to_speech(brief, spoken), "headlines") if shown else ("", "none")
+        if shown and llm is not None and settings.voice == "brief":
+            try:   # a few minutes to listen to; without it, the voice reads the headlines
+                speech, speech_source, dropped = narrate(llm, brief, model=settings.model_editor,
+                                                         prompts_dir=settings.prompts_dir, profile=profile,
+                                                         spoken_date=f"{local:%A}, {local:%B} {local.day}",
+                                                         minutes=settings.voice_minutes)
+                for w in dropped:
+                    log.info("verify: %s", w)
+                warnings += dropped
+                stats["warnings"] = len(warnings)
+            except (LLMError, ValueError) as exc:
+                log.warning("narrator skipped: %s", exc)
+                stats["narrator_error"] = str(exc)[:200]
+        stats["speech"] = {"source": speech_source, "words": len(speech.split())}
         cost = llm.total_cost if llm is not None else 0.0
         title = f"AI Brief · {date_label}" + (" · evening update" if edition == "pm" else "")
         footer = (f"{len(shown)} stories from {stats['candidates']} candidates · "
@@ -84,17 +101,18 @@ def build_brief(conn: sqlite3.Connection, settings, sources, *, llm=None, editio
         stats["coverage"] = dict(Counter(coverage(by_id[i]) for i in shown))  # full article, excerpt, …
         markdown = to_markdown(brief, by_id, names, title, footer)
         telegram = to_telegram(brief, by_id, names, title, footer)
-        spoken = f"AI Brief for {local:%A}, {local:%B} {local.day}" + (", evening update" if edition == "pm" else "")
         brief_id = conn.execute(
             "INSERT INTO briefs (created_at, edition, story_ids, markdown, telegram_html, cost_usd)"
             " VALUES (?, ?, ?, ?, ?, ?)",
             (now(), edition, json.dumps(shown), markdown, json.dumps(telegram), cost),
         ).lastrowid
+        if speech:
+            conn.execute("INSERT OR REPLACE INTO brief_speech VALUES (?, ?, ?)", (brief_id, speech_source, speech))
         conn.commit()
         stats["cost_usd"] = round(cost, 4)
         finish_run(conn, run_id, "ok", stats)
         return {"brief_id": brief_id, "title": title, "markdown": markdown, "telegram": telegram,
-                "speech": to_speech(brief, spoken), "warnings": warnings, "stats": stats}
+                "speech": speech, "warnings": warnings, "stats": stats}
     except Exception as exc:
         finish_run(conn, run_id, f"error: {exc}"[:300], stats)
         raise
@@ -109,6 +127,7 @@ def drop_latest_brief(conn: sqlite3.Connection) -> int | None:
         return None
     conn.executemany("INSERT OR IGNORE INTO replaced_posts VALUES (?, ?)",
                      [(i, now()) for i in json.loads(row["telegram_message_ids"] or "[]")])
+    conn.execute("DELETE FROM brief_speech WHERE brief_id = ?", (row["id"],))
     conn.execute("DELETE FROM briefs WHERE id = ?", (row["id"],))
     conn.commit()
     return row["id"]
