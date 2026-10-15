@@ -7,6 +7,10 @@
 - Fit, 0-100: 70 points for skills and 30 for level. The posting's required skills count in full and its
   preferred ones at half; a skill you have (private/skills.yaml) earns all of its weight, one you're
   learning half.
+- Each opening splits its skills into the ones you have, the required and nice-to-have ones that would be
+  new to you, and the ones you're learning, with how much of them you cover (the gap). At the end, "Where
+  you stand" does the same for all of the week's roles for you: how big your gap usually is, which of your
+  skills they ask for most, which missing ones they ask for most, and what learning the top few would change.
 - The same role posted in several cities is shown once, with all its places, and no employer takes more
   than two of the day's places.
 - The day's places are shared between three employer groups (each employer's tier in companies.yaml):
@@ -18,6 +22,8 @@ import html
 import json
 import re
 import sqlite3
+import statistics
+from collections import Counter
 from itertools import groupby
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -41,8 +47,12 @@ DEFAULTS = {"families": list(TARGET), "markets": list(MARKETS), "levels": ["seni
             "per_tier": {"established": 3, "startup": 3, "top": 2}, "min_fit": 50}
 TIER_LABELS = {"established": "🏢 Established", "startup": "🌱 Startups", "top": "🏆 Top tier"}
 NO_SPILL = "top"         # the one group that never takes the places another group leaves empty
-SHOW_SKILLS = 5
-FOOTER = ("Fit 0–100: 70 for skills (required in full, preferred at half), 30 for level."
+SHOW_SKILLS = 8
+GAP_SIZES = ((80, "small gap", "🟢"), (60, "medium gap", "🟡"), (0, "big gap", "🔴"))   # by the skills you cover
+TOP_GAPS = 3        # "learning your top 3 gaps would give N roles a small gap"
+MIN_STANDING = 5    # roles needed before "Where you stand" says anything
+FOOTER = ("Fit 0–100: 70 for skills (required in full, preferred at half), 30 for level. Skills %: how much of a"
+          " posting's skills you cover, a skill you're learning at half; the gap is small from 80%, medium from 60%."
           " Tap a title to open the posting. Each posting is sent once.")
 FLAGS = {"US": "🇺🇸", "CA": "🇨🇦", "UK": "🇬🇧", "CH": "🇨🇭", "AE": "🇦🇪"}
 # Location parts that name a country, state or province rather than a city: "USA, GA, Atlanta",
@@ -77,18 +87,24 @@ def load_prefs(path: Path) -> dict:
     return prefs
 
 
-def fit_score(data: dict, profile: dict | None, prefs: dict) -> int:
+def skill_coverage(data: dict, profile: dict | None) -> float | None:
+    """How much of a posting's skills you cover, 0-1: its required skills count in full and its preferred ones at
+    half; a skill you have earns all of its weight, one you're learning half. None with nothing to compare."""
     required, preferred = data.get("skills_required") or [], data.get("skills_preferred") or []
     weight = len(required) + 0.5 * len(preferred)
     if profile is None or not weight:
-        skills = 0.5    # nothing to compare: neither a match nor a miss
-    else:
-        have, learning = set(profile["have"]), set(profile["learning"])
+        return None
+    have, learning = set(profile["have"]), set(profile["learning"])
 
-        def w(s: str) -> float:
-            return 1.0 if s in have else 0.5 if s in learning else 0.0
+    def w(s: str) -> float:
+        return 1.0 if s in have else 0.5 if s in learning else 0.0
 
-        skills = (sum(map(w, required)) + 0.5 * sum(map(w, preferred))) / weight
+    return (sum(map(w, required)) + 0.5 * sum(map(w, preferred))) / weight
+
+
+def fit_score(data: dict, profile: dict | None, prefs: dict) -> int:
+    cover = skill_coverage(data, profile)
+    skills = 0.5 if cover is None else cover   # nothing to compare: neither a match nor a miss
     level = data.get("seniority") or "unknown"
     share = 1.0 if level in prefs["levels"] else LEVEL_SHARE.get(level, OTHER_LEVEL_SHARE)
     return round(SKILL_POINTS * skills + LEVEL_POINTS * share)
@@ -107,19 +123,23 @@ def _wanted(row, data: dict, prefs: dict, since: datetime) -> bool:
 
 def pick_openings(conn: sqlite3.Connection, skills: Skills, profile: dict | None, prefs: dict,
                   employers: dict[str, Company], *, now_dt: datetime | None = None) -> dict:
-    """{"picked": by employer group, best fit first in each, "considered": postings that passed the filters,
-    "unread": new postings in your role families the model hasn't read yet}."""
+    """{"picked": by employer group, best fit first in each, "considered": unsent postings that passed the
+    filters, "unread": new postings in your role families the model hasn't read yet, "standing": where you
+    stand among all of the week's roles for you, sent or not (where_you_stand)}."""
     now_dt = now_dt or datetime.now(timezone.utc)
     since = now_dt - FRESH
     rows = conn.execute(
-        "SELECT p.*, e.data FROM job_postings p JOIN job_extractions e ON e.posting_id = p.id"
-        " LEFT JOIN job_alerts a ON a.posting_id = p.id WHERE p.closed_at IS NULL AND a.posting_id IS NULL").fetchall()
-    scored = []
+        "SELECT p.*, e.data, EXISTS (SELECT 1 FROM job_alerts a WHERE a.posting_id = p.id) AS sent"
+        " FROM job_postings p JOIN job_extractions e ON e.posting_id = p.id WHERE p.closed_at IS NULL").fetchall()
+    scored, roles = [], {}
     for r in rows:
         if r["company"] not in employers:   # taken off the list: no longer polled, so it may have closed
             continue
         data = _renormalize(json.loads(r["data"]), skills)
-        if _wanted(r, data, prefs, since):
+        if not _wanted(r, data, prefs, since):
+            continue
+        roles.setdefault((r["company"], " ".join(r["title"].casefold().split())), data)   # each role once
+        if not r["sent"]:
             scored.append((fit_score(data, profile, prefs), _when(r), r, data))
     scored.sort(key=lambda x: (-x[0], -x[1].timestamp(), x[2]["id"]))
 
@@ -146,7 +166,59 @@ def pick_openings(conn: sqlite3.Connection, skills: Skills, profile: dict | None
         " WHERE p.closed_at IS NULL AND e.posting_id IS NULL AND a.posting_id IS NULL").fetchall()
     waiting = sum(1 for r in unread if r["title_family"] in prefs["families"] and _when(r) >= since
                   and set(json.loads(r["markets"])) & set(prefs["markets"]))
-    return {"picked": _share_out(list(groups.values()), prefs), "considered": len(scored), "unread": waiting}
+    return {"picked": _share_out(list(groups.values()), prefs), "considered": len(scored), "unread": waiting,
+            "standing": where_you_stand(list(roles.values()), profile)}
+
+
+def _size(share: float) -> tuple[str, str]:
+    """('small gap', '🟢') for a coverage of 0.8 or more; 'no gap' when you cover all of it."""
+    pct = round(100 * share)
+    if pct >= 100:
+        return "no gap", "🟢"
+    return next((name, dot) for floor, name, dot in GAP_SIZES if pct >= floor)
+
+
+def where_you_stand(roles: list[dict], profile: dict | None) -> dict | None:
+    """Where you stand among the week's roles for you (each role once): how much of their skills you
+    typically cover, how many fall in each gap size, which of your skills they ask for most, which skills
+    they ask for that you don't have, and how many would have a small gap if you learned the TOP_GAPS skills
+    that would add the most to your coverage."""
+    roles = [d for d in roles if skill_coverage(d, profile) is not None]
+    if profile is None or len(roles) < MIN_STANDING:
+        return None
+    have, learning = set(profile["have"]), set(profile["learning"])
+    covered = [skill_coverage(d, profile) for d in roles]
+    asked, weight = Counter(), Counter()   # roles that list a skill; its share of their coverage, summed
+    for d in roles:
+        required, preferred = d.get("skills_required") or [], d.get("skills_preferred") or []
+        total = len(required) + 0.5 * len(preferred)
+        asked.update(set(required + preferred))
+        weight.update({s: 1 / total for s in required})
+        weight.update({s: 0.5 / total for s in preferred})
+    # What learning a skill would add to your coverage (a skill you're learning has half of it to go) picks the
+    # ones to learn first; the lists themselves go by how many roles ask for a skill, the number they show.
+    gain = {s: w * (0.5 if s in learning else 1.0) for s, w in weight.items() if s not in have}
+    first = sorted(gain, key=lambda s: (-gain[s], s))[:TOP_GAPS]
+    gaps = sorted(gain, key=lambda s: (-asked[s], -gain[s], s))
+    ranked = sorted((s for s in weight if s in have), key=lambda s: (-asked[s], -weight[s], s))
+    learned = {"have": list(have | set(first)), "learning": list(learning - set(first))}
+    small = GAP_SIZES[0][0] / 100
+
+    def pct(skill: str) -> int:
+        return round(100 * asked[skill] / len(roles))
+
+    sizes, ceiling = [], 101
+    for floor, name, dot in GAP_SIZES:
+        span = f"{floor}%+" if ceiling > 100 else f"{floor}–{ceiling - 1}%" if floor else f"under {ceiling}%"
+        sizes.append({"name": name, "dot": dot, "span": span,
+                      "roles": sum(1 for c in covered if floor <= round(100 * c) < ceiling)})
+        ceiling = floor
+    return {"roles": len(roles), "median": statistics.median(covered), "sizes": sizes,
+            "strengths": [(s, pct(s)) for s in ranked[:5]],
+            "gaps": [(s, pct(s), s in learning) for s in gaps[:6]],
+            "top_gaps": first,
+            "small_now": sum(1 for c in covered if c >= small),
+            "small_after": sum(1 for d in roles if skill_coverage(d, learned) >= small)}
 
 
 def _share_out(groups: list[dict], prefs: dict) -> list[dict]:
@@ -179,15 +251,21 @@ def _share_out(groups: list[dict], prefs: dict) -> list[dict]:
 
 
 def _skills_for(data: dict, profile: dict | None) -> dict:
-    """Which of the posting's skills you have, are learning, or would be new (required ones only)."""
+    """The posting's skills split into the ones you have, are learning, or would be new to you (required and
+    preferred apart), and how much of them you cover."""
+    required, preferred = data.get("skills_required") or [], data.get("skills_preferred") or []
     if profile is None:
-        return {"have": [], "learning": [], "missing": [], "required": 0, "required_have": 0}
+        return {"have": [], "learning": [], "missing": [], "missing_preferred": [], "required": len(required),
+                "required_have": 0, "coverage": None}
     have, learning = set(profile["have"]), set(profile["learning"])
-    required = data.get("skills_required") or []
-    both = required + (data.get("skills_preferred") or [])
-    return {"have": [s for s in both if s in have], "learning": [s for s in both if s in learning],
-            "missing": [s for s in required if s not in have and s not in learning],
-            "required": len(required), "required_have": sum(1 for s in required if s in have)}
+
+    def new(names: list[str]) -> list[str]:
+        return [s for s in names if s not in have and s not in learning]
+
+    return {"have": [s for s in required + preferred if s in have],
+            "learning": [s for s in required + preferred if s in learning],
+            "missing": new(required), "missing_preferred": new(preferred), "required": len(required),
+            "required_have": sum(1 for s in required if s in have), "coverage": skill_coverage(data, profile)}
 
 
 def _pay(sal: dict | None) -> str:
@@ -246,17 +324,47 @@ def _clip(names: list[str]) -> str:
     return ", ".join(names[:SHOW_SKILLS]) + (f" +{len(names) - SHOW_SKILLS}" if len(names) > SHOW_SKILLS else "")
 
 
-def _match_line(g: dict, posted: str) -> str:
-    skills = f" · {g['required_have']} of {g['required']} required skills" if g["required"] else ""
-    return f"🎯 Fit {g['fit']}{skills} · posted {posted}"
+def _bar(share: float) -> str:
+    full = round(10 * share)
+    return "▰" * full + "▱" * (10 - full)
 
 
-def _gap_line(g: dict) -> str:
-    """The required skills you don't have yet, and which of the posting's skills you're learning."""
-    learning = f"learning: {_clip(g['learning'])}" if g["learning"] else ""
+def _skill_lines(g: dict, posted: str) -> list[str]:
+    """Fit, then the posting's skills: how much of them you cover and how big the gap is, the ones you have,
+    the ones that would be new to you (required, then nice to have), and the ones you're learning."""
+    lines = [f"🎯 Fit {g['fit']} · posted {posted}"]
+    if g["coverage"] is None:
+        return lines
+    name, dot = _size(g["coverage"])
+    todo = len(g["missing"])
+    lines.append(f"🧩 Skills {_bar(g['coverage'])} {round(100 * g['coverage'])}% · {dot} {name}"
+                 + (f", {todo} required skill{'s' * (todo != 1)} new to you" if todo else ""))
+    if g["have"]:
+        count = f" ({g['required_have']} of {g['required']} required)" if g["required"] else ""
+        lines.append(f"✅ You have{count}: {_clip(g['have'])}")
     if g["missing"]:
-        return f"➕ To learn: {_clip(g['missing'])}" + (f" ({learning})" if learning else "")
-    return f"📚 {learning[0].upper()}{learning[1:]}" if learning else ""
+        lines.append(f"❌ New to you, required: {_clip(g['missing'])}")
+    if g["missing_preferred"]:
+        lines.append(f"➖ New to you, nice to have: {_clip(g['missing_preferred'])}")
+    if g["learning"]:
+        lines.append(f"📚 Learning: {_clip(g['learning'])}")
+    return lines
+
+
+def _standing_lines(s: dict) -> list[str]:
+    """'Where you stand' among the week's roles for you."""
+    lines = [f"🧩 You cover {_bar(s['median'])} {round(100 * s['median'])}% of a typical role's skills",
+             " · ".join(f"{b['dot']} {b['roles']} {b['name']} ({b['span']})" for b in s["sizes"])]
+    if s["strengths"]:
+        lines.append("💪 Most asked of yours: " + ", ".join(f"{name} {pct}%" for name, pct in s["strengths"]))
+    if s["gaps"]:
+        lines.append("🧱 Most asked that you lack: " + ", ".join(
+            f"{name} {pct}%" + (" (learning)" if learning else "") for name, pct, learning in s["gaps"]))
+    top = s["top_gaps"]
+    if top and s["small_after"] > s["small_now"]:
+        names = ", ".join(top[:-1]) + (" and " if len(top) > 1 else "") + top[-1]
+        lines.append(f"🚀 Learning {names} would give {s['small_after']} roles a small gap, up from {s['small_now']}")
+    return lines
 
 
 def title_for(day: datetime) -> str:
@@ -273,9 +381,10 @@ def _tier_counts(picked: list[dict]) -> str:
     return " · ".join(out)
 
 
-def render(picked: list[dict], considered: int, unread: int, title: str, footer: str) -> tuple[str, list[str]]:
+def render(picked: list[dict], considered: int, unread: int, title: str, footer: str,
+           standing: dict | None = None) -> tuple[str, list[str]]:
     """picked comes group by group (established, startups, top tier); each group gets a heading, and a
-    message ends between groups when the next group doesn't fit, never inside one."""
+    message ends between groups when the next group doesn't fit, never inside one. "Where you stand" closes it."""
     e = html.escape
     lead = f"{len(picked)} pick{'s' * (len(picked) != 1)} from {considered} new posting{'s' * (considered != 1)} this week"
     counts = _tier_counts(picked)
@@ -289,14 +398,14 @@ def render(picked: list[dict], considered: int, unread: int, title: str, footer:
         for g in in_tier:
             i += 1
             posted = _day(datetime.fromisoformat(g["posted"]))
-            facts, pay, gaps = " · ".join(_facts(g)), _pay(g.get("salary")), _gap_line(g)
+            facts, pay, skill_lines = " · ".join(_facts(g)), _pay(g.get("salary")), _skill_lines(g, posted)
             md += [f"### {i}. [{g['title']}]({g['url']})", "", facts] + ([f"💰 {pay}"] if pay else [])
             md += [f"_{g['summary']}_"] if g.get("summary") else []
-            md += [_match_line(g, posted)] + ([gaps] if gaps else []) + [""]
+            md += skill_lines + [""]
             block = [f'<b>{i}. <a href="{e(g["url"], quote=True)}">{e(g["title"])}</a></b>', e(facts)]
             block += [f"💰 {e(pay)}"] if pay else []
             block += [f"<i>{e(g['summary'])}</i>"] if g.get("summary") else []
-            block += [e(_match_line(g, posted))] + ([e(gaps)] if gaps else [])
+            block += [e(line) for line in skill_lines]
             blocks.append("\n".join(block))
         head = f"{DIVIDER}\n<b>{e(TIER_LABELS[tier])}</b>"
         whole = "\n\n".join([head] + blocks)
@@ -304,6 +413,11 @@ def render(picked: list[dict], considered: int, unread: int, title: str, footer:
             units.append(whole)
         else:   # a group too long for one message: its heading travels with its first opening
             units += [f"{head}\n\n{blocks[0]}"] + blocks[1:]
+    if standing:
+        head = f"📊 Where you stand · {standing['roles']} roles for you this week"
+        lines = _standing_lines(standing)
+        md += [f"## {head}", ""] + lines + [""]
+        units.append(f"{DIVIDER}\n<b>{e(head)}</b>\n" + "\n".join(e(line) for line in lines))
     md += ["---", footer]
     units.append(f"{DIVIDER}\n<i>{e(footer)}</i>")
     return "\n".join(md), _pack(units)
@@ -338,11 +452,12 @@ def build_openings(conn: sqlite3.Connection, settings, *, per_tier: dict[str, in
             title = title_for(local)
             footer = FOOTER + ("" if profile else NO_PROFILE)
             result["markdown"], result["telegram"] = render(found["picked"], found["considered"], found["unread"],
-                                                            title, footer)
+                                                            title, footer, found["standing"])
             stats = {"posting_ids": [i for g in found["picked"] for i in g["ids"]],
                      "fits": {str(i): g["fit"] for g in found["picked"] for i in g["ids"]},
                      "tiers": {t: sum(g["tier"] == t for g in found["picked"]) for t in prefs["per_tier"]},
-                     "considered": found["considered"], "unread": found["unread"]}
+                     "considered": found["considered"], "unread": found["unread"],
+                     "standing": found["standing"]}   # kept, so you can see how your gap changes over time
             result["report_id"] = conn.execute(
                 "INSERT INTO reports (created_at, kind, stats, markdown, telegram_html) VALUES (?, 'jobs_openings', ?, ?, ?)",
                 (now(), json.dumps(stats), result["markdown"], json.dumps(result["telegram"]))).lastrowid

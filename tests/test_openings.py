@@ -10,8 +10,8 @@ from ainews.config import ROOT
 from ainews.deliver.render import TELEGRAM_LIMIT, visible_len
 from ainews.jobs.boards import TIERS, Company, load_companies
 from ainews.jobs.extract import Skills
-from ainews.jobs.openings import (DEFAULTS, _city, _pay, _share_out, _where, build_openings, fit_score, load_prefs,
-                                  mark_sent, pick_openings)
+from ainews.jobs.openings import (DEFAULTS, _city, _pay, _share_out, _size, _skill_lines, _skills_for, _where,
+                                  build_openings, fit_score, load_prefs, mark_sent, pick_openings, where_you_stand)
 
 SKILLS = Skills(ROOT / "config" / "skills.yaml")
 NOW = datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc)
@@ -46,6 +46,37 @@ def test_fit_score_weighs_skills_and_level():
     assert fit_score(mixed, PROFILE, PREFS) == round(70 * (1 + 0.25) / 2.5 + 30 * 0.4)
     assert fit_score({"seniority": "unknown"}, PROFILE, PREFS) == round(70 * 0.5 + 30 * 0.6)   # no skills listed
     assert fit_score(full, None, PREFS) == round(70 * 0.5 + 30)                                  # no skills file
+
+
+def test_each_opening_splits_its_skills_and_sizes_the_gap():
+    data = {"skills_required": ["Python", "RAG", "Kubernetes", "Go"], "skills_preferred": ["MCP", "Rust"]}
+    g = {"fit": 60, **_skills_for(data, PROFILE)}
+    assert g["coverage"] == pytest.approx((2 + 0.5 * 0.5) / 5)                      # 45%
+    assert _skill_lines(g, "Mon 12 Oct") == [
+        "🎯 Fit 60 · posted Mon 12 Oct",
+        "🧩 Skills ▰▰▰▰▱▱▱▱▱▱ 45% · 🔴 big gap, 2 required skills new to you",
+        "✅ You have (2 of 4 required): Python, RAG",
+        "❌ New to you, required: Kubernetes, Go",
+        "➖ New to you, nice to have: Rust",
+        "📚 Learning: MCP"]
+    assert [_size(c) for c in (1.0, 0.8, 0.79, 0.6, 0.59)] == [
+        ("no gap", "🟢"), ("small gap", "🟢"), ("medium gap", "🟡"), ("medium gap", "🟡"), ("big gap", "🔴")]
+    assert _skill_lines({"fit": 50, **_skills_for(data, None)}, "Mon 12 Oct") == ["🎯 Fit 50 · posted Mon 12 Oct"]
+
+
+def test_where_you_stand_lists_gaps_and_picks_what_to_learn_first():
+    roles = [{"skills_required": ["Python", "Kubernetes"], "skills_preferred": ["Terraform"]} for _ in range(4)]
+    roles += [{"skills_required": ["Python", "RAG"], "skills_preferred": []}, {"skills_preferred": ["MCP"]}]
+    s = where_you_stand(roles, PROFILE)
+    assert s["roles"] == 6
+    # Kubernetes is required where Terraform is only nice to have; MCP, which you're learning, has half to go.
+    assert [name for name, *_ in s["gaps"]] == ["Kubernetes", "Terraform", "MCP"]
+    assert s["gaps"][0] == ("Kubernetes", 67, False) and s["gaps"][2] == ("MCP", 17, True)
+    assert s["top_gaps"] == ["Kubernetes", "Terraform", "MCP"]
+    assert s["strengths"][0] == ("Python", 83)
+    assert [b["roles"] for b in s["sizes"]] == [1, 0, 5] and [b["span"] for b in s["sizes"]] == ["80%+", "60–79%", "under 60%"]
+    assert (s["small_now"], s["small_after"]) == (1, 6)
+    assert where_you_stand(roles[:4], PROFILE) is None and where_you_stand(roles, None) is None   # too few; no skills file
 
 
 def test_pick_filters_groups_and_caps_per_employer(conn):
@@ -122,8 +153,11 @@ def test_build_sends_once_and_fits_telegram(conn, settings, tmp_path):
     first, text = result["telegram"][0], "\n".join(result["telegram"])
     assert len(result["telegram"]) == 1                                       # all eight fit in one message
     assert "Jobs for you" in first and "🏢 3 established · 🌱 3 startups · 🏆 2 top tier" in first
-    assert "🎯 Fit 65 · 1 of 2 required skills · posted" in first
-    assert "➕ To learn: Kubernetes (learning: MCP)" in first
+    # Python (have) + Kubernetes (new) required, MCP (learning) preferred: (1 + 0.5 * 0.5) / 2.5 = 50% covered.
+    assert "🎯 Fit 65 · posted" in first
+    assert "🧩 Skills ▰▰▰▰▰▱▱▱▱▱ 50% · 🔴 big gap, 1 required skill new to you" in first
+    assert "✅ You have (1 of 2 required): Python\n❌ New to you, required: Kubernetes\n📚 Learning: MCP" in first
+    assert "<b>📊 Where you stand · 12 roles for you this week</b>" in text
     assert "Co 4 · San Francisco / New York City 🇺🇸 · hybrid · senior" in first
     assert text.index("<b>🏢 Established</b>") < text.index("<b>🌱 Startups</b>") < text.index("<b>🏆 Top tier</b>")
     assert '<b>7. <a href="https://jobs.example/co0:1">Applied AI Engineer 0</a></b>' in text   # numbered across groups

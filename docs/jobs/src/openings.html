@@ -77,15 +77,19 @@
 </ol>
 
 <h2 id="message">What arrives in Telegram</h2>
-<p>A heading with how many postings were considered and how many picks each group got, then the openings under their group's heading (🏢 Established, 🌱 Startups, 🏆 Top tier, numbered straight through, best fit first in each). A day's eight usually fit in one message, so there's one notification; when they don't, a message ends between groups, never inside one. The example above, rendered by the same code:</p>
+<p>A heading with how many postings were considered and how many picks each group got, then the openings under their group's heading (🏢 Established, 🌱 Startups, 🏆 Top tier, numbered straight through, best fit first in each). The eight usually take two messages; a message ends between groups, never inside one. The example above, rendered by the same code:</p>
 <div class="tg">{{openings_preview}}</div>
 <ul>
 <li><b>The title</b> opens the employer's own posting.</li>
 <li><b>The line under it:</b> the employer, where (the first two cities, how many more, and the country's flag), the work policy, the level, and “visa sponsorship” when the posting says it offers it. Career sites write places in many ways (“USA, GA, Atlanta”, “California - San Francisco”); only the city is kept.</li>
 <li><b>💰</b> the posted pay, when there is one: the board's own figure if it publishes one, else the range in the text.</li>
-<li><b>🎯</b> the fit, how many of the required skills you have, and when the posting was published.</li>
-<li><b>➕ To learn</b> the required skills on neither of your lists, and in brackets the posting's skills you're learning (a <b>📚</b> line when nothing is missing).</li>
+<li><b>🎯</b> the fit and when the posting was published.</li>
+<li><b>🧩 Skills</b> how much of the posting's skills you cover, as a bar and a percentage: its required skills count in full and its nice-to-haves at half, and a skill you're learning earns half. Then the size of the gap (small from 80%, medium from 60%, big below) and how many required skills would be new to you.</li>
+<li><b>✅ You have</b> the posting's skills on your “have” list, required ones first, and how many of the required ones that is.</li>
+<li><b>❌ New to you, required</b> and <b>➖ New to you, nice to have</b>: the posting's skills on neither of your lists.</li>
+<li><b>📚 Learning</b> the posting's skills on your “learning” list.</li>
 </ul>
+<p><b>📊 Where you stand</b> closes the message, using the same measure for all of the week's roles for you. Each role counts once, including ones sent before. It shows how much of a typical role's skills you cover (the median), how many roles have a small, medium or big gap, which of your skills they ask for most, and which skills you don't have they ask for most (the share of roles that list each). The 🚀 line names the three skills that would add the most to your coverage, required ones before nice-to-haves, and how many roles would have a small gap if you learned them. Each list keeps these numbers (in <code>reports.stats</code>), so you can follow your gap over time.</p>
 <p class="muted">These lines show anyone who can read the channel which skills you have and which you lack, as the weekly report's “Your fit” section does.</p>
 
 <h2 id="once">Sent once: how it's tracked</h2>
@@ -107,7 +111,7 @@
 <tr><td><code>ainews openings --redo --send</code></td><td>Rebuilds the latest sent openings, say after a layout change, and sends them again; without <code>--send</code> their postings count as unsent until you send</td></tr>
 <tr><td><code>ainews openings --tier top=0</code></td><td>No top-tier openings this time; <code>--tier startup=5</code> gives startups more places. The rest keep their places</td></tr>
 </tbody></table></div>
-<p class="muted">Free and instant: no model call, no network call except to Telegram. Deployed, the 05:00 jobs run (every other day) sends the openings at the end (<code>ainews jobs --send-openings</code>).</p>
+<p class="muted">Free and instant: no model call, no network call except to Telegram. Deployed, the 05:00 jobs run (every three days) sends the openings at the end (<code>ainews jobs --send-openings</code>).</p>
 
 <div class="callout">
 <p><b>Why not let the model rank?</b> The model already did the hard part, reading each posting into a form. Ranking those forms in code costs nothing, gives the same answer every run, and shows its working: every opening lists the skills behind its fit, so you can see why it's there and fix your lists if it shouldn't be.</p>

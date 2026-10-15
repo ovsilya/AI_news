@@ -34,13 +34,14 @@ JOBS=(
   "ainews-brief|run,--send|30m"
   "ainews-weekly|weekly,--send|20m"
 )
-# Jobs + openings and the brief run every EVERY_DAYS days. Cron counts days of the month, so 2 means the
-# odd-numbered days: the 31st and the 1st run back to back, and the gap is never more than two days.
-EVERY_DAYS=2
+# Jobs + openings and the brief run every EVERY_DAYS days (1 for daily). Cron counts days of the month, so
+# 3 means the 3rd, 6th, ... 30th: never two days running, and a longer gap (4-5 days) after a month's last run.
+EVERY_DAYS=3
+DAYS="$EVERY_DAYS-31/$EVERY_DAYS"
 # Triggers: name, job, cron, in TZ_NAME.
 SCHEDULES=(
-  "ainews-jobs-am|ainews-jobs|0 5 */$EVERY_DAYS * *"
-  "ainews-brief-am|ainews-brief|0 6 */$EVERY_DAYS * *"
+  "ainews-jobs-am|ainews-jobs|0 5 $DAYS * *"
+  "ainews-brief-am|ainews-brief|0 6 $DAYS * *"
   "ainews-weekly-mon|ainews-weekly|0 7 * * 1"
 )
 RETIRED=(ainews-jobs-daily)   # earlier trigger names; schedule removes them so they can't keep firing
@@ -107,7 +108,7 @@ release() {
 
   env="^@^GCP_PROJECT_ID=$PROJECT@VERTEX_REGION=global@AINEWS_LLM_ENABLED=true@AINEWS_STATE_BUCKET=$BUCKET@TZ=$TZ_NAME"
   env+="@TELEGRAM_CHAT_ID=$chat"
-  env+="@AINEWS_BRIEF_LOOKBACK_HOURS=$((24 * EVERY_DAYS + 2))"   # a brief covers everything since the last one
+  env+="@AINEWS_BRIEF_LOOKBACK_HOURS=$((24 * (EVERY_DAYS + 2) + 2))"   # since the last brief, month-end gaps too
   for key in AINEWS_MAX_USD_PER_RUN AINEWS_MAX_USD_PER_DAY AINEWS_MAX_USD_PER_MONTH AINEWS_MAX_JOBS_EXTRACT \
              AINEWS_BRIEF_RESERVE_USD; do
     value="$(from_env "$key")"

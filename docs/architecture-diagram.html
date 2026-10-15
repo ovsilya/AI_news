@@ -92,7 +92,7 @@
 <body>
 <main>
   <h1>AI_news: architecture</h1>
-  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Markets: USA · Canada · UK · Switzerland · UAE. Draft v1.5 · 2026-10-14. <b>Status:</b> deployed on GCP since 2026-10-14: Cloud Scheduler starts three Cloud Run jobs (jobs and openings at 05:00 and the brief at 06:00, every other day; the weekly jobs report on Mondays at 07:00), and the SQLite database lives in a private Cloud Storage bucket between runs (<code>infra/deploy.sh</code>; <code>ainews tg-clean</code> clears earlier posts). Each lane is one command, which you can also run on the laptop: <code>ainews jobs</code> polls 97 employer job boards and 32 Workday career sites and reads new postings, <code>ainews openings</code> sends the day's best-fitting openings, and <code>ainews weekly</code> builds the jobs report; <a href="jobs/index.html">How the job search works</a> explains it step by step. Cloud Run, Cloud Scheduler, Cloud Storage and Firestore below are the deployment plan. <b>Hover</b> a block for a quick tooltip, or <b>click</b> it to see what it does and why.</p>
+  <p class="lede">A daily AI-industry brief that runs on GCP and posts to Telegram, plus job-market tracking and a career-fit report. Markets: USA · Canada · UK · Switzerland · UAE. Draft v1.6 · 2026-10-15. <b>Status:</b> deployed on GCP since 2026-10-14: Cloud Scheduler starts three Cloud Run jobs (jobs and openings at 05:00 and the brief at 06:00, every three days; the weekly jobs report on Mondays at 07:00), and the SQLite database lives in a private Cloud Storage bucket between runs (<code>infra/deploy.sh</code>; <code>ainews tg-clean</code> clears earlier posts). Each lane is one command, which you can also run on the laptop: <code>ainews jobs</code> polls 97 employer job boards and 32 Workday career sites and reads new postings, <code>ainews openings</code> sends the day's best-fitting openings, and <code>ainews weekly</code> builds the jobs report; <a href="jobs/index.html">How the job search works</a> explains it step by step. Cloud Run, Cloud Scheduler, Cloud Storage and Firestore below are the deployment plan. <b>Hover</b> a block for a quick tooltip, or <b>click</b> it to see what it does and why.</p>
 
   <div class="frame" id="diagram">
   <div id="pop" class="pop" hidden role="dialog" aria-live="polite"></div>
@@ -140,16 +140,16 @@
     <rect class="gcp" x="290" y="15" width="630" height="835" rx="14"/>
     <text class="h" x="306" y="38">Google Cloud · personal project · us-central1</text>
 
-    <a class="blk" href="#card-scheduler" data-id="scheduler"><title>Cloud Scheduler: Three cron triggers, which is the free quota: ① the brief at 06:00 and ② jobs at 05:00, every other day, ③ the weekly reports Mondays at 07:00. An 18:00 brief is planned.</title><rect class="comp" x="320" y="50" width="580" height="50" rx="8"/>
+    <a class="blk" href="#card-scheduler" data-id="scheduler"><title>Cloud Scheduler: Three cron triggers, which is the free quota: ① the brief at 06:00 and ② jobs at 05:00, every three days, ③ the weekly reports Mondays at 07:00. An 18:00 brief is planned.</title><rect class="comp" x="320" y="50" width="580" height="50" rx="8"/>
       <text class="t" x="336" y="72">Cloud Scheduler · 3 free jobs</text>
-      <text class="s" x="336" y="89">① brief 06:00 · ② jobs 05:00, every other day · ③ weekly Mon 07:00</text></a>
+      <text class="s" x="336" y="89">① brief 06:00 · ② jobs 05:00, every three days · ③ weekly Mon 07:00</text></a>
     <path class="a" d="M610 100 V116" marker-end="url(#arr)"/>
 
     <a class="blk" href="#card-job" data-id="job"><title>Cloud Run Job: One container image with three modes (run daily | jobs | weekly), 1 vCPU / 2 GiB, parallelism 1.</title><rect class="jobbox" x="320" y="120" width="580" height="428" rx="10"/>
       <text class="h" x="336" y="142">Cloud Run Job · one image, three modes · single writer</text></a>
 
     <!-- lane 1 -->
-    <text class="lane" x="340" y="162">① Brief · 06:00 every other day</text>
+    <text class="lane" x="340" y="162">① Brief · 06:00 every three days</text>
     <a class="blk" href="#card-a1" data-id="a1"><title>1 · Ingest: Fetches every source politely: conditional GET so unchanged feeds aren't re-downloaded, a pause between requests to the same site (30 s for Reddit, which rate-limits hard) and a one-minute wait after a 429. RSS items keep the full post when the feed carries it (up to 4,000 characters). Broad search feeds keep only on-topic headlines: AI for Reuters, work and jobs for the AI-and-jobs search. Records the health of each source.</title><rect class="comp" x="340" y="170" width="166" height="64" rx="8"/>
       <text class="t" x="423" y="192" text-anchor="middle">1 · Ingest</text>
       <text class="s" x="423" y="210" text-anchor="middle">RSS · APIs · page diffs</text>
@@ -184,7 +184,7 @@
     <line class="sep" x1="320" y1="340" x2="900" y2="340"/>
 
     <!-- lane 2 -->
-    <text class="lane" x="340" y="358">② Jobs · 05:00 every other day</text>
+    <text class="lane" x="340" y="358">② Jobs · 05:00 every three days</text>
     <a href="jobs/index.html"><text class="s lnk" x="880" y="358" text-anchor="end">How the job search works →</text></a>
     <a class="blk" href="#card-b1" data-id="b1"><title>J1 · Poll &amp; diff: Fetches the full list of open postings from 97 employers' own job boards through the public Greenhouse, Lever and Ashby APIs (about 13,000 postings in 80 seconds), and searches the Workday career sites of 32 banks, pharma and big-tech employers for AI roles within our countries. Keeps the ones in your target role families (FDE and applied AI, solutions, LLM/GenAI, AI and ML engineering; ML research and data science for context) and markets (US, CA, UK, CH, UAE, remote), about 2,400. Compares with what is stored: new, changed and closed (missing for 36 hours from successful polls; on Workday, only once the posting's own page says it is gone). SerpApi Google Jobs and alert emails come next.</title><rect class="comp" x="340" y="366" width="166" height="64" rx="8"/>
       <text class="t" x="423" y="388" text-anchor="middle">J1 · Poll &amp; diff</text>
@@ -352,7 +352,7 @@
   </div>
   <h3>Orchestration</h3>
   <div class="grid">
-    <div class="card" id="card-scheduler"><b>Cloud Scheduler</b><p><span class="lbl">What:</span> Three cron triggers, which is the free quota: ① the brief at 06:00 and ② jobs at 05:00, every other day, ③ the weekly reports Mondays at 07:00. An 18:00 brief is planned.</p><p><span class="lbl">Why:</span> Managed cron with no server to run. Jobs finish before the morning brief, so the brief can include fresh postings.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
+    <div class="card" id="card-scheduler"><b>Cloud Scheduler</b><p><span class="lbl">What:</span> Three cron triggers, which is the free quota: ① the brief at 06:00 and ② jobs at 05:00, every three days, ③ the weekly reports Mondays at 07:00. An 18:00 brief is planned.</p><p><span class="lbl">Why:</span> Managed cron with no server to run. Jobs finish before the morning brief, so the brief can include fresh postings.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
     <div class="card" id="card-job"><b>Cloud Run Job</b><p><span class="lbl">What:</span> One container image with three modes (run daily | jobs | weekly), 1 vCPU / 2 GiB, parallelism 1.</p><p><span class="lbl">Why:</span> Pay-per-run, so it fits the free tier. Running a single writer means the SQLite snapshot is never written by two runs at once.</p><p class="back"><a href="#diagram">↑ back to diagram</a></p></div>
   </div>
   <h3>① Daily brief</h3>

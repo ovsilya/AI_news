@@ -24,7 +24,7 @@
 </tbody></table></div>
 
 <h2 id="cloud">In the cloud</h2>
-<p>Deployed on GCP (<a href="https://github.com/ovsilya/AI_news/blob/main/docs/setup.md#6-deploy-to-gcp-cloud-run-jobs-on-a-schedule">setup §6</a>), three Cloud Run jobs run on a schedule in your time zone: <code>ainews-jobs</code> at 05:00 (<code>ainews jobs --send-openings</code>) and <code>ainews-brief</code> at 06:00, every other day (odd-numbered dates), and <code>ainews-weekly</code> on Mondays at 07:00. Each run downloads the database from a private bucket, works on it, and uploads it again, so don't run the lanes on the laptop as well.</p>
+<p>Deployed on GCP (<a href="https://github.com/ovsilya/AI_news/blob/main/docs/setup.md#6-deploy-to-gcp-cloud-run-jobs-on-a-schedule">setup §6</a>), three Cloud Run jobs run on a schedule in your time zone: <code>ainews-jobs</code> at 05:00 (<code>ainews jobs --send-openings</code>) and <code>ainews-brief</code> at 06:00, every three days (the 3rd, 6th, … 30th of the month), and <code>ainews-weekly</code> on Mondays at 07:00. Each run downloads the database from a private bucket, works on it, and uploads it again, so don't run the lanes on the laptop as well.</p>
 <div class="tablewrap"><table>
 <thead><tr><th style="width:46%">Command</th><th>What it does</th></tr></thead>
 <tbody>

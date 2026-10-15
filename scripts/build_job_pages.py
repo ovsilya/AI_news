@@ -351,6 +351,15 @@ EXAMPLE_POSTING = {
 }
 EXAMPLE_PROFILE = {"have": ["Software engineering", "REST APIs", "Data pipelines", "Customer-facing work", "Communication",
                             "Debugging", "AI agents"], "learning": ["TypeScript"]}
+EXAMPLE_ROLES = [   # a made-up week of roles for you, for the "Where you stand" example
+    EXAMPLE_POSTING,
+    {"skills_required": ["Python", "REST APIs", "AI agents", "Kubernetes"], "skills_preferred": ["TypeScript"]},
+    {"skills_required": ["Software engineering", "Python", "Kubernetes", "Communication"], "skills_preferred": ["AWS"]},
+    {"skills_required": ["Customer-facing work", "Communication", "REST APIs"], "skills_preferred": ["Python"]},
+    {"skills_required": ["Python", "Data pipelines", "AWS", "Kubernetes"], "skills_preferred": ["AI agents"]},
+    {"skills_required": ["Software engineering", "Debugging", "AI agents", "Python"], "skills_preferred": []},
+    {"skills_required": ["TypeScript", "REST APIs", "Authentication"], "skills_preferred": ["B2B"]},
+]
 
 
 def _num(x: float) -> str:
@@ -392,8 +401,9 @@ def openings_preview() -> str:
          "family": d["role_family"],
          **openings._skills_for(d, prof),
          **{k: d.get(k) for k in ("seniority", "remote_policy", "visa_sponsorship", "salary", "summary")}}
-    _, messages = openings.render([g], 60, 0, openings.title_for(datetime(2026, 10, 13)), openings.FOOTER)
-    return messages[0]
+    _, messages = openings.render([g], 60, 0, openings.title_for(datetime(2026, 10, 13)), openings.FOOTER,
+                                  openings.where_you_stand(EXAMPLE_ROLES, prof))
+    return "\n\n".join(messages)
 
 
 def openings_defaults() -> str:

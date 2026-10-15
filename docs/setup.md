@@ -156,7 +156,7 @@ Nothing to sign up for: the employers' job boards (Greenhouse, Lever, Ashby) are
 
 ## 6. Deploy to GCP (Cloud Run jobs on a schedule)
 
-Deployed, everything runs on its own and posts to the channel: the jobs lane and the openings at 05:00 and the brief at 06:00, every other day (odd-numbered dates), and the weekly jobs report on Mondays at 07:00, in your time zone. `EVERY_DAYS` at the top of the script sets the rhythm (1 for daily), and the brief's lookback follows it, so a brief always covers everything since the last one. [infra/deploy.sh](../infra/deploy.sh) does it in steps you can run again safely; it reads the project from `GCP_PROJECT_ID` and the time zone from `AINEWS_TZ` in `.env`.
+Deployed, everything runs on its own and posts to the channel: the jobs lane and the openings at 05:00 and the brief at 06:00, every three days (the 3rd, 6th, … 30th of the month), and the weekly jobs report on Mondays at 07:00, in your time zone. `EVERY_DAYS` at the top of the script sets the rhythm (1 for daily), and the brief's lookback follows it, so a brief always covers everything since the last one. [infra/deploy.sh](../infra/deploy.sh) does it in steps you can run again safely; it reads the project from `GCP_PROJECT_ID` and the time zone from `AINEWS_TZ` in `.env`.
 
 | Piece | What it is |
 |---|---|
