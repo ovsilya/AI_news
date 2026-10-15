@@ -75,6 +75,23 @@ def test_the_narrator_explains_each_story_in_order_from_the_brief_only():
                         "narrator: story 2 missing; its title is read"]
 
 
+def test_the_narrator_keeps_to_its_length_leaving_out_details_first():
+    def said(tag):
+        return f"{tag} " + " ".join(["word"] * 9) + "."   # 10 words
+
+    def story(n):
+        return {"number": n, "what_happened": f"Number {n}. {said(f'W{n}a')} {said(f'W{n}b')}",
+                "in_simple_words": f"{said(f'S{n}a')} {said(f'S{n}b')}", "why_it_matters": said(f"M{n}a")}
+
+    llm = Narrator({"opening": "Good morning.", "stories": [story(1), story(2), story(3)], "closing": "Bye."})
+    # 149 words with the per-part limits (story 3 is a minor one: one sentence of what happened); 1 minute is 112
+    script, _, warnings = narrate(llm, BRIEF, model="gemini-3.8-flash", prompts_dir=ROOT / "prompts",
+                                  profile="An FDE.", spoken_date="Thursday, October 15", minutes=1)
+    left_out = {"W1b", "W2b", "W3b", "S3b", "S2b"}   # details first, then simple words from the last story back
+    assert not any(tag in script for tag in left_out) and len(script.split()) == 109 and not warnings
+    assert all(f"{p}{n}a" in script for p in "WSM" for n in (1, 2, 3)) and "S1b" in script
+
+
 def test_the_narrator_may_say_in_digits_what_the_brief_spells_out():
     from ainews.pipeline.narrate import _spelled
 

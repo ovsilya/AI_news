@@ -25,6 +25,11 @@ PARTS = ("what_happened", "in_simple_words", "why_it_matters")
 # Sentences kept per part, top stories first: the model tends to write two where one is asked for, and this is
 # what holds the overview to its few minutes. The first sentences carry the point.
 MAX_SENTENCES = {"top": (2, 2, 1), "other": (1, 2, 1)}
+# Over its length even so (it wrote 900 to 1,150 words for the same target), the script leaves out more, one
+# sentence at a time and never the first of a part: a top story's second sentence of what happened (detail),
+# then the second sentence of the simple explanation, minor stories from the last one back, then top stories.
+TRIM = ((0, "top"), (1, "other"), (1, "top"))
+SLACK = 1.05   # how far over its word target the script may run
 LEAD = re.compile(r"\bnumber \d+\.$", re.I)   # "In research, number 12." is said with the sentence after it
 # Numbers the brief spells out ("six point eight billion"), which the narrator writes with digits ("6.8 billion").
 # Million and up stay words either way, so a run of number words ends there.
@@ -109,9 +114,8 @@ def _sentences(text: str) -> list[str]:
     return out
 
 
-def _checked(text: str, allowed: set[str], warnings: list[str], limit: int | None = None) -> tuple[str, int]:
-    """The text without sentences whose numbers aren't allowed, and at most limit sentences; and how many
-    sentences the limit cut."""
+def _checked(text: str, allowed: set[str], warnings: list[str]) -> list[str]:
+    """The text's sentences, without those whose numbers aren't allowed."""
     kept = []
     for sentence in _sentences(text):
         bad = _numbers(sentence) - allowed
@@ -119,8 +123,23 @@ def _checked(text: str, allowed: set[str], warnings: list[str], limit: int | Non
             warnings.append(f"narrator: dropped sentence with unsupported {sorted(bad)}: {sentence[:80]!r}")
         else:
             kept.append(sentence)
-    cut = max(0, len(kept) - limit) if limit else 0
-    return " ".join(kept[:limit] if limit else kept), cut
+    return kept
+
+
+def _words(sentences: list[str]) -> int:
+    return sum(len(s.split()) for s in sentences)
+
+
+def _fit(stories: list[tuple[bool, list[list[str]]]], budget: float, fixed: int) -> int:
+    """Leaves out sentences in TRIM order until the stories, with fixed more words, fit budget words; returns how
+    many it left out. stories: (top story?, its sentences per part)."""
+    total, cut = fixed + sum(_words(part) for _, parts in stories for part in parts), 0
+    for index, kind in TRIM:
+        for top, parts in reversed(stories):
+            while total > budget and top == (kind == "top") and len(parts[index]) > 1:
+                total -= len(parts[index].pop().split())
+                cut += 1
+    return cut
 
 
 def narrate(llm, brief: dict, *, model: str, prompts_dir: Path, profile: str, spoken_date: str,
@@ -143,21 +162,28 @@ def narrate(llm, brief: dict, *, model: str, prompts_dir: Path, profile: str, sp
     written = {s.get("number"): s for s in out.get("stories") or []}
     if not written:
         raise ValueError("narrator: no stories in its output")
-    paragraphs, trimmed = [_checked(out.get("opening", ""), allowed, warnings)[0]], 0
+    opening, closing = (_checked(out.get(k, ""), allowed, warnings) for k in ("opening", "closing"))
+    stories, trimmed = [], 0
     for story in payload["stories"]:   # the brief's order, every story, whatever the model returned
-        n, parts = story["number"], written.get(story["number"])
-        limits = MAX_SENTENCES["top" if story["section"] == LABELS["top"].split(" ", 1)[1] else "other"]
-        said = [_checked(parts.get(p, ""), allowed, warnings, limit) for p, limit in zip(PARTS, limits)] if parts else []
-        trimmed += sum(cut for _, cut in said)
-        text = " ".join(t for t, _ in said if t)
+        parts = written.get(story["number"])
+        top = story["section"] == LABELS["top"].split(" ", 1)[1]
+        said = [_checked(parts.get(p, ""), allowed, warnings) for p in PARTS] if parts else [[] for _ in PARTS]
+        for kept, limit in zip(said, MAX_SENTENCES["top" if top else "other"]):
+            trimmed += max(0, len(kept) - limit)
+            del kept[limit:]
+        stories.append((top, said))
+    trimmed += _fit(stories, SLACK * words, _words(opening) + _words(closing))
+    paragraphs = [" ".join(opening)]
+    for story, (_, said) in zip(payload["stories"], stories):
+        n, text = story["number"], " ".join(s for part in said for s in part)
         if not re.search(rf"\bnumber {n}\b", text, re.I):
             warnings.append(f"narrator: story {n} " + ("had no number" if text else "missing; its title is read"))
             text = f"Number {n}. " + (text or _sentence(story["title"]))
         paragraphs.append(" ".join(text.split()))
-    paragraphs.append(_checked(out.get("closing", ""), allowed, warnings)[0])
+    paragraphs.append(" ".join(closing))
     script = "\n\n".join(p for p in paragraphs if p)
     if trimmed:
-        log.info("narrator: %d sentences over the per-part limits left out", trimmed)
+        log.info("narrator: %d sentences over the per-part limits or the length left out", trimmed)
     if len(script.split()) > 1.5 * words:
         warnings.append(f"narrator: {len(script.split())} words, target {words}")
     return script, version, warnings
