@@ -351,7 +351,7 @@ EXAMPLE_POSTING = {
 }
 EXAMPLE_PROFILE = {"have": ["Software engineering", "REST APIs", "Data pipelines", "Customer-facing work", "Communication",
                             "Debugging", "AI agents"], "learning": ["TypeScript"]}
-EXAMPLE_ROLES = [   # a made-up week of roles for you, for the "Where you stand" example
+_EXAMPLE_SKILLS = [
     EXAMPLE_POSTING,
     {"skills_required": ["Python", "REST APIs", "AI agents", "Kubernetes"], "skills_preferred": ["TypeScript"]},
     {"skills_required": ["Software engineering", "Python", "Kubernetes", "Communication"], "skills_preferred": ["AWS"]},
@@ -360,6 +360,12 @@ EXAMPLE_ROLES = [   # a made-up week of roles for you, for the "Where you stand"
     {"skills_required": ["Software engineering", "Debugging", "AI agents", "Python"], "skills_preferred": []},
     {"skills_required": ["TypeScript", "REST APIs", "Authentication"], "skills_preferred": ["B2B"]},
 ]
+EXAMPLE_ROLES = (   # a made-up market of 20 open roles, for the "Where you stand" example
+    [{**s, "role_family": "fde_applied_ai", "seniority": "senior" if i % 2 else "mid"} for i, s in enumerate(_EXAMPLE_SKILLS)]
+    + [{**s, "role_family": "ai_eng", "seniority": "staff" if i % 3 == 0 else "senior"} for i, s in enumerate(_EXAMPLE_SKILLS)]
+    + [{"skills_required": ["Software engineering", "Python", "PyTorch", "CUDA", extra], "skills_preferred": ["Kubernetes"], "role_family": "ml_eng",
+        "seniority": "staff" if i % 2 else "senior"}
+       for i, extra in enumerate(["Distributed systems", "MLOps", "AWS", "Data pipelines", "Deep learning", "Model training"])])
 
 
 def _num(x: float) -> str:
@@ -402,7 +408,7 @@ def openings_preview() -> str:
          **openings._skills_for(d, prof),
          **{k: d.get(k) for k in ("seniority", "remote_policy", "visa_sponsorship", "salary", "summary")}}
     _, messages = openings.render([g], 60, 0, openings.title_for(datetime(2026, 10, 13)), openings.FOOTER,
-                                  openings.where_you_stand(EXAMPLE_ROLES, prof))
+                                  openings.where_you_stand(EXAMPLE_ROLES, prof, extract.Skills(ROOT / "config" / "skills.yaml")))
     return "\n\n".join(messages)
 
 
@@ -465,7 +471,7 @@ def blocks() -> dict[str, str]:
         "extract_version": prompt_version("job_extract"), "weekly_version": prompt_version("weekly"),
         "top_skills": str(stats.TOP_SKILLS), "min_cohort": str(stats.MIN_COHORT),
         "min_tracking_days": str(stats.MIN_TRACKING.days), "min_skill": str(stats.MIN_SKILL),
-        "min_salary": str(stats.MIN_SALARY),
+        "min_salary": str(stats.MIN_SALARY), "min_group": str(stats.MIN_GROUP),
         "targets": ", ".join(targets), "n_targets": str(len(targets)),
         "openings_fresh_days": str(openings.FRESH.days),
         "openings_total": str(sum(openings.DEFAULTS["per_tier"].values())),

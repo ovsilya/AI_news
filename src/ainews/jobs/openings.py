@@ -8,9 +8,11 @@
   preferred ones at half; a skill you have (private/skills.yaml) earns all of its weight, one you're
   learning half.
 - Each opening splits its skills into the ones you have, the required and nice-to-have ones that would be
-  new to you, and the ones you're learning, with how much of them you cover (the gap). At the end, "Where
-  you stand" does the same for all of the week's roles for you: how big your gap usually is, which of your
-  skills they ask for most, which missing ones they ask for most, and what learning the top few would change.
+  new to you, and the ones you're learning, with how much of them you cover (the gap).
+- "Where you stand" follows in a message of its own: the same measure for every open role in your role
+  families and markets that the model has read, each role once, whatever its date or level. The openings are
+  the best fits by design, so this is the market: how big your gap usually is, per role family and level,
+  which of your skills roles ask for most, which missing ones, and what learning the top few would change.
 - The same role posted in several cities is shown once, with all its places, and no employer takes more
   than two of the day's places.
 - The day's places are shared between three employer groups (each employer's tier in companies.yaml):
@@ -35,7 +37,8 @@ from ..deliver.render import DIVIDER, PACK_LIMIT, _day, _pack, visible_len
 from .boards import TIERS, Company, load_companies
 from .extract import Skills
 from .filters import _STATES, FAMILIES, MARKETS
-from .stats import CURRENCY, SMALL_GAP, TARGET, _renormalize, _when, load_fit_profile, skill_coverage
+from .stats import (CURRENCY, SMALL_GAP, TARGET, _pct, _renormalize, _when, each_role, load_fit_profile, market_fit,
+                    skill_coverage)
 
 FRESH = timedelta(days=7)
 SKILL_POINTS, LEVEL_POINTS = 70, 30
@@ -95,10 +98,13 @@ def fit_score(data: dict, profile: dict | None, prefs: dict) -> int:
     return round(SKILL_POINTS * skills + LEVEL_POINTS * share)
 
 
+def _in_market(row, data: dict, prefs: dict) -> bool:
+    """In your role families and markets: the roles "Where you stand" compares you with."""
+    return data.get("role_family") in prefs["families"] and bool(set(json.loads(row["markets"])) & set(prefs["markets"]))
+
+
 def _wanted(row, data: dict, prefs: dict, since: datetime) -> bool:
-    if _when(row) < since or data.get("role_family") not in prefs["families"]:
-        return False
-    if not set(json.loads(row["markets"])) & set(prefs["markets"]):
+    if _when(row) < since or not _in_market(row, data, prefs):
         return False
     if (data.get("seniority") or "unknown") in prefs["skip_levels"]:
         return False
@@ -110,20 +116,21 @@ def pick_openings(conn: sqlite3.Connection, skills: Skills, profile: dict | None
                   employers: dict[str, Company], *, now_dt: datetime | None = None) -> dict:
     """{"picked": by employer group, best fit first in each, "considered": unsent postings that passed the
     filters, "unread": new postings in your role families the model hasn't read yet, "standing": where you
-    stand among all of the week's roles for you, sent or not (where_you_stand)}."""
+    stand among every open role in your families and markets, sent or not, whatever its date (where_you_stand)}."""
     now_dt = now_dt or datetime.now(timezone.utc)
     since = now_dt - FRESH
     rows = conn.execute(
         "SELECT p.*, e.data, EXISTS (SELECT 1 FROM job_alerts a WHERE a.posting_id = p.id) AS sent"
         " FROM job_postings p JOIN job_extractions e ON e.posting_id = p.id WHERE p.closed_at IS NULL").fetchall()
-    scored, roles = [], {}
+    scored, market = [], []
     for r in rows:
         if r["company"] not in employers:   # taken off the list: no longer polled, so it may have closed
             continue
         data = _renormalize(json.loads(r["data"]), skills)
+        if _in_market(r, data, prefs):
+            market.append((r, data))
         if not _wanted(r, data, prefs, since):
             continue
-        roles.setdefault((r["company"], " ".join(r["title"].casefold().split())), data)   # each role once
         if not r["sent"]:
             scored.append((fit_score(data, profile, prefs), _when(r), r, data))
     scored.sort(key=lambda x: (-x[0], -x[1].timestamp(), x[2]["id"]))
@@ -145,14 +152,18 @@ def pick_openings(conn: sqlite3.Connection, skills: Skills, profile: dict | None
                        "family": data["role_family"],
                        **_skills_for(data, profile),
                        **{k: data.get(k) for k in ("seniority", "remote_policy", "visa_sponsorship", "salary", "summary")}}
-    unread = conn.execute(
-        "SELECT p.title_family, p.markets, p.posted_at, p.first_seen FROM job_postings p"
-        " LEFT JOIN job_extractions e ON e.posting_id = p.id LEFT JOIN job_alerts a ON a.posting_id = p.id"
-        " WHERE p.closed_at IS NULL AND e.posting_id IS NULL AND a.posting_id IS NULL").fetchall()
-    waiting = sum(1 for r in unread if r["title_family"] in prefs["families"] and _when(r) >= since
-                  and set(json.loads(r["markets"])) & set(prefs["markets"]))
+    listed = [r for r in conn.execute(
+        "SELECT p.company, p.title_family, p.markets, p.posted_at, p.first_seen, e.posting_id IS NOT NULL AS was_read,"
+        " a.posting_id IS NOT NULL AS was_sent FROM job_postings p LEFT JOIN job_extractions e ON e.posting_id = p.id"
+        " LEFT JOIN job_alerts a ON a.posting_id = p.id WHERE p.closed_at IS NULL")
+        if r["company"] in employers and r["title_family"] in prefs["families"]
+        and set(json.loads(r["markets"])) & set(prefs["markets"])]
+    waiting = sum(1 for r in listed if not r["was_read"] and not r["was_sent"] and _when(r) >= since)
+    standing = where_you_stand(each_role(market), profile, skills)
+    if standing:   # how much of the market the model has read so far (newest first)
+        standing.update(postings_open=len(listed), postings_read=sum(1 for r in listed if r["was_read"]))
     return {"picked": _share_out(list(groups.values()), prefs), "considered": len(scored), "unread": waiting,
-            "standing": where_you_stand(list(roles.values()), profile)}
+            "standing": standing}
 
 
 def _size(share: float) -> tuple[str, str]:
@@ -163,11 +174,11 @@ def _size(share: float) -> tuple[str, str]:
     return next((name, dot) for floor, name, dot in GAP_SIZES if pct >= floor)
 
 
-def where_you_stand(roles: list[dict], profile: dict | None) -> dict | None:
-    """Where you stand among the week's roles for you (each role once): how much of their skills you
-    typically cover, how many fall in each gap size, which of your skills they ask for most, which skills
-    they ask for that you don't have, and how many would have a small gap if you learned the TOP_GAPS skills
-    that would add the most to your coverage."""
+def where_you_stand(roles: list[dict], profile: dict | None, skills: Skills) -> dict | None:
+    """Where you stand among roles given once each: market_fit (how much of a typical role's skills you cover,
+    overall, technical skills only, per family and level), how many roles fall in each gap size, which of your
+    skills they ask for most, which skills they ask for that you don't have, and how many would have a small
+    gap if you learned the TOP_GAPS skills that would add the most to your coverage."""
     roles = [d for d in roles if skill_coverage(d, profile) is not None]
     if profile is None or len(roles) < MIN_STANDING:
         return None
@@ -195,10 +206,10 @@ def where_you_stand(roles: list[dict], profile: dict | None) -> dict | None:
     sizes, ceiling = [], 101
     for floor, name, dot in GAP_SIZES:
         span = f"{floor}%+" if ceiling > 100 else f"{floor}–{ceiling - 1}%" if floor else f"under {ceiling}%"
-        sizes.append({"name": name, "dot": dot, "span": span,
-                      "roles": sum(1 for c in covered if floor <= round(100 * c) < ceiling)})
+        n = sum(1 for c in covered if floor <= round(100 * c) < ceiling)
+        sizes.append({"name": name, "dot": dot, "span": span, "roles": n, "pct": _pct(n, len(roles))})
         ceiling = floor
-    return {"roles": len(roles), "median": statistics.median(covered), "sizes": sizes,
+    return {**market_fit(roles, profile, skills), "median": statistics.median(covered), "sizes": sizes,
             "strengths": [(s, pct(s)) for s in ranked[:5]],
             "gaps": [(s, pct(s), s in learning) for s in gaps[:6]],
             "top_gaps": first,
@@ -336,20 +347,45 @@ def _skill_lines(g: dict, posted: str) -> list[str]:
     return lines
 
 
-def _standing_lines(s: dict) -> list[str]:
-    """'Where you stand' among the week's roles for you."""
-    lines = [f"🧩 You cover {_bar(s['median'])} {round(100 * s['median'])}% of a typical role's skills",
-             " · ".join(f"{b['dot']} {b['roles']} {b['name']} ({b['span']})" for b in s["sizes"])]
+def _standing_blocks(s: dict, picked: list[dict]) -> list[tuple[str | None, list[str]]]:
+    """'Where you stand', as (heading or None, lines) blocks."""
+    tech = s.get("technical_median_pct")
+    blocks = [(None, [f"🧩 You cover {_bar(s['median'])} {round(100 * s['median'])}% of a typical role's skills"
+                      + (f", {tech}% of its technical ones" if tech is not None else ""),
+                      " · ".join(f"{b['dot']} {b['pct']}% {b['name']} ({b['span']})" for b in s["sizes"])])]
+    if s.get("by_family"):
+        blocks.append(("By role family", [f"• {f['name']}: {f['median_pct']}% · 🟢 {f['small_gap_pct']}% small gap"
+                                          f" · {f['roles']} roles" for f in s["by_family"]]))
+    if s.get("by_level"):
+        blocks.append(("By level", [" · ".join(f"{g['name']} {g['median_pct']}%" for g in s["by_level"])]))
+    asked = []
     if s["strengths"]:
-        lines.append("💪 Most asked of yours: " + ", ".join(f"{name} {pct}%" for name, pct in s["strengths"]))
+        asked.append("💪 Yours: " + ", ".join(f"{name} {pct}%" for name, pct in s["strengths"]))
     if s["gaps"]:
-        lines.append("🧱 Most asked that you lack: " + ", ".join(
+        asked.append("🧱 Missing: " + ", ".join(
             f"{name} {pct}%" + (" (learning)" if learning else "") for name, pct, learning in s["gaps"]))
     top = s["top_gaps"]
     if top and s["small_after"] > s["small_now"]:
         names = ", ".join(top[:-1]) + (" and " if len(top) > 1 else "") + top[-1]
-        lines.append(f"🚀 Learning {names} would give {s['small_after']} roles a small gap, up from {s['small_now']}")
-    return lines
+        asked.append(f"🚀 Learning {names} would give {_pct(s['small_after'], s['roles'])}% of these roles a small"
+                     f" gap, up from {_pct(s['small_now'], s['roles'])}%")
+    if asked:
+        blocks.append(("Most asked (share of roles)", asked))
+    covered = [g["coverage"] for g in picked if g.get("coverage") is not None]
+    if covered:
+        blocks.append((None, [f"🎯 The openings above are your best fits, not typical roles: you cover"
+                              f" {round(100 * statistics.median(covered))}% of their skills."]))
+    return blocks
+
+
+def standing_note(s: dict) -> str:
+    """The footer of "Where you stand": how it is measured, and how much of the market it has read."""
+    read = (f" The model has read {s['postings_read']:,} of the {s['postings_open']:,} open postings in your role"
+            f" families so far, newest first." if s.get("postings_open") and s["postings_read"] < s["postings_open"] else "")
+    return ("Every open role in your role families and markets that the model has read, each once (one title in"
+            " several cities is one role), whatever its posting date or level. A typical role is the median. Skills"
+            " count as in the openings: required in full, nice-to-haves at half, one you're learning at half;"
+            " “technical” leaves out customer-facing skills." + read)
 
 
 def _versus(picked: list[dict], standing: dict | None) -> str:
@@ -358,7 +394,7 @@ def _versus(picked: list[dict], standing: dict | None) -> str:
     if not covered or not standing:
         return ""
     return (f"Picked for fit: you cover {round(100 * statistics.median(covered))}% of these roles' skills, against"
-            f" {round(100 * standing['median'])}% for a typical role this week (📊 Where you stand, at the end).")
+            f" {round(100 * standing['median'])}% for a typical open role (📊 Where you stand, below).")
 
 
 def title_for(day: datetime) -> str:
@@ -378,7 +414,8 @@ def _tier_counts(picked: list[dict]) -> str:
 def render(picked: list[dict], considered: int, unread: int, title: str, footer: str,
            standing: dict | None = None) -> tuple[str, list[str]]:
     """picked comes group by group (established, startups, top tier); each group gets a heading, and a
-    message ends between groups when the next group doesn't fit, never inside one. "Where you stand" closes it."""
+    message ends between groups when the next group doesn't fit, never inside one. "Where you stand" follows in
+    a message of its own."""
     e = html.escape
     n = len(picked)
     lead = (f"The {n} best fits" if n != 1 else "The best fit") + f" of {considered} new posting{'s' * (considered != 1)} this week"
@@ -409,14 +446,20 @@ def render(picked: list[dict], considered: int, unread: int, title: str, footer:
             units.append(whole)
         else:   # a group too long for one message: its heading travels with its first opening
             units += [f"{head}\n\n{blocks[0]}"] + blocks[1:]
-    if standing:
-        head = f"📊 Where you stand · {standing['roles']} roles for you this week"
-        lines = _standing_lines(standing)
-        md += [f"## {head}", ""] + lines + [""]
-        units.append(f"{DIVIDER}\n<b>{e(head)}</b>\n" + "\n".join(e(line) for line in lines))
-    md += ["---", footer]
+    md += ["---", footer, ""]
     units.append(f"{DIVIDER}\n<i>{e(footer)}</i>")
-    return "\n".join(md), _pack(units)
+    messages = _pack(units)
+    if standing:
+        head = f"📊 Where you stand · {standing['roles']} open roles in your role families"
+        md += [f"# {head}", ""]
+        parts = [f"<b>{e(head)}</b>"]
+        for heading, lines in _standing_blocks(standing, picked):
+            md += ([f"**{heading}**"] if heading else []) + lines + [""]
+            parts.append((f"<b>{e(heading)}</b>\n" if heading else "") + "\n".join(e(line) for line in lines))
+        note = standing_note(standing)
+        md += [f"_{note}_", ""]
+        messages.append("\n\n".join(parts + [f"<i>{e(note)}</i>"]))
+    return "\n".join(md).rstrip() + "\n", messages
 
 
 def build_openings(conn: sqlite3.Connection, settings, *, per_tier: dict[str, int] | None = None,

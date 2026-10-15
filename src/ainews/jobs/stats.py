@@ -33,7 +33,8 @@ CURRENCY = {"USD": "$", "CAD": "C$", "GBP": "£", "CHF": "CHF ", "AED": "AED ", 
 PER_YEAR = {"year": 1, "month": 12, "hour": 2080}
 SMALL_GAP = 80          # % of a role's skills you cover from which the gap counts as small
 SOFT = {"customer_facing"}   # skill categories that aren't technical
-MIN_FAMILY = 5          # roles a family needs before its own coverage is shown
+MIN_GROUP = 5           # roles a family or level needs before its own coverage is shown
+LEVELS = ("junior", "mid", "senior", "staff", "principal", "lead", "manager")   # in order, for "by level"
 
 
 def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
@@ -188,7 +189,7 @@ def market_stats(conn: sqlite3.Connection, skills: Skills, names: dict[str, str]
                           for c, n in employers.most_common(10)],
     }
     if fit_profile is not None:
-        stats["fit"] = {**fit(top, fit_profile, movement), "market": market_fit(target, fit_profile, skills)}
+        stats["fit"] = {**fit(top, fit_profile, movement), "market": market_fit(each_role(target), fit_profile, skills)}
     return stats
 
 
@@ -204,32 +205,46 @@ def fit(top: list[dict], profile: dict, movement: dict) -> dict:
             "gaps": gaps[:10]}
 
 
-def market_fit(target: list, profile: dict, skills: Skills) -> dict | None:
-    """How much of each open role's skills you cover (as in the openings: required in full, preferred at half,
-    learning at half), across every open target role, each role once: the median, the median counting technical
-    skills only, the share of roles with a small gap, and the median per role family. None without roles."""
+def each_role(postings: list) -> list[dict]:
+    """The postings' data, each role once: one employer's title in several cities is one role."""
     roles = {}
-    for r, d in target:
+    for r, d in postings:
         roles.setdefault((r["company"], " ".join(r["title"].casefold().split())), d)
+    return list(roles.values())
+
+
+def market_fit(roles: list[dict], profile: dict, skills: Skills) -> dict | None:
+    """How much of each role's skills you cover (as in the openings: required in full, preferred at half, learning
+    at half), across roles given once each (each_role): the median, the median counting technical skills only, the
+    share of roles with a small gap, and the median and small-gap share per role family and per level. None
+    without roles."""
     soft = {s for s, c in skills.category.items() if c in SOFT}
 
     def technical(d: dict) -> dict:
         return {**d, **{k: [s for s in d.get(k) or [] if s not in soft] for k in ("skills_required", "skills_preferred")}}
 
-    covered = [(d["role_family"], c) for d in roles.values() if (c := skill_coverage(d, profile)) is not None]
+    covered = [(d, c) for d in roles if (c := skill_coverage(d, profile)) is not None]
     if not covered:
         return None
-    tech = [c for d in roles.values() if (c := skill_coverage(technical(d), profile)) is not None]
+    tech = [c for d, _ in covered if (c := skill_coverage(technical(d), profile)) is not None]
 
     def pct(x: float) -> int:
         return round(100 * x)
 
-    by_family = []
-    for f in TARGET:
-        cs = [c for family, c in covered if family == f]
-        if len(cs) >= MIN_FAMILY:
-            by_family.append({"name": FAMILIES[f], "roles": len(cs), "median_pct": pct(median(cs))})
-    return {"roles": len(covered), "median_pct": pct(median(c for _, c in covered)),
-            "technical_median_pct": pct(median(tech)) if tech else None,
-            "small_gap_pct": _pct(sum(1 for _, c in covered if pct(c) >= SMALL_GAP), len(covered)),
-            "by_family": sorted(by_family, key=lambda f: -f["median_pct"])}
+    def small(cs: list[float]) -> int:
+        return _pct(sum(1 for c in cs if pct(c) >= SMALL_GAP), len(cs))
+
+    def groups(key, order, name) -> list[dict]:
+        out = []
+        for k in order:
+            cs = [c for d, c in covered if key(d) == k]
+            if len(cs) >= MIN_GROUP:
+                out.append({"name": name(k), "roles": len(cs), "median_pct": pct(median(cs)), "small_gap_pct": small(cs)})
+        return out
+
+    every = [c for _, c in covered]
+    return {"roles": len(covered), "median_pct": pct(median(every)),
+            "technical_median_pct": pct(median(tech)) if tech else None, "small_gap_pct": small(every),
+            "by_family": sorted(groups(lambda d: d.get("role_family"), FAMILIES, FAMILIES.get),
+                                key=lambda g: -g["median_pct"]),
+            "by_level": groups(lambda d: d.get("seniority") or "unknown", LEVELS, str)}

@@ -67,16 +67,16 @@ def test_each_opening_splits_its_skills_and_sizes_the_gap():
 def test_where_you_stand_lists_gaps_and_picks_what_to_learn_first():
     roles = [{"skills_required": ["Python", "Kubernetes"], "skills_preferred": ["Terraform"]} for _ in range(4)]
     roles += [{"skills_required": ["Python", "RAG"], "skills_preferred": []}, {"skills_preferred": ["MCP"]}]
-    s = where_you_stand(roles, PROFILE)
+    s = where_you_stand(roles, PROFILE, SKILLS)
     assert s["roles"] == 6
     # Kubernetes is required where Terraform is only nice to have; MCP, which you're learning, has half to go.
     assert [name for name, *_ in s["gaps"]] == ["Kubernetes", "Terraform", "MCP"]
     assert s["gaps"][0] == ("Kubernetes", 67, False) and s["gaps"][2] == ("MCP", 17, True)
     assert s["top_gaps"] == ["Kubernetes", "Terraform", "MCP"]
     assert s["strengths"][0] == ("Python", 83)
-    assert [b["roles"] for b in s["sizes"]] == [1, 0, 5] and [b["span"] for b in s["sizes"]] == ["80%+", "60–79%", "under 60%"]
+    assert [(b["roles"], b["pct"]) for b in s["sizes"]] == [(1, 17), (0, 0), (5, 83)] and [b["span"] for b in s["sizes"]] == ["80%+", "60–79%", "under 60%"]
     assert (s["small_now"], s["small_after"]) == (1, 6)
-    assert where_you_stand(roles[:4], PROFILE) is None and where_you_stand(roles, None) is None   # too few; no skills file
+    assert where_you_stand(roles[:4], PROFILE, SKILLS) is None and where_you_stand(roles, None, SKILLS) is None   # too few; no skills file
 
 
 def test_pick_filters_groups_and_caps_per_employer(conn):
@@ -151,15 +151,18 @@ def test_build_sends_once_and_fits_telegram(conn, settings, tmp_path):
     assert [g["tier"] for g in result["picked"]] == ["established"] * 3 + ["startup"] * 3 + ["top"] * 2
     assert all(visible_len(m) <= TELEGRAM_LIMIT for m in result["telegram"])
     first, text = result["telegram"][0], "\n".join(result["telegram"])
-    assert len(result["telegram"]) == 1                                       # all eight fit in one message
+    assert len(result["telegram"]) == 2          # all eight fit in one message; "Where you stand" has its own
     assert "Jobs for you" in first and "🏢 3 established · 🌱 3 startups · 🏆 2 top tier" in first
     assert "The 8 best fits of 12 new postings this week" in first   # the best fits, not the market
-    assert "Picked for fit: you cover 50% of these roles&#x27; skills, against 50% for a typical role" in first
+    assert "Picked for fit: you cover 50% of these roles&#x27; skills, against 50% for a typical open role" in first
     # Python (have) + Kubernetes (new) required, MCP (learning) preferred: (1 + 0.5 * 0.5) / 2.5 = 50% covered.
     assert "🎯 Fit 65 · posted" in first
     assert "🧩 Skills ▰▰▰▰▰▱▱▱▱▱ 50% · 🔴 big gap, 1 required skill new to you" in first
     assert "✅ You have (1 of 2 required): Python\n❌ New to you, required: Kubernetes\n📚 Learning: MCP" in first
-    assert "<b>📊 Where you stand · 12 roles for you this week</b>" in text
+    standing = result["telegram"][1]
+    assert standing.startswith("<b>📊 Where you stand · 12 open roles in your role families</b>")
+    assert "🎯 The openings above are your best fits, not typical roles: you cover 50% of their skills." in standing
+    assert "Where you stand" not in first.replace("(📊 Where you stand, below)", "")
     assert "Co 4 · San Francisco / New York City 🇺🇸 · hybrid · senior" in first
     assert text.index("<b>🏢 Established</b>") < text.index("<b>🌱 Startups</b>") < text.index("<b>🏆 Top tier</b>")
     assert '<b>7. <a href="https://jobs.example/co0:1">Applied AI Engineer 0</a></b>' in text   # numbered across groups

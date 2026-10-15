@@ -111,10 +111,10 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 <main>
 <div class="top" id="top"><a class="home" href="../architecture-diagram.html#card-b1">← Architecture diagram</a><nav aria-label="Job search pages"><a href="index.html">Overview</a><a href="sources.html">1 · Sources</a><a href="poll.html">2 · Filter &amp; track</a><a href="extract.html">3 · Read</a><a href="openings.html" aria-current="page">4 · Openings</a><a href="report.html">5 · Report &amp; fit</a><a href="operate.html">Run &amp; change it</a></nav></div>
 <h1>4 · Openings for you</h1>
-<p class="lede">Every day, <code>ainews openings</code> picks the week's new postings that fit you best, <b>shared between established companies, startups and top-tier names</b>, and sends them to the Telegram channel, <b>each posting once</b>. It makes no model call: the ranking uses the form the model already filled in for each posting (step 3), your skills list, and your preferences. This is step J3 on the architecture diagram.</p>
+<p class="lede">Every day, <code>ainews openings</code> picks the week's new postings that fit you best, <b>shared between established companies, startups and top-tier names</b>, and sends them to the Telegram channel, <b>each posting once</b>, followed by <b>where you stand</b> among every open role in your families, so the best fits are never mistaken for the market. It makes no model call: the ranking uses the form the model already filled in for each posting (step 3), your skills list, and your preferences. This is step J3 on the architecture diagram.</p>
 
 <div class="frame">
-<svg viewBox="0 0 1000 140" role="img" aria-label="New postings the model has read pass your filters, get a fit score from skills and level, share the day's places between three employer groups, and go to Telegram, where they are marked as sent">
+<svg viewBox="0 0 1000 250" role="img" aria-label="Top lane: new postings the model has read pass your filters, get a fit score from skills and level, share the day's places between three employer groups, and go to Telegram, where they are marked as sent. Bottom lane: every open role in your families and markets the model has read, each once and whatever its date, is measured the same way, and Where you stand goes to Telegram as a message of its own">
   <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker></defs>
   <rect class="store" x="2" y="20" width="172" height="100" rx="9"/>
   <text class="t" x="88" y="48" text-anchor="middle">New, read postings</text>
@@ -140,6 +140,20 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
   <path class="a" d="M380 70 H410" marker-end="url(#arr)"/>
   <path class="a" d="M586 70 H616" marker-end="url(#arr)"/>
   <path class="a" d="M792 70 H822" marker-end="url(#arr)"/>
+  <rect class="store" x="2" y="140" width="172" height="100" rx="9"/>
+  <text class="t" x="88" y="168" text-anchor="middle">Every open role</text>
+  <text class="s" x="88" y="190" text-anchor="middle">in your families, read,</text>
+  <text class="s" x="88" y="208" text-anchor="middle">any date · each once</text>
+  <a href="#standing"><rect class="comp" x="208" y="140" width="584" height="100" rx="9"/>
+  <text class="t" x="500" y="168" text-anchor="middle">📊 Where you stand: the market, not the best fits</text>
+  <text class="s" x="500" y="190" text-anchor="middle">a typical role's coverage · technical only · by family · by level</text>
+  <text class="s" x="500" y="208" text-anchor="middle">most-asked skills you have and lack · what to learn first</text></a>
+  <a href="#standing"><rect class="ext" x="826" y="140" width="172" height="100" rx="9"/>
+  <text class="t" x="912" y="168" text-anchor="middle">Telegram</text>
+  <text class="s" x="912" y="190" text-anchor="middle">its own message,</text>
+  <text class="s" x="912" y="208" text-anchor="middle">after the openings</text></a>
+  <path class="a" d="M174 190 H204" marker-end="url(#arr)"/>
+  <path class="a" d="M792 190 H822" marker-end="url(#arr)"/>
 </svg>
 </div>
 
@@ -189,11 +203,11 @@ border-radius:8px;background:var(--bg);color:var(--ink)}
 </ol>
 
 <h2 id="message">What arrives in Telegram</h2>
-<p>A heading with how many postings were considered (“The 8 best fits of 140 new postings this week”) and how many picks each group got, and a line that compares the picks with a typical role: they are chosen for fit, so you cover more of their skills than of most roles, and “📊 Where you stand” at the end shows the typical one. Then the openings under their group's heading (🏢 Established, 🌱 Startups, 🏆 Top tier, numbered straight through, best fit first in each). The eight usually take two messages; a message ends between groups, never inside one. The example above, rendered by the same code:</p>
+<p>A heading with how many postings were considered (“The 8 best fits of 140 new postings this week”) and how many picks each group got, and a line that compares the picks with a typical role: they are chosen for fit, so you cover more of their skills than of most roles, and “📊 Where you stand”, in the next message, shows the typical one. Then the openings under their group's heading (🏢 Established, 🌱 Startups, 🏆 Top tier, numbered straight through, best fit first in each). The eight usually take two messages; a message ends between groups, never inside one. The example above, rendered by the same code:</p>
 <div class="tg">💼 <b>Jobs for you · Tue 13 Oct</b>
 The best fit of 60 new postings this week
 🌱 1 startup
-<i>Picked for fit: you cover 68% of these roles&#x27; skills, against 50% for a typical role this week (📊 Where you stand, at the end).</i>
+<i>Picked for fit: you cover 68% of these roles&#x27; skills, against 44% for a typical open role (📊 Where you stand, below).</i>
 
 ━━━━━━━━━━━━
 <b>🌱 Startups</b>
@@ -210,15 +224,29 @@ Legora · New York City 🇺🇸 · onsite · mid
 📚 Learning: TypeScript
 
 ━━━━━━━━━━━━
-<b>📊 Where you stand · 7 roles for you this week</b>
-🧩 You cover ▰▰▰▰▰▱▱▱▱▱ 50% of a typical role&#x27;s skills
-🟢 1 small gap (80%+) · 🟡 2 medium gap (60–79%) · 🔴 4 big gap (under 60%)
-💪 Most asked of yours: REST APIs 57%, AI agents 57%, Communication 43%, Software engineering 43%, Customer-facing work 29%
-🧱 Most asked that you lack: Python 71%, Kubernetes 43%, TypeScript 43% (learning), Authentication 29%, AWS 29%, B2B 29%
-🚀 Learning Python, Kubernetes and Authentication would give 4 roles a small gap, up from 1
+<i>Fit 0–100: 70 for skills (required in full, preferred at half), 30 for level. Skills %: how much of a posting&#x27;s skills you cover, a skill you&#x27;re learning at half; the gap is small from 80%, medium from 60%. Tap a title to open the posting. Each posting is sent once.</i>
 
-━━━━━━━━━━━━
-<i>Fit 0–100: 70 for skills (required in full, preferred at half), 30 for level. Skills %: how much of a posting&#x27;s skills you cover, a skill you&#x27;re learning at half; the gap is small from 80%, medium from 60%. Tap a title to open the posting. Each posting is sent once.</i></div>
+<b>📊 Where you stand · 20 open roles in your role families</b>
+
+🧩 You cover ▰▰▰▰▱▱▱▱▱▱ 44% of a typical role&#x27;s skills, 40% of its technical ones
+🟢 10% small gap (80%+) · 🟡 20% medium gap (60–79%) · 🔴 70% big gap (under 60%)
+
+<b>By role family</b>
+• FDE / applied AI: 50% · 🟢 14% small gap · 7 roles
+• AI engineer: 50% · 🟢 14% small gap · 7 roles
+• ML engineer: 18% · 🟢 0% small gap · 6 roles
+
+<b>By level</b>
+senior 47% · staff 40%
+
+<b>Most asked (share of roles)</b>
+💪 Yours: Software engineering 60%, REST APIs 40%, AI agents 40%, Communication 30%, Data pipelines 25%
+🧱 Missing: Python 80%, Kubernetes 60%, CUDA 30%, PyTorch 30%, TypeScript 30% (learning), AWS 25%
+🚀 Learning Python, Kubernetes and CUDA would give 45% of these roles a small gap, up from 10%
+
+🎯 The openings above are your best fits, not typical roles: you cover 68% of their skills.
+
+<i>Every open role in your role families and markets that the model has read, each once (one title in several cities is one role), whatever its posting date or level. A typical role is the median. Skills count as in the openings: required in full, nice-to-haves at half, one you&#x27;re learning at half; “technical” leaves out customer-facing skills.</i></div>
 <ul>
 <li><b>The title</b> opens the employer's own posting.</li>
 <li><b>The line under it:</b> the employer, where (the first two cities, how many more, and the country's flag), the work policy, the level, and “visa sponsorship” when the posting says it offers it. Career sites write places in many ways (“USA, GA, Atlanta”, “California - San Francisco”); only the city is kept.</li>
@@ -229,7 +257,16 @@ Legora · New York City 🇺🇸 · onsite · mid
 <li><b>❌ New to you, required</b> and <b>➖ New to you, nice to have</b>: the posting's skills on neither of your lists.</li>
 <li><b>📚 Learning</b> the posting's skills on your “learning” list.</li>
 </ul>
-<p><b>📊 Where you stand</b> closes the message, using the same measure for all of the week's roles for you. Each role counts once, including ones sent before. It shows how much of a typical role's skills you cover (the median), how many roles have a small, medium or big gap, which of your skills they ask for most, and which skills you don't have they ask for most (the share of roles that list each). The 🚀 line names the three skills that would add the most to your coverage, required ones before nice-to-haves, and how many roles would have a small gap if you learned them. Each list keeps these numbers (in <code>reports.stats</code>), so you can follow your gap over time.</p>
+<h2 id="standing">📊 Where you stand: the market, not the best fits</h2>
+<p>The openings are the best fits by design, so you always cover more of their skills than of most roles: read alone, they make your gaps look small. So a message of its own follows them, with the same measure for <b>every open role in your role families and markets that the model has read</b>, each role once (one title in several cities is one role), whatever its posting date or level, sent or not. Nothing on the way chooses roles by your skills: the search uses titles, markets and fixed AI search terms only, and the model reads each posting without your profile. The last message of the example above shows it, for a made-up market of 20 roles.</p>
+<ul>
+<li><b>🧩 Coverage:</b> how much of a typical role's skills you cover (the median), and of its technical skills only, leaving out customer-facing ones such as “Communication” or “Consulting”; then the share of roles with a small (80%+), medium (60–79%) or big gap.</li>
+<li><b>By role family</b> and <b>by level:</b> the same median for each family and level with at least 5 roles, and each family's share of roles with a small gap, so you see where you can compete today and where the gap is large.</li>
+<li><b>Most asked:</b> 💪 your skills that roles ask for most, 🧱 the skills you lack that they ask for most (the share of roles that list each), and 🚀 the three skills that would add the most to your coverage, required ones before nice-to-haves, with the share of roles that would then have a small gap.</li>
+<li><b>🎯</b> how much of the openings' skills you cover, next to the typical role.</li>
+<li><b>The footer</b> says how it is measured, and how many of the open postings in your families the model has read so far: it reads a fixed number of new postings each run, newest first, so older ones wait.</li>
+</ul>
+<p>Each list keeps these numbers (in <code>reports.stats</code>), so you can follow your gap over time. The weekly report's “Your fit” starts with the same measure.</p>
 <p class="muted">These lines show anyone who can read the channel which skills you have and which you lack, as the weekly report's “Your fit” section does.</p>
 
 <h2 id="once">Sent once: how it's tracked</h2>
